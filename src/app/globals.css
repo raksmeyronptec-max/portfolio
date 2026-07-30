@@ -1,0 +1,705 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — "Scholar × Builder"
+   ───────────────────────────────────────────────────────────────────────────
+   Academic and modern, professional and approachable, calm and content-first.
+
+   Palette rationale
+     Primary   deep indigo/navy — academic authority, reads as trustworthy
+     Accent    warm gold/amber  — Cambodian warmth, used sparingly for emphasis
+     Support   restrained teal  — the "builder"/systems half of the identity
+     Surfaces  warm off-white in light, deep blue-grey in dark
+
+   Rules this file enforces
+     • Only semantic tokens are consumed by components. No component ever
+       references a raw palette step or a hex value.
+     • Every foreground/background pair below meets WCAG 2.2 AA for its size.
+     • Focus is never removed. It is redefined as a branded two-tone ring.
+     • All motion is opt-out via prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer theme {
+  :root {
+    /* ── Raw palette (never used directly by components) ─────────────────── */
+    --indigo-50: #f0f3fb;
+    --indigo-100: #dde4f6;
+    --indigo-200: #c1cdec;
+    --indigo-300: #94aade;
+    --indigo-400: #6781cb;
+    --indigo-500: #4560b4;
+    --indigo-600: #344a97;
+    --indigo-700: #2b3c7a;
+    --indigo-800: #1f2c5c;
+    --indigo-900: #16203f;
+    --indigo-950: #0d1428;
+
+    --amber-50: #fdf8ec;
+    --amber-100: #f8ecca;
+    --amber-200: #f1d792;
+    --amber-300: #e8bc57;
+    --amber-400: #dfa22f;
+    --amber-500: #c8871a;
+    --amber-600: #a66916;
+    --amber-700: #834f18;
+    --amber-800: #6c401a;
+    --amber-900: #5c3619;
+
+    --teal-50: #eef8f6;
+    --teal-100: #d3ece8;
+    --teal-200: #a9d9d2;
+    --teal-300: #77bfb6;
+    --teal-400: #4aa19a;
+    --teal-500: #348480;
+    --teal-600: #276a68;
+    --teal-700: #235555;
+    --teal-800: #1f4545;
+    --teal-900: #1c3a3a;
+
+    --stone-50: #faf9f7;
+    --stone-100: #f3f1ed;
+    --stone-200: #e7e3dc;
+    --stone-300: #d5cfc4;
+    --stone-400: #a9a196;
+    /* #7d766c was the original step here. It measures 4.27:1 on --background,
+       which fails WCAG 1.4.3 for the 11–13px labels it was used on. Darkened to
+       #6f6960 — 5.16:1 on --background, 4.81:1 on --surface-muted, 5.50:1 on
+       --surface — so the smallest text in the system still clears AA. */
+    --stone-500: #6f6960;
+    --stone-600: #5e584f;
+    --stone-700: #4a453e;
+    --stone-800: #302c27;
+    --stone-900: #1d1a17;
+
+    --slate-850: #16202e;
+    --slate-900: #101823;
+    --slate-950: #0a0f17;
+
+    --red-100: #fde8e6;
+    --red-500: #d1453b;
+    --red-600: #b3352d;
+    --red-700: #8f2a24;
+    --green-100: #e3f4e8;
+    --green-600: #2c7a4b;
+    --green-700: #22603b;
+    --blue-100: #e5eefc;
+    --blue-600: #2563a8;
+    --blue-700: #1d4e85;
+
+    /* ── Semantic tokens — LIGHT (default) ───────────────────────────────── */
+    --background: var(--stone-50);
+    --surface: #ffffff;
+    --surface-muted: var(--stone-100);
+    --surface-raised: #ffffff;
+    --surface-inverse: var(--indigo-900);
+
+    --foreground: var(--stone-900);
+    /* 5.4:1 on --background. Deliberately not an opacity of --foreground:
+       v1 used opacity 0.55 on body text, which is how contrast bugs happen. */
+    --foreground-muted: var(--stone-600);
+    /* Used for 11–13px labels, so it is held to the 4.5:1 small-text threshold
+       rather than the 3:1 large-text one. 5.16:1 on --background. */
+    --foreground-subtle: var(--stone-500);
+    --foreground-inverse: var(--stone-50);
+
+    --primary: var(--indigo-700);
+    --primary-hover: var(--indigo-800);
+    --primary-active: var(--indigo-900);
+    --primary-foreground: #ffffff;
+    --primary-subtle: var(--indigo-50);
+    --primary-subtle-foreground: var(--indigo-800);
+
+    --accent: var(--amber-500);
+    /* Hover goes *lighter*, not darker. Amber carries dark text, so darkening on
+       hover would lower the text contrast at the exact moment the control is
+       being interacted with. amber-400 with --accent-foreground is 7.4:1. */
+    --accent-hover: var(--amber-400);
+    /* Was #ffffff, which measures 3.03:1 on amber-500 — a fail for the 17px
+       button label it was used on. This near-black amber gives 5.47:1 on
+       amber-500 and 7.38:1 on amber-400. */
+    --accent-foreground: #2a1c05;
+    --accent-subtle: var(--amber-50);
+    --accent-subtle-foreground: var(--amber-800);
+
+    --secondary: var(--teal-600);
+    --secondary-hover: var(--teal-700);
+    --secondary-foreground: #ffffff;
+    --secondary-subtle: var(--teal-50);
+    --secondary-subtle-foreground: var(--teal-800);
+
+    --border: var(--stone-200);
+    --border-strong: var(--stone-300);
+    --border-interactive: var(--indigo-300);
+
+    --focus-ring: var(--indigo-600);
+    --focus-ring-offset: var(--background);
+
+    --success: var(--green-600);
+    --success-subtle: var(--green-100);
+    --success-foreground: var(--green-700);
+    --warning: var(--amber-600);
+    --warning-subtle: var(--amber-50);
+    --warning-foreground: var(--amber-900);
+    --danger: var(--red-600);
+    --danger-subtle: var(--red-100);
+    --danger-foreground: var(--red-700);
+    --info: var(--blue-600);
+    --info-subtle: var(--blue-100);
+    --info-foreground: var(--blue-700);
+
+    /* Shadows stay deliberately shallow — the brief rules out oversized
+       shadows and heavy glassmorphism. */
+    --shadow-xs: 0 1px 2px 0 rgb(16 24 35 / 0.04);
+    --shadow-sm: 0 1px 3px 0 rgb(16 24 35 / 0.06), 0 1px 2px -1px rgb(16 24 35 / 0.05);
+    --shadow-md: 0 4px 10px -3px rgb(16 24 35 / 0.08), 0 2px 4px -2px rgb(16 24 35 / 0.05);
+    --shadow-lg: 0 10px 24px -8px rgb(16 24 35 / 0.12);
+
+    /* ── Layout scale ───────────────────────────────────────────────────── */
+    --container-max: 76rem;
+    --container-prose: 44rem;
+    --container-narrow: 60rem;
+    --header-height: 4rem;
+
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 999px;
+
+    --space-section: clamp(3.5rem, 7vw, 6.5rem);
+    --space-block: clamp(1.75rem, 3.5vw, 3rem);
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    /* --font-latin / --font-khmer are injected by next/font in layout.tsx.
+       Khmer is listed first in --font-ui so Khmer glyphs never fall through to
+       a system font that clips their upper/lower marks. */
+    --font-sans: var(--font-latin), var(--font-khmer), ui-sans-serif, system-ui,
+      "Segoe UI", sans-serif;
+    --font-khmer-stack: var(--font-khmer), "Noto Sans Khmer", "Khmer OS Battambang",
+      "Khmer OS", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+
+    /* Khmer needs materially more leading than Latin: its glyphs stack
+       diacritics above and subscripts below the baseline, and 1.5 clips them. */
+    --leading-latin: 1.6;
+    --leading-khmer: 1.95;
+    --leading-heading-latin: 1.15;
+    --leading-heading-khmer: 1.5;
+  }
+
+  /* ── Semantic tokens — DARK ────────────────────────────────────────────── */
+  [data-theme="dark"] {
+    --background: var(--slate-950);
+    --surface: var(--slate-900);
+    --surface-muted: var(--slate-850);
+    --surface-raised: var(--slate-850);
+    --surface-inverse: var(--stone-100);
+
+    --foreground: #eef1f6;
+    --foreground-muted: #a7b1c2;
+    --foreground-subtle: #8590a3;
+    --foreground-inverse: var(--stone-900);
+
+    /* Lighter primary in dark mode: indigo-700 on a near-black surface fails
+       contrast for text and looks muddy for fills. */
+    --primary: var(--indigo-300);
+    --primary-hover: var(--indigo-200);
+    --primary-active: var(--indigo-100);
+    --primary-foreground: var(--indigo-950);
+    --primary-subtle: #1a2440;
+    --primary-subtle-foreground: var(--indigo-200);
+
+    --accent: var(--amber-300);
+    --accent-hover: var(--amber-200);
+    --accent-foreground: #2a1c05;
+    --accent-subtle: #2e2410;
+    --accent-subtle-foreground: var(--amber-200);
+
+    --secondary: var(--teal-300);
+    --secondary-hover: var(--teal-200);
+    --secondary-foreground: #08211f;
+    --secondary-subtle: #17302f;
+    --secondary-subtle-foreground: var(--teal-200);
+
+    --border: #24303f;
+    --border-strong: #33415a;
+    --border-interactive: var(--indigo-400);
+
+    --focus-ring: var(--amber-300);
+    --focus-ring-offset: var(--background);
+
+    --success: #5cc282;
+    --success-subtle: #13291d;
+    --success-foreground: #9de0b4;
+    --warning: var(--amber-300);
+    --warning-subtle: #2e2410;
+    --warning-foreground: var(--amber-200);
+    --danger: #f0796e;
+    --danger-subtle: #331714;
+    --danger-foreground: #f8b2ab;
+    --info: #7bb0ea;
+    --info-subtle: #142438;
+    --info-foreground: #b3d2f5;
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45);
+    --shadow-md: 0 4px 10px -3px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 24px -8px rgb(0 0 0 / 0.55);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Tailwind theme bridge — `inline` so utilities resolve the live CSS variable
+   and therefore follow the active theme without duplicating any utility.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-inverse: var(--surface-inverse);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-foreground-inverse: var(--foreground-inverse);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-subtle-foreground: var(--accent-subtle-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-subtle: var(--secondary-subtle);
+  --color-secondary-subtle-foreground: var(--secondary-subtle-foreground);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-interactive: var(--border-interactive);
+  --color-focus-ring: var(--focus-ring);
+
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-foreground: var(--info-foreground);
+
+  --font-sans: var(--font-sans);
+  --font-khmer: var(--font-khmer-stack);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --container-content: var(--container-max);
+  --container-prose: var(--container-prose);
+  --container-narrow: var(--container-narrow);
+
+  /* Responsive type scale. clamp() keeps headings readable at 320px without a
+     separate mobile stylesheet, and avoids the layout shift a JS-driven scale
+     would cause. */
+  --text-display: clamp(2.25rem, 1.35rem + 4.2vw, 4rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: clamp(1.875rem, 1.2rem + 3vw, 3rem);
+  --text-h1--line-height: 1.14;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: clamp(1.5rem, 1.1rem + 1.8vw, 2.125rem);
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h3: clamp(1.25rem, 1.05rem + 0.9vw, 1.5rem);
+  --text-h3--line-height: 1.3;
+  --text-h4: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+  --text-h4--line-height: 1.4;
+  /* 1rem floor — the brief rules out tiny text. */
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.7;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.55;
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--letter-spacing: 0.08em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Base layer
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+  }
+
+  html {
+    /* Anchors must not land under the sticky header. */
+    scroll-padding-top: calc(var(--header-height) + 1.5rem);
+    -webkit-text-size-adjust: 100%;
+    /* Avoids the horizontal scrollbar that long Khmer strings can force. */
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-latin);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: none;
+  }
+
+  /* Khmer pages get the Khmer stack first and the taller leading. Driven by
+     the `lang` attribute rather than a class, so the rule can never disagree
+     with what assistive technology is told. */
+  :lang(km) {
+    font-family: var(--font-khmer-stack);
+    line-height: var(--leading-khmer);
+    /* Khmer subscripts (ជើង) render below the baseline and get clipped by
+       tight line boxes; a little breathing room prevents that. */
+    padding-block: 0.01px;
+  }
+
+  :lang(km) h1,
+  :lang(km) h2,
+  :lang(km) h3,
+  :lang(km) h4 {
+    line-height: var(--leading-heading-khmer);
+    letter-spacing: normal;
+    /* Khmer has no uppercase and no meaningful tracking; negative tracking
+       from the Latin scale actively collides glyphs. */
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 650;
+    text-wrap: balance;
+    /*
+      No `color` here.
+     
+      An element selector beats inheritance, so `color: var(--foreground)` on this
+      rule overrode the colour a heading should inherit from its section. On the
+      dark call-to-action band (`bg-surface-inverse text-foreground-inverse`) the
+      heading came out near-black on navy — 1.5:1, which axe flagged as a serious
+      contrast failure while the paragraph beside it rendered correctly.
+     
+      `<body>` sets `color: var(--foreground)`, so a heading with no ancestor
+      override still gets exactly the same colour this rule was asking for.
+    */
+  }
+
+  p, li {
+    text-wrap: pretty;
+  }
+
+  /* ── Focus ─────────────────────────────────────────────────────────────
+     Never removed, always branded. Two-tone: a ring in the focus colour plus
+     an offset ring in the page colour, so the indicator stays visible on both
+     light and dark surfaces and against coloured buttons. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Mouse users do not get a ring, keyboard users always do. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Windows High Contrast / forced-colors: let the OS win. */
+  @media (forced-colors: active) {
+    :focus-visible {
+      outline: 3px solid CanvasText;
+    }
+  }
+
+  ::selection {
+    background-color: var(--primary-subtle);
+    color: var(--primary-subtle-foreground);
+  }
+
+  /* Explicit sizes prevent the layout shift that unsized media caused in v1. */
+  img, video, svg, canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  /* Inputs inherit the type stack so Khmer placeholders are not clipped. */
+  input, textarea, select, button {
+    font: inherit;
+    color: inherit;
+  }
+
+  textarea {
+    field-sizing: content;
+    min-height: 7rem;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* ── Motion ────────────────────────────────────────────────────────────
+     Everything animated in this app is gated on this query. v1 ran a
+     permanent requestAnimationFrame canvas regardless of the user's setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Component utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  .container-content {
+    width: 100%;
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .container-prose {
+    width: 100%;
+    max-width: var(--container-prose);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .container-narrow {
+    width: 100%;
+    max-width: var(--container-narrow);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2rem);
+  }
+
+  .section-y {
+    padding-block: var(--space-section);
+  }
+
+  /* Screen-reader-only text that becomes visible on focus, used by the skip
+     link. */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* ── Long-form content ──────────────────────────────────────────────────
+     Applied to rendered case-study blocks. Values are tuned so that switching
+     to Khmer does not change the vertical rhythm enough to reflow the page. */
+  .prose-content {
+    max-width: 68ch;
+    font-size: var(--text-body-lg);
+    line-height: 1.7;
+    color: var(--foreground);
+  }
+
+  .prose-content > * + * {
+    margin-block-start: 1.25em;
+  }
+
+  .prose-content h2 {
+    font-size: var(--text-h3);
+    margin-block-start: 2em;
+    margin-block-end: 0.6em;
+  }
+
+  .prose-content h3 {
+    font-size: var(--text-h4);
+    margin-block-start: 1.75em;
+    margin-block-end: 0.5em;
+  }
+
+  .prose-content a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  .prose-content a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  .prose-content ul,
+  .prose-content ol {
+    padding-inline-start: 1.5em;
+  }
+
+  .prose-content ul { list-style: disc; }
+  .prose-content ol { list-style: decimal; }
+  .prose-content li + li { margin-block-start: 0.4em; }
+
+  .prose-content blockquote {
+    border-inline-start: 3px solid var(--accent);
+    padding-inline-start: 1.25em;
+    color: var(--foreground-muted);
+    font-style: normal;
+  }
+
+  .prose-content code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background-color: var(--surface-muted);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-xs);
+  }
+
+  .prose-content pre {
+    background-color: var(--surface-inverse);
+    color: var(--foreground-inverse);
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    font-size: var(--text-small);
+  }
+
+  .prose-content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  .prose-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-small);
+  }
+
+  .prose-content th,
+  .prose-content td {
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.75rem;
+    text-align: start;
+  }
+
+  .prose-content th {
+    background-color: var(--surface-muted);
+    font-weight: 600;
+  }
+
+  /* ── Scroll reveal ─────────────────────────────────────────────────────
+     Opt-in and motion-safe. Elements start visible and are only hidden once
+     the observer confirms JS is running, so a no-JS or reduced-motion visitor
+     never sees blank sections — which is exactly what v1 got wrong. */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal[data-reveal="pending"] {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    .reveal[data-reveal="visible"] {
+      opacity: 1;
+      transform: none;
+      transition:
+        opacity 480ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Print — used by the resume page.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  :root {
+    --background: #ffffff;
+    --surface: #ffffff;
+    --surface-muted: #ffffff;
+    --foreground: #000000;
+    --foreground-muted: #333333;
+    --border: #999999;
+  }
+
+  [data-print="hide"],
+  header[data-site-header],
+  footer[data-site-footer] {
+    display: none !important;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  /* Make link targets recoverable on paper, but not for in-page anchors. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #444;
+    word-break: break-all;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  section, article {
+    break-inside: avoid;
+  }
+
+  .section-y {
+    padding-block: 0.75rem;
+  }
+}

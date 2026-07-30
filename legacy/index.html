@@ -1,0 +1,1336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="theme-color" content="#22ff6e" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Ron Raksmey — Primary School Mathematics Educator specializing in modern teaching methodologies, Algebra, and Geometry."
+    />
+    <meta name="author" content="Ron Raksmey" />
+    <meta property="og:title" content="Ron Raksmey - Primary School Educator" />
+    <meta
+      property="og:description"
+      content="Future Primary School Teacher (12+4) based in Phnom Penh. Creating engaging and effective learning environments for young students."
+    />
+    <meta property="og:type" content="website" />
+    <!-- Fixed image URL to local path -->
+    <meta
+      property="og:image"
+      content="image/MyPF.jpg" 
+    />
+    <meta property="og:url" content="https://ron-raksmey.vercel.app" />
+    <link rel="canonical" href="https://ron-raksmey.vercel.app" />
+    <title>Ron Raksmey - Primary School Educator</title>
+    <!-- Keep this placeholder or link to your real photo -->
+    <link rel="icon" href="image/MyPF.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Added Battambang font for Khmer Typography -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    
+    <style>
+      .back-to-system {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-main);
+        text-decoration: none;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        margin-right: 1.5rem;
+        border: 1px solid var(--border);
+        padding: 6px 12px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      .back-to-system:hover {
+        border-color: var(--neon);
+        color: var(--neon);
+        transform: translateY(-2px);
+      }
+      @media (max-width: 768px) {
+        .back-to-system span {
+          display: none;
+        }
+        .back-to-system {
+          padding: 6px 8px;
+          margin-right: 0.8rem;
+        }
+        .hide-on-mobile {
+          display: none !important;
+        }
+      }
+
+      /* Language Toggle Button Styles */
+      .lang-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        cursor: pointer;
+        font-family: var(--font-mono);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+      }
+      .lang-btn:hover {
+        border-color: var(--neon);
+        color: var(--neon);
+      }
+
+      /* Khmer Font Override when active */
+      body.lang-km {
+        font-family: 'Battambang', var(--font-sans, sans-serif) !important;
+      }
+      body.lang-km h1, 
+      body.lang-km h2, 
+      body.lang-km h3, 
+      body.lang-km h4, 
+      body.lang-km .s-title {
+        font-family: 'Battambang', var(--font-heading, sans-serif) !important;
+      }
+
+      /* =========================================
+         ADDED CSS ANIMATIONS
+         ========================================= */
+      @keyframes float-img {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-12px); }
+        100% { transform: translateY(0px); }
+      }
+      .profile-img {
+        animation: float-img 6s ease-in-out infinite;
+      }
+      
+      @keyframes pulse-glow {
+        0% { box-shadow: 0 0 10px rgba(34, 255, 110, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(34, 255, 110, 0.5); }
+        100% { box-shadow: 0 0 10px rgba(34, 255, 110, 0.2); }
+      }
+      .avail-banner-inner {
+        animation: pulse-glow 3s infinite;
+      }
+      .hero-badge {
+        transition: all 0.3s ease;
+      }
+      .hero-badge:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(34, 255, 110, 0.4);
+      }
+
+      /* =========================================
+         FLOATING AI CHAT BUTTON
+         ========================================= */
+      .floating-chat-btn {
+        position: fixed;
+        bottom: 85px; /* Above back-to-top button */
+        right: 25px;
+        background: var(--neon, #22ff6e);
+        color: #040f07;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(34, 255, 110, 0.4);
+        z-index: 9999;
+        transition: all 0.3s ease;
+        animation: pulse-glow-chat 2s infinite;
+        border: none;
+        cursor: pointer;
+      }
+      .floating-chat-btn:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 6px 20px rgba(34, 255, 110, 0.6);
+        background: #1aff5e;
+      }
+      .floating-chat-btn svg {
+        width: 30px;
+        height: 30px;
+      }
+      .chat-tooltip {
+        position: absolute;
+        right: 75px;
+        background: #040f07;
+        color: var(--neon, #22ff6e);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: var(--font-sans);
+        white-space: nowrap;
+        border: 1px solid var(--neon, #22ff6e);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        transform: translateX(10px);
+        pointer-events: none;
+      }
+      .floating-chat-btn:hover .chat-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+      }
+      @keyframes pulse-glow-chat {
+        0% { box-shadow: 0 0 0 0 rgba(34, 255, 110, 0.5); }
+        70% { box-shadow: 0 0 0 15px rgba(34, 255, 110, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 255, 110, 0); }
+      }
+
+      /* =========================================
+         AI CHAT POPUP (IFRAME)
+         ========================================= */
+      .chat-popup-container {
+        position: fixed;
+        bottom: 155px; /* Above floating button */
+        right: 25px;
+        width: 380px;
+        height: 600px;
+        max-width: calc(100vw - 50px);
+        max-height: calc(100vh - 180px);
+        background: #040f07;
+        border: 1px solid var(--neon, #22ff6e);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(34, 255, 110, 0.15);
+        z-index: 9998;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px) scale(0.95);
+        transform-origin: bottom right;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        overflow: hidden;
+      }
+      .chat-popup-container.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+      }
+      .chat-popup-container iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* =========================================
+         TESTIMONIAL AVATAR FIXES
+         ========================================= */
+      .ts-avatar {
+        flex: 0 0 55px; /* Force strict width/height to prevent squishing */
+        width: 55px;
+        height: 55px;
+        min-width: 55px;
+        min-height: 55px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: block;
+        border: 2px solid var(--neon, #22ff6e);
+        box-shadow: 0 0 10px rgba(34, 255, 110, 0.2);
+        background: #040f07; /* Fallback background */
+        align-self: center; /* Prevents vertical stretching from flexbox */
+      }
+      .ts-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Prevents image stretching */
+        object-position: center top; /* Focuses on the face */
+        display: block;
+        border-radius: 50%;
+      }
+
+      @media (max-width: 768px) {
+        .floating-chat-btn {
+          bottom: 75px;
+          right: 20px;
+          width: 55px;
+          height: 55px;
+        }
+        .floating-chat-btn svg {
+          width: 26px;
+          height: 26px;
+        }
+        .chat-tooltip {
+          display: none;
+        }
+        .chat-popup-container {
+          bottom: 140px;
+          right: 20px;
+          width: calc(100vw - 40px);
+          height: calc(100vh - 160px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Skip to main content -->
+    <a href="#about" class="skip-link" data-km="រំលងទៅមាតិកាដើម">Skip to main content</a>
+
+    <noscript>
+      <style>
+        section {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style>
+      <div
+        style="
+          text-align: center;
+          padding: 1rem;
+          font-family: sans-serif;
+          background: #040f07;
+          color: #22ff6e;
+          font-size: 0.9rem;
+        "
+      >
+        Please enable JavaScript for the full experience.
+      </div>
+    </noscript>
+
+    <!-- ═══ SHARED SVG ICONS ═══ -->
+    <svg
+      style="display: none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="ico-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m2 7 10 7 10-7" />
+        </symbol>
+        <symbol id="ico-telegram" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/>
+        </symbol>
+        <symbol id="ico-facebook" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </symbol>
+        <symbol id="ico-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </symbol>
+        <symbol id="ico-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </symbol>
+        <symbol id="ico-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </symbol>
+        <symbol id="ico-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </symbol>
+        <symbol id="ico-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </symbol>
+        <symbol id="ico-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </symbol>
+        <symbol id="ico-grad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
+        </symbol>
+        <symbol id="ico-cert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="6" />
+          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+        </symbol>
+        <symbol id="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </symbol>
+        <symbol id="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </symbol>
+        <symbol id="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </symbol>
+        <symbol id="ico-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </symbol>
+        <symbol id="ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </symbol>
+        <symbol id="ico-paint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3z"/>
+          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+          <path d="M14.5 17.5 4.5 15" />
+        </symbol>
+        <symbol id="ico-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </symbol>
+        <symbol id="ico-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </symbol>
+        <symbol id="ico-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <symbol id="ico-team" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </symbol>
+        <symbol id="ico-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </symbol>
+        <symbol id="ico-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </symbol>
+        <symbol id="ico-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </symbol>
+        <symbol id="ico-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <symbol id="ico-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </symbol>
+        <symbol id="ico-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ═══ HEADER ═══ -->
+    <header>
+      <nav>
+        <div class="logo">
+          <a href="#" aria-label="Ron Raksmey - Home">
+            <svg class="logo-badge" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect width="40" height="40" rx="11" fill="url(#lgGreen)" />
+              <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="16" font-weight="bold" fill="#040f07">
+                ∑
+              </text>
+              <defs>
+                <linearGradient id="lgGreen" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#22ff6e" />
+                  <stop offset="100%" stop-color="#0a9a40" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="logo-word" data-km="រុន រស្មី">Ron Raksmey</span>
+          </a>
+        </div>
+
+        <ul class="nav-links" id="navLinks" role="list">
+          <li><a href="#about" data-km="អំពីខ្ញុំ">About</a></li>
+          <li><a href="#journey" data-km="បទពិសោធន៍">Journey</a></li>
+          <li><a href="#skills" data-km="ជំនាញ">Skills</a></li>
+          <li><a href="#projects" data-km="សមិទ្ធផល">Achievements</a></li>
+          <li><a href="#testimonials" data-km="ឯកសារយោង">References</a></li>
+          <li><a href="#contact" data-km="ទំនាក់ទំនង">Contact</a></li>
+        </ul>
+
+        <div class="nav-controls">
+          <!-- Updated link to point back to the main PTEC system index.html -->
+          <a href="https://www.krusmart.org/" class="back-to-system">
+            <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+            <span data-km="ត្រឡប់ទៅប្រព័ន្ធ PTEC">Back to PTEC</span>
+          </a>
+
+          <!-- Language Toggle -->
+          <button class="lang-btn" id="langToggle" aria-label="Toggle language">
+            <span id="langLabel">ខ្មែរ</span>
+          </button>
+
+          <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">
+            <svg id="themeIcon"><use href="#ico-moon" /></svg>
+          </button>
+          <button class="menu-btn" id="menuBtn" aria-label="Open navigation menu" aria-expanded="false">
+            <svg><use href="#ico-menu" /></svg>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- ═══ UPDATED AVAILABILITY BANNER (Promoting PTEC System) ═══ -->
+    <div class="avail-banner" id="availBanner" role="banner" aria-label="Availability status">
+      <div class="avail-banner-inner">
+        <!-- Changed dot to blue to match PTEC theme conceptually -->
+        <span class="avail-banner-dot" aria-hidden="true" style="background-color: #3b82f6; box-shadow: 0 0 8px #3b82f6;"></span>
+        <span class="avail-banner-text" data-km="<strong>ប្រព័ន្ធជំនួយការគ្រូបង្រៀនឌីជីថល PTEC</strong> <span class='hide-on-mobile'>&nbsp;·&nbsp; ប្រព័ន្ធគ្រប់គ្រងទិន្នន័យសិស្ស និងថ្នាក់រៀន បង្កើតឡើងដោយ <strong>រុន រស្មី</strong></span>">
+          <strong>PTEC Digital Teacher Assistant</strong>
+          <span class="hide-on-mobile">&nbsp;·&nbsp; Classroom &amp; Student Management System developed by
+          <strong>Ron Raksmey</strong></span>
+        </span>
+        <a href="https://www.krusmart.org/" class="avail-banner-cta">
+          <span data-km="ចូលប្រើប្រព័ន្ធ">Open System</span>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="8" x2="13" y2="8" />
+            <polyline points="9 4 13 8 9 12" />
+          </svg>
+        </a>
+        <button class="avail-banner-close" id="bannerClose" aria-label="Dismiss banner">×</button>
+      </div>
+    </div>
+
+    <!-- ═══ HERO — two-column layout ═══ -->
+    <section class="hero" aria-label="Introduction">
+      <div class="blob blob1" aria-hidden="true"></div>
+      <div class="blob blob2" aria-hidden="true"></div>
+      <div class="blob blob3" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <!-- LEFT — photo -->
+        <div class="hero-photo-col">
+          <div class="profile-wrap" title="Hi there! 👋">
+            <div class="profile-ring" aria-hidden="true"></div>
+            <div class="profile-glow" aria-hidden="true"></div>
+            <!-- Update this source to your real photo file in your project -->
+            <img class="profile-img" src="image/MyPF.jpg" alt="Ron Raksmey - Mathematics Educator" onerror="this.src='https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop'" />
+          </div>
+          <!-- floating code snippet decoration -->
+          <div class="hero-code-snippet" aria-hidden="true">
+            <span class="hcs-line"><span class="hcs-k">let</span> <span class="hcs-v">educator</span> = <span class="hcs-s">"Ron Raksmey"</span>;</span>
+            <span class="hcs-line"><span class="hcs-k">let</span> <span class="hcs-v">level</span> = <span class="hcs-s">"Primary School Teacher"</span>;</span>
+          </div>
+        </div>
+
+        <!-- RIGHT — content -->
+        <div class="hero-content-col">
+          <div class="hero-badge">
+            <span class="hero-badge-dot" aria-hidden="true"></span>
+            <span data-km="មានពេលទំនេរសម្រាប់ការងារ &nbsp;·&nbsp; រាជធានីភ្នំពេញ ប្រទេសកម្ពុជា">Available for Work &nbsp;·&nbsp; Phnom Penh, Cambodia</span>
+          </div>
+
+          <h1 data-km="ជម្រាបសួរបាទ! ខ្ញុំបាទ <em>រុន រស្មី</em>">Hi, I'm <em>Ron Raksmey</em></h1>
+          <p class="hero-oneliner" data-km="ខ្ញុំអនុវត្តវិធីសាស្រ្តបង្រៀនទំនើប និងមានចំណង់ចំណូលចិត្តខ្ពស់ក្នុងការអប់រំ ដើម្បីបង្កើតបរិយាកាសសិក្សាដែលទាក់ទាញ និងមានប្រសិទ្ធភាពសម្រាប់សិស្សបឋមសិក្សា។">
+            I apply modern teaching methodologies and a deep passion for education to create engaging and effective learning environments for primary school students.
+          </p>
+          <p class="tagline" aria-live="polite">
+            <span id="typingText" data-km="អនាគតគ្រូបង្រៀនបឋមសិក្សា (១២+៤)">Future Primary School Teacher (12+4)</span><span class="cursor" aria-hidden="true"></span>
+          </p>
+
+          <!-- Stats row -->
+          <div class="hero-stats" aria-label="Quick stats">
+            <div class="hs-item">
+              <span class="hs-num">3.79</span>
+              <span class="hs-label" data-km="ពិន្ទុ GPA នៅសាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ">GPA @ RUPP</span>
+            </div>
+            <div class="hs-divider" aria-hidden="true"></div>
+            <div class="hs-item">
+              <span class="hs-num">A</span>
+              <span class="hs-label" data-km="និទ្ទេសបាក់ឌុប">Grade BacII</span>
+            </div>
+            <div class="hs-divider" aria-hidden="true"></div>
+            <div class="hs-item">
+              <span class="hs-num">2</span>
+              <span class="hs-label" data-km="សញ្ញាបត្រពីរ">Dual Degrees</span>
+            </div>
+          </div>
+
+          <div class="hero-btns">
+            <a href="#contact" class="btn btn-warm"
+              ><svg><use href="#ico-mail" /></svg> <span data-km="ទំនាក់ទំនង">Get In Touch</span></a
+            >
+            <!-- Changed this to a button to open the chat popup -->
+            <button class="btn btn-out" id="heroChatBtn" style="border-color: var(--neon); color: var(--neon);"
+              ><svg><use href="#ico-chat" /></svg> <span data-km="សួរជំនួយការ AI">Ask AI Bot</span></button
+            >
+            <!-- Update the download link to point to your new CV -->
+            <a href="CV/CV_Ron_Raksmey.pdf" class="btn btn-ghost" download
+              ><svg><use href="#ico-download" /></svg> <span data-km="ប្រវត្តិរូបសង្ខេប (CV)">Resume</span></a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ ABOUT ═══ -->
+    <section id="about">
+      <div class="si">
+        <div class="sh">
+          <span class="s-label" data-km="// ខ្ញុំជានរណា?">// Who I Am</span><br />
+          <h2 class="s-title">
+            <span data-km="អំពីខ្ញុំ">About Me</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+
+        <div class="about-grid">
+          <!-- LEFT col: two equal cards stacked -->
+          <div class="about-cards-col">
+            <div class="card about-card">
+              <h3 data-km="ជម្រាបសួរ! ខ្ញុំបាទ រស្មី">Hello! I'm Ron Raksmey</h3>
+              <p data-km="ខ្ញុំគឺជាអ្នកអប់រំដែលមានមហិច្ឆតា និងការសាទរ បច្ចុប្បន្នជាគរុនិស្សិតឆ្នាំទី២ ផ្នែកបឋមសិក្សា (ប្រព័ន្ធ ១២+៤) នៅវិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ (PTEC) និងជានិស្សិតបរិញ្ញាបត្រគណិតវិទ្យាឆ្នាំទី៣។ ខ្ញុំមានចំណង់ចំណូលចិត្តយ៉ាងខ្លាំងក្នុងការធ្វើឱ្យការសិក្សាមូលដ្ឋាន និងគណិតវិទ្យាមានភាពងាយស្រួល និងរីករាយសម្រាប់សិស្សបឋមសិក្សា។">
+                I am an aspiring and enthusiastic educator, currently serving as a Year 2 Student Teacher (គរុនិស្សិត) in primary education (12+4 system) at Phnom Penh Teacher Education College (PTEC) and pursuing a Bachelor of Mathematics in Year 3. I am deeply passionate about making foundational learning and mathematics accessible and enjoyable for primary school students.
+              </p>
+              <p data-km="វិធីសាស្ត្របង្រៀនរបស់ខ្ញុំរួមបញ្ចូលនូវចំណេះដឹងទ្រឹស្តីជាមួយនឹងឧបករណ៍ទំនើបៗដូចជា AI, LaTeX, និង Canva ដើម្បីសម្រួលដល់ភាពស្មុគស្មាញ។ ខ្ញុំជឿជាក់យ៉ាងមុតមាំលើការបង្កើតផែនការសិក្សាផ្ទាល់ខ្លួន ដែលជួយអ្នកសិក្សាវ័យក្មេងកសាងទំនុកចិត្ត និងពង្រឹងលទ្ធផលសិក្សាសរុបរបស់ពួកគេតាំងពីវ័យក្មេង។">
+                My approach to teaching blends theoretical knowledge with modern tools like AI, LaTeX, and Canva to simplify complex concepts. I strongly believe in creating personalized learning plans that help young learners build confidence and improve their overall academic performance from an early age.
+              </p>
+              <p data-km="ខ្ញុំកំពុងត្រៀមខ្លួនដើម្បីក្លាយជាគ្រូបង្រៀនបឋមសិក្សាកម្រិតបរិញ្ញាបត្រជាផ្លូវការនៅឆ្នាំ២០២៨ ហើយខ្ញុំកំពុងស្វែងរកយ៉ាងសកម្មនូវតួនាទីដែលខ្ញុំអាចចូលរួមចំណែកដល់ការលូតលាស់របស់សិស្ស និងឧត្តមភាពសិក្សាពីដំបូង។">
+                I am preparing to officially become a Bachelor-level primary school teacher in 2028, and I am actively seeking roles where I can contribute to student growth and early academic excellence.
+              </p>
+              <p style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);" data-km="<strong>គោលបំណងនៃគេហទំព័រនេះ៖</strong> ផលប័ត្រនេះត្រូវបានបង្កើតឡើងដើម្បីជាការបង្ហាញជាលក្ខណៈឌីជីថលនៃដំណើរការសិក្សារបស់ខ្ញុំ ដើម្បីចែករំលែកវិធីសាស្ត្របង្រៀន និងចងក្រងការអភិវឌ្ឍវិជ្ជាជីវៈ ព្រមទាំងសមិទ្ធផលនានាក្នុងវិស័យអប់រំ។">
+                <strong>Purpose of this Website:</strong> This portfolio was created to serve as a digital showcase of my academic journey, to share my teaching methodologies, and to document my professional development and achievements in the field of education.
+              </p>
+            </div>
+
+            <div class="edu card">
+              <div class="edu-head">
+                <svg stroke="#22ff6e" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px"><use href="#ico-grad" /></svg>
+                <h4 data-km="ការអប់រំ">Education</h4>
+              </div>
+              <div style="margin-bottom: 1rem;">
+                <p><strong><a href="https://www.ptec.edu.kh/home/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;" data-km="វិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ (PTEC)">Phnom Penh Teacher Education College (PTEC)</a></strong></p>
+                <p data-km="គរុនិស្សិត — បឋមសិក្សា (១២+៤)">Student Teacher (គរុនិស្សិត) — Primary School (12+4)</p>
+                <p data-km="បរិញ្ញាបត្រអប់រំ (ឆ្នាំទី២)">Bachelor of Education (Year 2)</p>
+                <p style="opacity: 0.55; font-size: 0.82rem; font-family: var(--font-mono);" data-km="កាលវិភាគ ច័ន្ទ-សុក្រ · ឆ្នាំបញ្ចប់ការសិក្សារំពឹងទុក: ២០២៨">
+                  Mon-Fri Schedule · Expected Graduation: 2028
+                </p>
+              </div>
+              <div>
+                <p><strong><a href="https://khemarakuniversity.edu.kh/km" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;" data-km="សាកលវិទ្យាល័យខេមរៈ">Khemarak University</a></strong></p>
+                <p data-km="បរិញ្ញាបត្រគណិតវិទ្យា (ឆ្នាំទី៣)">Bachelor of Mathematics (Year 3)</p>
+                <p style="opacity: 0.55; font-size: 0.82rem; font-family: var(--font-mono);" data-km="កាលវិភាគ សៅរ៍-អាទិត្យ · ឆ្នាំបញ្ចប់ការសិក្សារំពឹងទុក: ២០២៧">
+                  Sat-Sun Schedule · Expected: 2027
+                </p>
+              </div>
+              <div class="certs" style="margin-top: 1.5rem">
+                <div class="certs-head">
+                  <svg stroke="#22ff6e" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px"><use href="#ico-chat" /></svg>
+                  <h4 style="font-size: 0.95rem" data-km="ភាសា">Languages</h4>
+                </div>
+                <div class="ci">
+                  <svg><use href="#ico-check" /></svg> <span data-km="ខ្មែរ (ភាសាកំណើត)">Khmer (Mother Tongue)</span>
+                </div>
+                <div class="ci">
+                  <svg><use href="#ico-check" /></svg> <span data-km="អង់គ្លេស (មធ្យម)">English (Intermediate)</span>
+                </div>
+                <div class="ci">
+                  <svg><use href="#ico-check" /></svg> <span data-km="បារាំង (A1)">French (A1)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT col: profile photo -->
+          <div class="about-photo-col">
+            <div class="about-photo-wrap">
+              <!-- Fixed image path to be consistent for Ron Raksmey -->
+              <img src="image/Kemdethpf.png" onerror="this.src='https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&h=800&fit=crop'" alt="Ron Raksmey" class="about-photo" />
+              <div class="about-photo-glow" aria-hidden="true"></div>
+              <div class="about-photo-badge">
+                <span class="about-photo-dot" aria-hidden="true"></span>
+                <span data-km="ទំនាក់ទំនងឥឡូវនេះ!">Contact us now!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ JOURNEY ═══ -->
+    <section id="journey" class="alt">
+      <div class="si">
+        <div class="sh">
+          <span class="s-label" data-km="// បទពិសោធន៍ និងការរីកចម្រើន">// Experience &amp; Growth</span><br />
+          <h2 class="s-title">
+            <span data-km="ដំណើររបស់ខ្ញុំ">My Journey</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+        <div class="tl">
+          <div class="card tl-item">
+            <div class="tl-date">2023 — 2028</div>
+            <div class="tl-title" data-km="គរុនិស្សិត និងនិស្សិតគណិតវិទ្យា">Student Teacher &amp; Mathematics Student</div>
+            <div class="tl-org" data-km="វិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ PTEC (ច័ន្ទ-សុក្រ) និងសាកលវិទ្យាល័យខេមរៈ (សៅរ៍-អាទិត្យ)">PTEC (Mon-Fri) &amp; Khemarak University (Sat-Sun)</div>
+            <p class="tl-desc" data-km="បច្ចុប្បន្នកំពុងពង្រឹងចំណេះដឹងទ្រឹស្តី និងជំនាញគរុកោសល្យតាមរយៈសញ្ញាបត្រពីរ។ ខ្ញុំជាគរុនិស្សិតឆ្នាំទី២ ផ្នែកបឋមសិក្សា (១២+៤) នៅវិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ រៀនថ្ងៃធ្វើការ (បញ្ចប់ឆ្នាំ២០២៨) ខណៈពេលកំពុងបន្តបរិញ្ញាបត្រគណិតវិទ្យា (ឆ្នាំទី៣) នៅសាកលវិទ្យាល័យខេមរៈ នៅចុងសប្តាហ៍។">
+              Currently advancing my theoretical knowledge and pedagogical skills through a dual degree. I serve as a Year 2 Student Teacher (គរុនិស្សិត) for primary education (12+4) at Phnom Penh Teacher Education College during weekdays (graduating in 2028), while pursuing a Bachelor of Mathematics (Year 3) at Khemarak University on weekends.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag" data-km="បឋមសិក្សា">Primary Ed</span>
+              <span class="tl-tag" data-km="គណិតវិទ្យា">Mathematics</span>
+              <span class="tl-tag" data-km="ប្រព័ន្ធ ១២+៤">12+4 System</span>
+            </div>
+          </div>
+          <div class="card tl-item">
+            <div class="tl-date" data-km="បទពិសោធន៍">Experience</div>
+            <div class="tl-title" data-km="កម្មសិក្សាគរុកោសល្យបង្រៀននៅបឋមសិក្សា">Primary School Teaching Practicum</div>
+            <div class="tl-org">សាលាបឋមសិក្សាអនុវត្តរាជធានី · Phnom Penh</div>
+            <p class="tl-desc" data-km="ទទួលបានបទពិសោធន៍បង្រៀនជាក់ស្តែងនៅសាលាបឋមសិក្សាអនុវត្តរាជធានី។ ផ្តោតលើការផ្តល់មេរៀនគណិតវិទ្យាមូលដ្ឋានដែលគួរឱ្យចាប់អារម្មណ៍ និងកសាងបរិយាកាសសិក្សាគាំទ្រសម្រាប់សិស្សបឋមសិក្សាវ័យក្មេង។">
+              Gained practical teaching experience at Capital Practice Primary School. Focused on delivering engaging foundational mathematics lessons and building a supportive learning environment for young primary school students.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag" data-km="បឋមសិក្សា">Primary Ed</span>
+              <span class="tl-tag" data-km="កម្មសិក្សា">Practicum</span>
+              <span class="tl-tag" data-km="ការណែនាំ">Mentoring</span>
+              <span class="tl-tag" data-km="គណិតវិទ្យា">Mathematics</span>
+            </div>
+          </div>
+          <div class="card tl-item">
+            <div class="tl-date">2023</div>
+            <div class="tl-title" data-km="បញ្ចប់ការសិក្សាថ្នាក់វិទ្យាល័យ">High School Graduate</div>
+            <div class="tl-org" data-km="អនុវិទ្យាល័យ និងវិទ្យាល័យមិត្តភាពកម្ពុជា-ជប៉ុន">Cambodia Japan Friendship Middle and High School</div>
+            <p class="tl-desc" data-km="បញ្ចប់ការសិក្សាដោយជោគជ័យ ទទួលបាននិទ្ទេស 'A' ក្នុងការប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ (បាក់ឌុប) ផ្នែកវិទ្យាសាស្ត្រ ដោយទទួលបានពិន្ទុខ្ពស់ផ្នែកគណិតវិទ្យា និងរូបវិទ្យា។">
+              Graduated with excellence, achieving an overall Grade 'A' in the National High School Diploma Examination (BacII) in the Science track, with top scores in Mathematics and Physics.
+            </p>
+            <div class="tl-tags">
+              <span class="tl-tag" data-km="និទ្ទេស 'A'">Grade 'A'</span>
+              <span class="tl-tag" data-km="ផ្នែកវិទ្យាសាស្ត្រ">Science Track</span>
+              <span class="tl-tag" data-km="បាក់ឌុប">BacII</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SKILLS ═══ -->
+    <section id="skills">
+      <div class="si">
+        <div class="sh">
+          <span class="s-label" data-km="// អ្វីដែលខ្ញុំដឹង">// What I Know</span><br />
+          <h2 class="s-title">
+            <span data-km="ជំនាញបង្រៀន និងបច្ចេកទេស">Teaching &amp; Technical Skills</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+        <div class="sk-grid">
+          <div class="card sk-card">
+            <div class="sk-head">
+              <div class="sk-icon">
+                <svg stroke="var(--neon)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-book" /></svg>
+              </div>
+              <h3 data-km="ជំនាញមុខវិជ្ជា">Subject Expertise</h3>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="គណិតវិទ្យាទូទៅ">General Mathematics</span><span class="sk-pct">95%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="95"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="ពីជគណិត និងធរណីមាត្រ">Algebra &amp; Geometry</span><span class="sk-pct">90%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="90"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="គណិតវិភាគ និងវិភាគទូទៅ">Calculus &amp; Analysis</span><span class="sk-pct">85%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="85"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="រូបវិទ្យា និងគីមីវិទ្យា">Physics &amp; Chemistry</span><span class="sk-pct">80%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="80"></div></div>
+            </div>
+          </div>
+          <div class="card sk-card">
+            <div class="sk-head">
+              <div class="sk-icon">
+                <svg stroke="var(--neon)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-wrench" /></svg>
+              </div>
+              <h3 data-km="ឧបករណ៍ឌីជីថល">Digital Tools</h3>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name">Microsoft Office Suite</span><span class="sk-pct">95%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="95"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name">Google Workspace</span><span class="sk-pct">90%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="90"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name">LaTeX Typesetting</span><span class="sk-pct">85%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="85"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name">Canva for Education</span><span class="sk-pct">88%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="88"></div></div>
+            </div>
+          </div>
+          <div class="card sk-card">
+            <div class="sk-head">
+              <div class="sk-icon">
+                <svg stroke="var(--neon)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-bolt" /></svg>
+              </div>
+              <h3 data-km="គរុកោសល្យ">Pedagogy</h3>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="ការរៀបចំផែនការមេរៀន">Lesson Planning</span><span class="sk-pct">90%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="90"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="ការវាយតម្លៃសិស្ស">Student Assessment</span><span class="sk-pct">85%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="85"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="ឧបករណ៍ AI សម្រាប់ការអប់រំ">AI Tools for Education</span><span class="sk-pct">80%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="80"></div></div>
+            </div>
+            <div class="sk-row">
+              <div class="sk-meta"><span class="sk-name" data-km="ការណែនាំមួយទល់នឹងមួយ">One-on-One Mentoring</span><span class="sk-pct">95%</span></div>
+              <div class="sk-track"><div class="sk-fill" data-w="95"></div></div>
+            </div>
+          </div>
+          <div class="card sk-card sk-soft">
+            <div class="sk-head">
+              <div class="sk-icon">
+                <svg stroke="var(--neon)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-team" /></svg>
+              </div>
+              <h3 data-km="ជំនាញទន់">Soft Skills</h3>
+            </div>
+            <div class="sk-soft-pills">
+              <span class="pill"><svg><use href="#ico-chat" /></svg> <span data-km="ទំនាក់ទំនង">Communication</span></span>
+              <span class="pill"><svg><use href="#ico-target" /></svg> <span data-km="ភាពអត់ធ្មត់">Patience</span></span>
+              <span class="pill"><svg><use href="#ico-clock" /></svg> <span data-km="ការគ្រប់គ្រងពេលវេលា">Time Management</span></span>
+              <span class="pill"><svg><use href="#ico-check" /></svg> <span data-km="ការដោះស្រាយបញ្ហា">Problem Solving</span></span>
+              <span class="pill"><svg><use href="#ico-book" /></svg> <span data-km="ការលះបង់">Dedicated</span></span>
+              <span class="pill"><svg><use href="#ico-refresh" /></svg> <span data-km="ភាពបត់បែន">Adaptability</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ ACADEMIC ACHIEVEMENTS — horizontal carousel ═══ -->
+    <section id="projects" class="alt">
+      <div class="si">
+        <div class="sh">
+          <span class="s-label" data-km="// ការផ្តោតលើការសិក្សា">// Academic Focus</span><br />
+          <h2 class="s-title">
+            <span data-km="សមិទ្ធផល និងបទពិសោធន៍">Achievements &amp; Experience</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+
+        <!-- Carousel wrapper -->
+        <div class="pj-carousel-wrap">
+          <button class="pj-nav pj-nav-prev" id="pjPrev" aria-label="Previous project">
+            <svg><use href="#ico-chevron-left" /></svg>
+          </button>
+          <button class="pj-nav pj-nav-next" id="pjNext" aria-label="Next project">
+            <svg><use href="#ico-chevron-right" /></svg>
+          </button>
+
+          <div class="pj-track" id="pjTrack">
+            <!-- PROJECT 1 — Practicum Experience -->
+            <article class="card pj-card">
+              <div class="pj-img-wrap">
+                <img src="image/Teach3.jpg" alt="Primary School Teaching" loading="lazy" decoding="async" width="800" height="420" />
+                <div class="pj-overlay" aria-hidden="true"></div>
+                <span class="pj-badge pj-badge-live">● <span data-km="សកម្ម">Active</span></span>
+              </div>
+              <div class="pj-body">
+                <h3>
+                  <span data-km="កម្មសិក្សាបង្រៀននៅបឋមសិក្សា">Primary School Teaching Practicum</span>
+                  <span class="pj-featured-tag" data-km="បទពិសោធន៍">Experience</span>
+                </h3>
+                <p data-km="ផ្តល់មេរៀនជាក់ស្តែង និងគួរឱ្យចាប់អារម្មណ៍ដល់អ្នកសិក្សាវ័យក្មេងនៅ <strong>សាលាបឋមសិក្សាអនុវត្តរាជធានី</strong>។ ផ្តោតលើគណិតវិទ្យាមូលដ្ឋាន និងការបង្កើតបរិយាកាសថ្នាក់រៀនដ៏រីករាយ។">
+                  Delivering practical, engaging lessons to young learners at <strong>Capital Practice Primary School (សាលាបឋមសិក្សាអនុវត្តរាជធានី)</strong>. Focusing on foundational mathematics and creating an enjoyable classroom environment.
+                </p>
+                <div class="pj-ch" data-km="<strong>លទ្ធផល៖</strong> អនុវត្តដោយជោគជ័យនូវវិធីសាស្ត្របង្រៀនទំនើប ដើម្បីជួយសិស្សវ័យក្មេងឱ្យយល់ពីទស្សនាទានមូលដ្ឋាន ខណៈពេលដែលកសាងទំនុកចិត្តរបស់ពួកគេតាំងពីវ័យក្មេង។">
+                  <strong>Outcome:</strong> Successfully applying modern teaching methodologies to help young students grasp basic concepts while building their confidence from an early age.
+                </div>
+                <div class="ttags">
+                  <span class="ttag" data-km="ការរៀបចំផែនការមេរៀន">Lesson Planning</span>
+                  <span class="ttag" data-km="គណិតវិទ្យាបឋម">Primary Math</span>
+                  <span class="ttag" data-km="ការណែនាំ">Mentorship</span>
+                </div>
+                <div class="pj-links" style="margin-top: 1rem;">
+                  <a href="http://facebook.com/p/%E1%9E%9F%E1%9E%B6%E1%9E%9B%E1%9E%B6%E1%9E%94%E1%9E%8B%E1%9E%98%E1%9E%9F%E1%9E%B7%E1%9E%80%E1%9F%92%E1%9E%9F%E1%9E%B6%E1%9E%A2%E1%9E%93%E1%9E%BB%E1%9E%9C%E1%9E%8F%E1%9F%92%E1%9E%8F%E1%9E%9A%E1%9E%B6%E1%9E%87%E1%9E%92%E1%9E%B6%E1%9E%93%E1%9E%B8-%E1%9E%95%E1%9F%92%E1%9E%9B%E1%9E%BC%E1%9E%9C%E1%9E%80%E1%9E%B6%E1%9E%9A-61556742188736/" target="_blank" rel="noopener noreferrer" class="pj-btn pj-live">
+                    <svg><use href="#ico-external" /></svg> <span data-km="មើលទំព័រសាលា">View School Page</span>
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <!-- PROJECT 2 — University GPA -->
+            <article class="card pj-card">
+              <div class="pj-img-wrap">
+                <img src="image/A3.jpg" alt="University Academic Performance" loading="lazy" decoding="async" width="800" height="420" />
+                <div class="pj-overlay" aria-hidden="true"></div>
+                <span class="pj-badge" data-km="ការសិក្សា">Academic</span>
+              </div>
+              <div class="pj-body">
+                <h3 data-km="លទ្ធផលសិក្សានៅ RUPP">RUPP Top Academic Performance</h3>
+                <p data-km="ទទួលបានពិន្ទុមធ្យមសិក្សា (GPA) ដ៏ឆ្នើម ៣.៧៩ លើ ៤.០ នៅក្នុងឆមាសទី១ ជានិស្សិតជំនាញគណិតវិទ្យានៅសាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ។">
+                  Achieved an outstanding Cumulative Grade Point Average of 3.79 out of 4.0 in the first semester as a Mathematics Major at the Royal University of Phnom Penh.
+                </p>
+                <div class="pj-ch" data-km="<strong>ចំណុចលេចធ្លោ៖</strong> ទទួលបានពិន្ទុខ្ពស់បំផុត (A) ក្នុងមុខវិជ្ជាវិភាគទូទៅ១ (៩៦%), គីមីវិទ្យាទូទៅ (៩៥%) និងរូបវិទ្យាទូទៅ (៩៥%)។">
+                  <strong>Highlights:</strong> Scored top marks (A) in General Analysis 1 (96%), General Chemistry (95%), and General Physics (95%).
+                </div>
+                <div class="pj-progress">
+                  <div class="pj-progress-label">
+                    <span data-km="ពិន្ទុ GPA ឆ្នាំទី១">First Year GPA</span><span class="pj-progress-pct">95%</span>
+                  </div>
+                  <div class="pj-progress-track">
+                    <div class="pj-progress-fill" data-w="95"></div>
+                  </div>
+                </div>
+                <div class="ttags">
+                  <span class="ttag" data-km="វិភាគទូទៅ">Analysis</span>
+                  <span class="ttag" data-km="គីមីវិទ្យា">Chemistry</span>
+                  <span class="ttag" data-km="រូបវិទ្យា">Physics</span>
+                </div>
+              </div>
+            </article>
+
+            <!-- PROJECT 3 — BacII -->
+            <article class="card pj-card">
+              <div class="pj-img-wrap">
+                <img src="image/GradeA4.png" alt="High School BacII Excellence" loading="lazy" decoding="async" width="800" height="420" />
+                <div class="pj-overlay" aria-hidden="true"></div>
+                <span class="pj-badge" data-km="បញ្ចប់ការសិក្សាឆ្នាំ ២០២៣">Graduated 2023</span>
+              </div>
+              <div class="pj-body">
+                <h3 data-km="ជ័យលាភីបាក់ឌុបនិទ្ទេស 'A'">BacII Grade 'A' Graduate</h3>
+                <p data-km="ប្រឡងជាប់សញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ (បាក់ឌុប) ដោយទទួលបាននិទ្ទេសរួម 'A' ក្នុងចំណាត់ថ្នាក់ ៩៩.៧៣៤%។">
+                  Successfully passed the rigorous National High School Diploma Examination (BacII) with an overall Grade 'A', ranking at 99.734 percentile.
+                </p>
+                <div class="pj-ch" data-km="<strong>ភាពស្ទាត់ជំនាញលើមុខវិជ្ជា៖</strong> ទទួលបាននិទ្ទេស 'A' មុខវិជ្ជាគណិតវិទ្យា ជីវវិទ្យា គីមីវិទ្យា និងរូបវិទ្យា។">
+                  <strong>Subject mastery:</strong> Achieved an 'A' in Mathematics, Biology, Chemistry, and Physics.
+                </div>
+                <div class="pj-progress">
+                  <div class="pj-progress-label">
+                    <span data-km="ភាពឆ្នើមរួម">Overall Excellence</span><span class="pj-progress-pct">99%</span>
+                  </div>
+                  <div class="pj-progress-track">
+                    <div class="pj-progress-fill" data-w="99"></div>
+                  </div>
+                </div>
+                <div class="ttags">
+                  <span class="ttag" data-km="បាក់ឌុប">BacII</span>
+                  <span class="ttag" data-km="ផ្នែកវិទ្យាសាស្ត្រ">Science Track</span>
+                  <span class="ttag" data-km="ភាពឆ្នើម">Excellence</span>
+                </div>
+              </div>
+            </article>
+          </div>
+          <!-- end pj-track -->
+
+          <!-- Dots indicator -->
+          <div class="pj-dots" id="pjDots" aria-label="Project navigation"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TESTIMONIALS & REFERENCES ═══ -->
+    <section id="testimonials">
+      <div class="si">
+        <div class="sh">
+          <span class="s-label" data-km="// បណ្តាញវិជ្ជាជីវៈ">// Professional Network</span><br />
+          <h2 class="s-title">
+            <span data-km="ឯកសារយោង">References</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+        <div class="ts-grid">
+          <div class="card ts-card">
+            <div class="ts-q" aria-hidden="true">"</div>
+            <div class="ts-stars" aria-label="5 stars">
+              <span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span>
+            </div>
+            <p class="ts-text" data-km="រស្មី គឺជាបុគ្គលដែលមានការលះបង់យ៉ាងខ្លាំង។ ការយល់ដឹងស៊ីជម្រៅរបស់គាត់អំពីគណិតវិទ្យា និងចំណង់ចំណូលចិត្តក្នុងការចែករំលែកចំណេះដឹងធ្វើឱ្យគាត់ក្លាយជាអ្នកអប់រំដ៏ល្អម្នាក់។">
+              Raksmey is an incredibly dedicated individual. His deep understanding of mathematics and passion for sharing knowledge makes him an excellent educator.
+            </p>
+            <div class="ts-footer">
+              <div class="ts-avatar">
+                <img src="image/ron.jpg" alt="Ron Saroeun" />
+              </div>
+              <div>
+                <p class="ts-author" data-km="រុន សារឿន">Ron Saroeun</p>
+                <p class="ts-role" data-km="អ្នកអភិវឌ្ឍន៍វេបសាយ ធនាគារវីង">Web Developer, Wing Bank</p>
+                <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 2px;">+855-88-916-2788</p>
+              </div>
+            </div>
+          </div>
+          <div class="card ts-card">
+            <div class="ts-q" aria-hidden="true">"</div>
+            <div class="ts-stars" aria-label="5 stars">
+              <span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span>
+            </div>
+            <p class="ts-text" data-km="រស្មី មានចំណង់ចំណូលចិត្តយ៉ាងជ្រាលជ្រៅចំពោះការបង្រៀន និងបច្ចេកវិទ្យា។ សមត្ថភាពរបស់គាត់ក្នុងការបញ្ចូលឧបករណ៍ឌីជីថលទៅក្នុងវិធីសាស្រ្តអប់រំរបស់គាត់គឺពិតជាគួរឱ្យស្ងើចសរសើរណាស់។">
+              Raksmey has a profound passion for teaching and technology. His ability to integrate digital tools into his educational approach is truly inspiring.
+            </p>
+            <div class="ts-footer">
+              <div class="ts-avatar">
+                <img src="image/kem.jpg" alt="Kem Deth" />
+              </div>
+              <div>
+                <p class="ts-author" data-km="គឹម ដេត"><a href="https://kem-deth.netlify.app/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Kem Deth</a></p>
+                <p class="ts-role" data-km="អ្នកអភិវឌ្ឍន៍វេបសាយ">Web Developer</p>
+              </div>
+            </div>
+          </div>
+          <div class="card ts-card">
+            <div class="ts-q" aria-hidden="true">"</div>
+            <div class="ts-stars" aria-label="5 stars">
+              <span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span><span class="ts-star">★</span>
+            </div>
+            <p class="ts-text" data-km="រស្មី គឺជាដៃគូសហការដ៏អស្ចារ្យ។ ក្នុងនាមខ្ញុំជាគណវគ្គ និងជាអ្នកបង្កើតកម្មវិធីគ្រប់គ្រងព័ត៌មានគរុនិស្សិតដោយប្រើ AI ព្រមទាំងភ្ជាប់ Excel ជាមួយ Website ខ្ញុំសូមកោតសរសើរនូវភាពច្នៃប្រឌិតរបស់គាត់ក្នុងការរួមបញ្ចូលបច្ចេកវិទ្យាទៅក្នុងការអប់រំ។">
+              Raksmey is a fantastic collaborator. As a Course Rep and developer of the AI-powered student management app integrating Excel with websites, I highly appreciate his creativity in blending technology with education.
+            </p>
+            <div class="ts-footer">
+              <div class="ts-avatar">
+                <img src="image/hum.jpg" alt="Hum Sanet" />
+              </div>
+              <div>
+                <p class="ts-author" data-km="ហ៊ុំ សាណេត">Hum Sanet</p>
+                <p class="ts-role" data-km="គណវគ្គ នៅវិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ">Course Representative, PTEC</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CONTACT ═══ -->
+    <section id="contact" class="alt">
+      <div class="si" style="max-width: 960px">
+        <div class="sh">
+          <span class="s-label" data-km="// តោះជជែកគ្នា">// Let's Talk</span><br />
+          <h2 class="s-title">
+            <span data-km="ទំនាក់ទំនង">Get In Touch</span>
+            <svg class="squig" viewBox="0 0 200 14" fill="none" aria-hidden="true">
+              <path d="M2 10 C35 3, 65 14, 100 7 S165 2, 198 9" stroke="#22ff6e" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </h2>
+        </div>
+        <div class="ct-grid">
+          <!-- RIGHT — info first in DOM for alignment reference -->
+          <div class="ct-info">
+            <h3 data-km="សួស្តី">Say hello</h3>
+            <p data-km="ខ្ញុំកំពុងស្វែងរកយ៉ាងសកម្មនូវឱកាសបង្រៀន និងកិច្ចសហការវិជ្ជាជីវៈ។ ប្រសិនបើអ្នកចង់ពិភាក្សាអំពីវិធីសាស្ត្រអប់រំទំនើប — ខ្ញុំរីករាយនឹងភ្ជាប់ទំនាក់ទំនង។">
+              I'm actively seeking teaching opportunities and professional collaborations. If you want to discuss modern education methodologies — I'd love to connect.
+            </p>
+            <a href="mailto:raksmeyron97@gmail.com" class="cl">
+              <div class="cl-ico">
+                <svg stroke="var(--neon)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-mail" /></svg>
+              </div>
+              <div class="cl-text">
+                <strong data-km="អុីមែល">Email</strong><span>raksmeyron97@gmail.com</span>
+              </div>
+            </a>
+            <a href="https://t.me/Ron_Raksmey" target="_blank" rel="noopener noreferrer" class="cl">
+              <div class="cl-ico">
+                <svg fill="var(--neon)" stroke="none"><use href="#ico-telegram" /></svg>
+              </div>
+              <div class="cl-text">
+                <strong data-km="តេឡេក្រាម">Telegram</strong><span>@Ron_Raksmey</span>
+              </div>
+            </a>
+            <a href="https://www.facebook.com/share/1Yda6Rj3Jg/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" class="cl">
+              <div class="cl-ico">
+                <svg fill="var(--neon)" stroke="none"><use href="#ico-facebook" /></svg>
+              </div>
+              <div class="cl-text">
+                <strong data-km="ហ្វេសប៊ុក">Facebook</strong><span>@Ron_Raksmey</span>
+              </div>
+            </a>
+            <div class="avail">
+              <div class="avail-dot" aria-hidden="true"></div>
+              <div class="avail-text">
+                <strong data-km="បើកចំហរសម្រាប់ឱកាស">Open to Opportunities</strong>
+                <p data-km="តួនាទីបង្រៀន និងការអប់រំ។ ទីលំនៅបច្ចុប្បន្នរាជធានីភ្នំពេញ។">
+                  Teaching &amp; educational roles. Based in Phnom Penh, Cambodia.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEFT — form aligned to info -->
+          <form class="ct-form" id="ctForm" action="#" method="POST" novalidate>
+            <div class="fg">
+              <label for="name" data-km="ឈ្មោះ​របស់​អ្នក">Your Name</label>
+              <input type="text" id="name" name="name" placeholder="Jane Smith" required aria-required="true" autocomplete="name" />
+            </div>
+            <div class="fg">
+              <label for="email" data-km="អ៊ីមែលរបស់អ្នក">Your Email</label>
+              <input type="email" id="email" name="email" placeholder="jane@example.com" required aria-required="true" autocomplete="email" />
+            </div>
+            <div class="fg">
+              <label for="message" data-km="សាររបស់អ្នក">Your Message</label>
+              <textarea id="message" name="message" placeholder="Hi Ron, I'd love to chat about..." required aria-required="true"></textarea>
+            </div>
+            <button type="submit" class="sub-btn">
+              <svg stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#ico-send" /></svg>
+              <span data-km="បញ្ជូនសារ">Send Message</span>
+            </button>
+            <div class="f-msg" id="fMsg" role="alert" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer>
+      <p>
+        © <span id="yr"></span> <strong data-km="រុន រស្មី">Ron Raksmey</strong> · <span data-km="គ្រូបង្រៀនបឋមសិក្សា">Primary School Educator</span> ·
+        <a href="mailto:raksmeyron97@gmail.com">raksmeyron97@gmail.com</a>
+      </p>
+    </footer>
+
+    <button class="b2t" id="b2t" aria-label="Scroll back to top">
+      <svg><use href="#ico-up" /></svg>
+    </button>
+
+    <!-- ═══ AI CHAT POPUP CONTAINER ═══ -->
+    <div class="chat-popup-container" id="chatPopup">
+      <iframe src="ask-ron-bot-main/index.html" title="Ask Ron AI Assistant"></iframe>
+    </div>
+
+    <!-- ═══ FLOATING AI CHAT BUTTON (TOGGLE) ═══ -->
+    <button id="chatToggleBtn" class="floating-chat-btn" aria-label="Toggle Ask Ron AI Chat">
+      <svg class="chat-icon-open" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        <path d="M9 10h.01"></path>
+        <path d="M15 10h.01"></path>
+        <path d="M12 10h.01"></path>
+      </svg>
+      <span class="chat-tooltip" id="chatTooltipText" data-km="សួរជំនួយការ AI របស់ខ្ញុំ">Ask my AI Assistant</span>
+    </button>
+
+    <!-- Original External JS -->
+    <script src="js/script.js"></script>
+
+    <!-- ═══ CHAT POPUP LOGIC ═══ -->
+    <script>
+      (function() {
+        const chatToggleBtn = document.getElementById('chatToggleBtn');
+        const chatPopup = document.getElementById('chatPopup');
+        const heroChatBtn = document.getElementById('heroChatBtn');
+        const chatTooltipText = document.getElementById('chatTooltipText');
+        
+        let isChatOpen = false;
+
+        function toggleChat() {
+          isChatOpen = !isChatOpen;
+          if (isChatOpen) {
+            chatPopup.classList.add('active');
+            // Change button icon to "Close (X)"
+            chatToggleBtn.innerHTML = `
+              <svg stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width: 26px; height: 26px;">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span class="chat-tooltip" id="chatTooltipText" data-km="បិទ">Close</span>
+            `;
+          } else {
+            chatPopup.classList.remove('active');
+            // Change button back to "Chat" icon
+            chatToggleBtn.innerHTML = `
+              <svg stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width: 30px; height: 30px;">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <path d="M9 10h.01"></path>
+                <path d="M15 10h.01"></path>
+                <path d="M12 10h.01"></path>
+              </svg>
+              <span class="chat-tooltip" id="chatTooltipText" data-km="សួរជំនួយការ AI របស់ខ្ញុំ">Ask my AI Assistant</span>
+            `;
+          }
+
+          // Re-apply language translation to the newly injected tooltip text
+          if(typeof window.applyLanguage === 'function') {
+             window.applyLanguage(localStorage.getItem('siteLang') || 'en');
+          }
+        }
+
+        if (chatToggleBtn) {
+          chatToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleChat();
+          });
+        }
+
+        // Open chat when clicking the button in the Hero section
+        if (heroChatBtn) {
+          heroChatBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!isChatOpen) {
+              toggleChat();
+            }
+          });
+        }
+      })();
+    </script>
+
+    <!-- ═══ BACKGROUND CANVAS ANIMATION ═══ -->
+    <script>
+      (function() {
+        // Create canvas for animated math background
+        const canvas = document.createElement('canvas');
+        canvas.id = 'math-bg';
+        Object.assign(canvas.style, {
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          width: '100vw',
+          height: '100vh',
+          zIndex: '-1',
+          pointerEvents: 'none',
+          opacity: '0.5' // Adjust for subtle neon background
+        });
+        document.body.prepend(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let w, h;
+
+        function resize() {
+          w = canvas.width = window.innerWidth;
+          h = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mathematical Symbols for the teacher theme
+        const symbols = ['∑', '∫', 'π', '∞', '√', 'Δ', 'Ω', '≈', '≠', '±', 'θ', 'μ', 'α', 'β', 'ƒ', 'λ', '+', '-'];
+        const particles = [];
+
+        // Setup particles
+        for(let i = 0; i < 45; i++) {
+          particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            s: Math.random() * 16 + 10,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: Math.random() * -0.6 - 0.2, // Move upwards
+            sym: symbols[Math.floor(Math.random() * symbols.length)],
+            alpha: Math.random() * 0.4 + 0.1,
+            rot: Math.random() * Math.PI * 2,
+            rs: (Math.random() - 0.5) * 0.02
+          });
+        }
+
+        let gridOffset = 0;
+
+        function draw() {
+          ctx.clearRect(0, 0, w, h);
+          
+          // 1. Draw Animated Grid Background (Hacker/Matrix feel)
+          ctx.strokeStyle = 'rgba(34, 255, 110, 0.06)';
+          ctx.lineWidth = 1;
+          const gridSize = 45;
+          gridOffset = (gridOffset + 0.3) % gridSize;
+          
+          ctx.beginPath();
+          for(let x = gridOffset; x < w; x += gridSize) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, h);
+          }
+          for(let y = gridOffset; y < h; y += gridSize) {
+            ctx.moveTo(0, y); ctx.lineTo(w, y);
+          }
+          ctx.stroke();
+
+          // 2. Draw Floating Math Particles
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.rs;
+
+            // Loop back when out of screen
+            if(p.y < -30) {
+              p.y = h + 30;
+              p.x = Math.random() * w;
+            }
+            if(p.x < -30) p.x = w + 30;
+            if(p.x > w + 30) p.x = -30;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = '#22ff6e';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#22ff6e';
+            ctx.font = `${p.s}px "JetBrains Mono", monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(p.sym, 0, 0);
+            ctx.restore();
+          });
+          requestAnimationFrame(draw);
+        }
+        draw();
+      })();
+    </script>
+
+    <!-- Added Language Switcher Logic -->
+    <script>
+      (function() {
+        const langToggle = document.getElementById('langToggle');
+        const langLabel = document.getElementById('langLabel');
+        const body = document.body;
+        
+        let currentLang = localStorage.getItem('siteLang') || 'en';
+        
+        // Make it accessible globally so the Chat popup toggle can use it
+        window.applyLanguage = function(lang) {
+          // Toggle styling classes
+          if(lang === 'km') {
+            body.classList.add('lang-km');
+            langLabel.innerText = 'EN';
+          } else {
+            body.classList.remove('lang-km');
+            langLabel.innerText = 'ខ្មែរ';
+          }
+          
+          // Swap text intelligently using standard dataset
+          document.querySelectorAll('[data-km]').forEach(el => {
+            if (!el.hasAttribute('data-en')) {
+              el.setAttribute('data-en', el.innerHTML); // Backup original HTML
+            }
+            el.innerHTML = lang === 'km' ? el.getAttribute('data-km') : el.getAttribute('data-en');
+          });
+
+          // Handle input placeholders
+          const nameInput = document.getElementById('name');
+          const emailInput = document.getElementById('email');
+          const msgInput = document.getElementById('message');
+          
+          if(nameInput) nameInput.placeholder = lang === 'km' ? 'រុន រស្មី' : 'Ron Raksmey';
+          if(emailInput) emailInput.placeholder = lang === 'km' ? 'raksmeyron97@gmail.com' : 'raksmeyron97@gmail.com';
+          if(msgInput) msgInput.placeholder = lang === 'km' ? 'សួស្តី រស្មី ខ្ញុំចង់ជជែកអំពី...' : "Hi Raksmey, I'd love to chat about...";
+        }
+
+        // Init language on load
+        window.applyLanguage(currentLang);
+
+        // Click event listener
+        langToggle.addEventListener('click', () => {
+          currentLang = currentLang === 'en' ? 'km' : 'en';
+          localStorage.setItem('siteLang', currentLang);
+          window.applyLanguage(currentLang);
+        });
+      })();
+    </script>
+  </body>
+</html>

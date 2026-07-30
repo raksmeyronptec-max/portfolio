@@ -1,0 +1,68 @@
+#  Netlify configuration — Ron Raksmey Portfolio CMS
+#
+#  The v1 site was published with `publish = "."` because it was raw static
+#  HTML. The rebuild is a Next.js App Router application that needs SSR, ISR,
+#  Server Actions, Supabase auth cookies, a dynamic sitemap and signed-URL route
+#  handlers. Netlify supports all of these through the official Next.js runtime,
+#  so hosting is intentionally unchanged.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--no-audit --no-fund"
+  # Netlify must run sharp's install script for image optimisation.
+  NPM_CONFIG_IGNORE_SCRIPTS = "false"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3000
+  framework = "#custom"
+
+# ── Security & caching headers ───────────────────────────────────────────────
+# next.config.ts is the source of truth for headers, but Netlify also serves the
+# static assets under public/ directly, so the essentials are repeated here.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), browsing-topics=()"
+
+# The admin app is authenticated. It must never be held by a shared cache and
+# must never be indexed.
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Cache-Control = "private, no-store, no-cache, must-revalidate, max-age=0"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Robots-Tag = "noindex, nofollow"
+
+# Legacy static assets kept at their v1 paths so old links never break.
+[[headers]]
+  for = "/image/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/ProjectImage/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/CV/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

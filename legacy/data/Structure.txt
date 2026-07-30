@@ -1,0 +1,7 @@
+/css/styles.css
+/js/main.js
+/images/…
+index.html
+.gitignore
+netlify.toml
+README.md

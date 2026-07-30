@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#22ff6e" />
+    <meta
+      name="description"
+      content="Ask Ron — AI assistant for Ron Raksmey's portfolio. Ask anything about his teaching skills, academic background, and availability."
+    />
+    <title>Ask Ron — AI Portfolio Assistant</title>
+    <!-- Fixed favicon path to look in the parent folder's image directory -->
+    <link rel="icon" href="../image/MyPF.jpg" onerror="this.src='../image/favicon.png'" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Fixed CSS path to remove leading slash -->
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="chat-header">
+      <div class="chat-header-inner">
+        <!-- Left: status badge -->
+        <div class="header-status-badge">
+          <span class="online-dot" aria-hidden="true"></span>
+          <span class="status-label">Live</span>
+        </div>
+
+        <!-- Center: brand -->
+        <div class="chat-header-brand">
+          <div class="bot-avatar-sm" aria-hidden="true">AI</div>
+          <div>
+            <span class="chat-header-title">Ask Ron</span>
+            <span class="chat-header-sub">AI Portfolio Assistant</span>
+          </div>
+        </div>
+
+        <!-- Right: theme toggle -->
+        <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+          <svg
+            id="themeIcon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <!-- Default: moon icon (dark mode) -->
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CHAT -->
+    <main class="chat-main">
+      <div class="chat-window" id="chatWindow">
+        <!-- Welcome message -->
+        <div class="msg-group bot-group" id="welcomeGroup">
+          <div class="bot-avatar" aria-hidden="true">AI</div>
+          <div class="msg-bubbles">
+            <div class="bubble bot-bubble">
+              Hey! 👋 I'm Ron's AI assistant. Ask me anything about his teaching methodology, academic background, or educational skills.
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggested questions -->
+        <div class="suggestions" id="suggestions">
+          <button
+            class="suggestion-btn"
+            data-q="What is Ron's teaching approach?"
+          >
+            💡 Teaching approach?
+          </button>
+          <button class="suggestion-btn" data-q="What is Ron studying?">
+            🎓 Academic background?
+          </button>
+          <button class="suggestion-btn" data-q="What digital tools does Ron use?">
+            🛠 Digital tools used?
+          </button>
+          <button class="suggestion-btn" data-q="How can I contact Ron?">
+            📬 Contact info?
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- INPUT BAR -->
+    <div class="chat-input-wrap">
+      <div class="chat-input-inner">
+        <textarea
+          id="userInput"
+          class="chat-input"
+          placeholder="Ask me anything about Ron..."
+          rows="1"
+          maxlength="500"
+          aria-label="Your message"
+        ></textarea>
+        <button
+          class="send-btn"
+          id="sendBtn"
+          aria-label="Send message"
+          disabled
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
+      </div>
+      <p class="input-hint">
+        Powered by Gemini ·
+        <a href="../index.html" target="_blank" rel="noopener"
+          >View Portfolio →</a
+        >
+      </p>
+    </div>
+
+    <script src="js/script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,326 @@
+import { NextResponse, type NextRequest } from "next/server";
+
+import { checkPermission } from "@/lib/auth/guards";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { writeAuditLog } from "@/lib/audit/log";
+import { isMediaKind, type MediaKind } from "@/lib/media/kinds";
+import {
+  buildStoragePath,
+  SIZE_LIMITS,
+  sanitizeFilename,
+  validateUpload,
+} from "@/lib/media/validate";
+import { checksumOf, processImage, readDimensions } from "@/lib/media/process";
+
+/**
+ * Media upload.
+ *
+ * A route handler rather than a Server Action because Server Actions carry a body
+ * size limit intended for form data (2 MB here), and a 25 MB certificate scan needs
+ * a streaming multipart endpoint.
+ *
+ * Routing by visibility:
+ *
+ *  | kind                  | bucket                | processing                    |
+ *  |-----------------------|-----------------------|-------------------------------|
+ *  | certificate_original  | certificate-originals | none — stored byte-for-byte   |
+ *  | certificate_preview   | certificate-previews  | full image pipeline           |
+ *  | resume_file           | resumes               | none (PDF)                    |
+ *  | everything else       | public-media          | full image pipeline           |
+ *
+ * A certificate original is never processed: it is the evidentiary copy, and
+ * re-encoding it would destroy exactly the fidelity that makes it useful. A resume
+ * PDF is likewise stored as-is.
+ */
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+// Image processing of a large scan can take a while on a cold function.
+export const maxDuration = 60;
+
+function json(body: unknown, status: number) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
+export async function POST(request: NextRequest) {
+  const auth = await checkPermission("uploadMedia");
+  if (!auth.ok) {
+    return json(
+      { ok: false, error: auth.reason },
+      auth.reason === "unauthenticated" ? 401 : 403,
+    );
+  }
+
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return json({ ok: false, error: "invalid_form" }, 400);
+  }
+
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    return json({ ok: false, error: "no_file" }, 400);
+  }
+
+  const kindRaw = String(form.get("kind") ?? "other");
+  const kind: MediaKind = isMediaKind(kindRaw) ? kindRaw : "other";
+
+  const altTextEn = trimmedOrNull(form.get("alt_text_en"));
+  const altTextKm = trimmedOrNull(form.get("alt_text_km"));
+  const captionEn = trimmedOrNull(form.get("caption_en"));
+  const captionKm = trimmedOrNull(form.get("caption_km"));
+  const credit = trimmedOrNull(form.get("credit"));
+
+  // ── Route by kind ─────────────────────────────────────────────────────────
+  const isPrivateOriginal = kind === "certificate_original";
+  const isResume = kind === "resume_file";
+  const isCertificatePreview = kind === "certificate_preview";
+
+  const bucketId = isPrivateOriginal
+    ? "certificate-originals"
+    : isResume
+      ? "resumes"
+      : isCertificatePreview
+        ? "certificate-previews"
+        : "public-media";
+
+  // Both `resumes` and `certificate-originals` are private buckets.
+  const visibility: "public" | "private" =
+    isPrivateOriginal || isResume ? "private" : "public";
+
+  const maxBytes = isPrivateOriginal
+    ? SIZE_LIMITS.certificateOriginal
+    : isResume
+      ? SIZE_LIMITS.resume
+      : isCertificatePreview
+        ? SIZE_LIMITS.certificatePreview
+        : SIZE_LIMITS.publicImage;
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  // ── Validate: declared type, extension AND magic bytes ────────────────────
+  const failure = validateUpload({
+    filename: file.name,
+    declaredType: file.type,
+    size: bytes.byteLength,
+    buffer: bytes,
+    maxBytes,
+  });
+
+  if (failure) {
+    return json({ ok: false, error: failure.code, message: failure.message }, 400);
+  }
+
+  const isPdf = file.type === "application/pdf";
+
+  // A PDF cannot be a public image; catching this here avoids storing something the
+  // gallery would then fail to render.
+  if (isPdf && visibility === "public" && kind !== "other") {
+    return json(
+      {
+        ok: false,
+        error: "type_not_allowed",
+        message:
+          "PDFs cannot be used as a public image. Upload a PDF as a certificate original or a resume file.",
+      },
+      400,
+    );
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  try {
+    // ── Duplicate detection ─────────────────────────────────────────────────
+    const checksum = checksumOf(bytes);
+
+    const { data: duplicate } = await admin
+      .from("media_assets")
+      .select("id, original_filename")
+      .eq("checksum_sha256", checksum)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (duplicate) {
+      // Reported rather than silently de-duplicated: the admin may genuinely want a
+      // second copy with different alt text, and should decide.
+      return json(
+        {
+          ok: false,
+          error: "duplicate",
+          message: `This exact file is already in the library as “${duplicate.original_filename}”.`,
+          existingId: duplicate.id,
+        },
+        409,
+      );
+    }
+
+    const safeName = sanitizeFilename(file.name);
+    const storagePath = buildStoragePath(kind, safeName);
+
+    let width: number | null = null;
+    let height: number | null = null;
+    let blurDataUrl: string | null = null;
+    let thumbnailPath: string | null = null;
+    let cardPath: string | null = null;
+    let previewPath: string | null = null;
+    let storedBytes = bytes.byteLength;
+    let storedMime = file.type;
+    let uploadBody: Uint8Array | Buffer = bytes;
+    let finalPath = storagePath;
+
+    if (isPdf || isPrivateOriginal) {
+      /*
+       * Stored exactly as received.
+       *
+       * For a certificate original that is the whole point — it is the evidentiary
+       * copy. For a PDF there is nothing useful to re-encode, and rasterising it
+       * would require a PDF renderer, which is a large attack surface for no gain.
+       * The PDF is never executed or parsed by us; it is only ever streamed back
+       * out with `Content-Type: application/pdf` and `nosniff`.
+       */
+      const dimensions = isPdf ? { width: null, height: null } : await readDimensions(bytes);
+      width = dimensions.width;
+      height = dimensions.height;
+    } else {
+      // Full pipeline: strip metadata, re-encode to WebP, generate derivatives.
+      const processed = await processImage(bytes);
+
+      uploadBody = processed.main.buffer;
+      storedBytes = processed.main.buffer.byteLength;
+      storedMime = "image/webp";
+      width = processed.main.width;
+      height = processed.main.height;
+      blurDataUrl = processed.blurDataUrl;
+
+      // The stored key gains a .webp extension since the bytes are now WebP.
+      finalPath = `${storagePath.replace(/\.[^./]+$/, "")}.webp`;
+
+      const { error: mainError } = await admin.storage
+        .from(bucketId)
+        .upload(finalPath, processed.main.buffer, {
+          contentType: "image/webp",
+          upsert: false,
+          cacheControl: "31536000",
+        });
+
+      if (mainError) {
+        return json({ ok: false, error: "storage_failed", message: mainError.message }, 500);
+      }
+
+      for (const derivative of processed.derivatives) {
+        const derivativePath = `${finalPath.replace(/\.webp$/, "")}-${derivative.suffix}.webp`;
+
+        const { error: derivativeError } = await admin.storage
+          .from(bucketId)
+          .upload(derivativePath, derivative.buffer, {
+            contentType: "image/webp",
+            upsert: false,
+            cacheControl: "31536000",
+          });
+
+        if (derivativeError) continue; // A missing derivative degrades gracefully.
+
+        if (derivative.suffix === "thumb") thumbnailPath = derivativePath;
+        if (derivative.suffix === "card") cardPath = derivativePath;
+        if (derivative.suffix === "preview") previewPath = derivativePath;
+      }
+    }
+
+    // Non-image and private-original paths still need the main object uploaded.
+    if (isPdf || isPrivateOriginal) {
+      const { error: uploadError } = await admin.storage
+        .from(bucketId)
+        .upload(finalPath, uploadBody, {
+          contentType: file.type,
+          upsert: false,
+          // Private objects are served through signed URLs, so a long cache would
+          // be pointless and slightly risky.
+          cacheControl: visibility === "private" ? "0" : "31536000",
+        });
+
+      if (uploadError) {
+        return json({ ok: false, error: "storage_failed", message: uploadError.message }, 500);
+      }
+    }
+
+    // ── Register the asset ──────────────────────────────────────────────────
+    const { data: asset, error: insertError } = await admin
+      .from("media_assets")
+      .insert({
+        bucket_id: bucketId,
+        storage_path: finalPath,
+        kind,
+        visibility,
+        original_filename: safeName,
+        mime_type: storedMime,
+        file_size_bytes: storedBytes,
+        checksum_sha256: checksum,
+        width,
+        height,
+        blur_data_url: blurDataUrl,
+        thumbnail_path: thumbnailPath,
+        card_path: cardPath,
+        preview_path: previewPath,
+        alt_text_en: altTextEn,
+        alt_text_km: altTextKm,
+        caption_en: captionEn,
+        caption_km: captionKm,
+        credit,
+        // A freshly uploaded original has not been reviewed for redaction yet.
+        requires_privacy_review: isPrivateOriginal,
+        uploaded_by: auth.session.userId,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !asset) {
+      // Roll back the storage object so a failed registration does not leave an
+      // orphaned file that nothing references.
+      await admin.storage.from(bucketId).remove([finalPath]);
+      return json({ ok: false, error: "server_error" }, 500);
+    }
+
+    await writeAuditLog({
+      action: "media.uploaded",
+      actor: auth.session,
+      entityType: "media_asset",
+      entityId: asset.id,
+      entityLabel: safeName,
+      summary: `Uploaded ${safeName} to ${bucketId} as ${visibility}.`,
+      changes: { kind, bytes: storedBytes, mime_type: storedMime },
+    });
+
+    return json(
+      {
+        ok: true,
+        id: asset.id,
+        filename: safeName,
+        visibility,
+        bucket: bucketId,
+        width,
+        height,
+        processed: !isPdf && !isPrivateOriginal,
+      },
+      201,
+    );
+  } catch (error) {
+    // Image processing throws on a corrupt or bomb-like file; surface that as a
+    // client error rather than a 500, because it is the caller's file.
+    const message =
+      error instanceof Error && error.message.includes("dimensions")
+        ? "The image could not be read. It may be corrupted."
+        : "The upload could not be processed.";
+
+    return json({ ok: false, error: "processing_failed", message }, 400);
+  }
+}
+
+function trimmedOrNull(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed.slice(0, 500);
+}

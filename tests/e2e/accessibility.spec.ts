@@ -1,0 +1,184 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
+
+/**
+ * Automated accessibility checks.
+ *
+ * Scope note, stated plainly: axe catches roughly a third of WCAG issues. It cannot
+ * judge whether alt text is *meaningful*, whether a heading structure is *logical*,
+ * or whether a flow is operable end to end with a screen reader. Those need manual
+ * testing, which is why docs/ACCESSIBILITY.md lists what was verified by hand.
+ *
+ * These tests are the floor, not the ceiling.
+ */
+
+const PUBLIC_PAGES = [
+  { path: "/en", name: "homepage (English)" },
+  { path: "/km", name: "homepage (Khmer)" },
+  { path: "/en/projects", name: "projects list" },
+  { path: "/km/projects", name: "projects list (Khmer)" },
+  { path: "/en/certificates", name: "certificates list" },
+  { path: "/en/about", name: "about" },
+  { path: "/en/experience", name: "experience" },
+  { path: "/en/education", name: "education" },
+  { path: "/en/resume", name: "resume" },
+  { path: "/en/contact", name: "contact" },
+  { path: "/en/this-page-does-not-exist", name: "404 page" },
+];
+
+const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+for (const page of PUBLIC_PAGES) {
+  test(`${page.name} has no automatically detectable WCAG 2.2 AA violations`, async ({
+    page: browserPage,
+  }) => {
+    await browserPage.goto(page.path);
+
+    const results = await new AxeBuilder({ page: browserPage })
+      .withTags(WCAG_TAGS)
+      .analyze();
+
+    // Report the rule ids and the offending selectors, so a failure is actionable
+    // rather than a bare count.
+    const summary = results.violations.map((violation) => ({
+      id: violation.id,
+      impact: violation.impact,
+      help: violation.help,
+      nodes: violation.nodes.map((node) => node.target.join(" ")),
+    }));
+
+    expect(summary, JSON.stringify(summary, null, 2)).toEqual([]);
+  });
+}
+
+test.describe("keyboard operability", () => {
+  test("the whole header is reachable by keyboard", async ({ page }) => {
+    await page.goto("/en");
+
+    const reached: string[] = [];
+
+    // Walk the first 20 tab stops and record what we land on.
+    for (let index = 0; index < 20; index += 1) {
+      await page.keyboard.press("Tab");
+      const description = await page.evaluate(() => {
+        const element = document.activeElement;
+        if (!element) return "none";
+        return `${element.tagName.toLowerCase()}:${element.getAttribute("aria-label") ?? element.textContent?.trim().slice(0, 30) ?? ""}`;
+      });
+      reached.push(description);
+    }
+
+    // The skip link must be first, and the nav must be reachable.
+    expect(reached[0]?.toLowerCase()).toContain("skip");
+    expect(reached.join("|").toLowerCase()).toContain("projects");
+  });
+
+  test("focus is visible on every interactive element", async ({ page }) => {
+    await page.goto("/en");
+
+    for (let index = 0; index < 10; index += 1) {
+      await page.keyboard.press("Tab");
+
+      const hasVisibleFocus = await page.evaluate(() => {
+        const element = document.activeElement as HTMLElement | null;
+        if (!element || element === document.body) return true;
+
+        const style = window.getComputedStyle(element);
+        // The design system uses a branded outline; `outline: none` anywhere would be
+        // a regression against an explicit requirement.
+        return style.outlineStyle !== "none" || style.boxShadow !== "none";
+      });
+
+      expect(hasVisibleFocus).toBe(true);
+    }
+  });
+
+  test("the mobile drawer restores focus on close", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en");
+
+    const trigger = page.getByRole("button", { name: /open navigation menu/i });
+    await trigger.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+
+    // Native <dialog> restores focus to the invoker.
+    await expect(trigger).toBeFocused();
+  });
+});
+
+test.describe("zoom and reflow", () => {
+  test("usable at 200% zoom without horizontal scrolling", async ({ page }) => {
+    // WCAG 1.4.10 reflow: 320 CSS px wide at 400% is equivalent to 1280 at 100%.
+    // Emulating 200% on a 1280 viewport gives an effective 640px.
+    await page.setViewportSize({ width: 640, height: 512 });
+    await page.goto("/en");
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("Khmer content reflows without overflow at 320px", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+
+    for (const path of ["/km", "/km/about", "/km/education", "/km/contact"]) {
+      await page.goto(path);
+
+      const overflow = await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+
+      expect(overflow, path).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+test.describe("reduced motion", () => {
+  test("no animation runs when reduced motion is requested", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/en");
+
+    const animating = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("*")).some((element) => {
+        const style = window.getComputedStyle(element);
+        const duration = Number.parseFloat(style.animationDuration);
+        // The global rule collapses durations to 0.01ms.
+        return Number.isFinite(duration) && duration > 0.1;
+      });
+    });
+
+    expect(animating).toBe(false);
+  });
+});
+
+test.describe("images", () => {
+  test("every content image has an alt attribute", async ({ page }) => {
+    for (const path of ["/en", "/en/about", "/en/projects"]) {
+      await page.goto(path);
+
+      const missing = await page.locator("img:not([alt])").count();
+      expect(missing, `${path} has images without alt`).toBe(0);
+    }
+  });
+
+  test("images declare dimensions or a fixed aspect box to avoid layout shift", async ({
+    page,
+  }) => {
+    await page.goto("/en");
+
+    const unsized = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("img")).filter((img) => {
+        if (img.getAttribute("width") && img.getAttribute("height")) return false;
+        // next/image `fill` sets position: absolute inside a sized parent.
+        return window.getComputedStyle(img).position !== "absolute";
+      }).length;
+    });
+
+    expect(unsized).toBe(0);
+  });
+});
