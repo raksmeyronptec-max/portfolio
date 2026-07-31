@@ -59,7 +59,9 @@
       "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3000/admin/login)",
       "Bash(npm run *)",
       "Bash(git checkout *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"
