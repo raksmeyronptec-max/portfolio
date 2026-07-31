@@ -179,6 +179,29 @@ begin
           'This message must never be readable by an anonymous client.')
   on conflict do nothing;
 
+  -- Two resumes: one active, one retired. Both files are private; only the
+  -- active one's metadata row may be publicly readable.
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename, mime_type, file_size_bytes)
+  values
+    ('resumes', 'rls-fixture/active-cv.pdf',  'resume_file', 'private',
+     'rls-fixture-active-cv.pdf',  'application/pdf', 1000),
+    ('resumes', 'rls-fixture/retired-cv.pdf', 'resume_file', 'private',
+     'rls-fixture-retired-cv.pdf', 'application/pdf', 1000)
+  on conflict (bucket_id, storage_path) do nothing;
+
+  insert into public.resume_versions
+    (media_id, locale, version_label, effective_from, is_active, is_archived)
+  select id, 'en', 'rls-fixture-active', current_date, true, false
+    from public.media_assets where original_filename = 'rls-fixture-active-cv.pdf'
+  on conflict do nothing;
+
+  insert into public.resume_versions
+    (media_id, locale, version_label, effective_from, is_active, is_archived)
+  select id, 'km', 'rls-fixture-retired', current_date, false, true
+    from public.media_assets where original_filename = 'rls-fixture-retired-cv.pdf'
+  on conflict do nothing;
+
   raise notice 'Fixtures ready.';
 end $$;
 
@@ -249,6 +272,25 @@ begin
   select count(*) into n from public.project_metrics where label_en = 'Unverified metric';
   perform pg_temp.assert(n = 0, 'anon CANNOT read an unverified metric');
 
+  /*
+   * The resume's media row.
+   *
+   * The file is private and the bucket is private, but the *metadata* row has to
+   * be readable or the public resume page cannot render a published resume at
+   * all — it refuses to show a version whose asset it cannot see, which is how a
+   * live resume ended up invisible to everyone except its author.
+   *
+   * Access is scoped to the active, non-archived version, mirroring the storage
+   * policy on the object itself, so deactivating revokes both together.
+   */
+  select count(*) into n from public.media_assets
+   where bucket_id = 'resumes' and original_filename = 'rls-fixture-active-cv.pdf';
+  perform pg_temp.assert(n = 1, 'anon CAN read the media row behind the ACTIVE resume');
+
+  select count(*) into n from public.media_assets
+   where bucket_id = 'resumes' and original_filename = 'rls-fixture-retired-cv.pdf';
+  perform pg_temp.assert(n = 0, 'anon CANNOT read the media row behind a retired resume');
+
   perform pg_temp.become_postgres();
 end $$;
 
@@ -272,8 +314,34 @@ begin
   perform pg_temp.assert(n = 0,
     'anon CANNOT read the private certificate-original media row (its storage path stays secret)');
 
-  select count(*) into n from public.media_assets where visibility = 'private';
-  perform pg_temp.assert(n = 0, 'anon sees ZERO private media assets in total');
+  /*
+   * Private media is invisible to anon with exactly one deliberate exception:
+   * the metadata row for the ACTIVE resume.
+   *
+   * That resume is already publicly downloadable through /api/resume/download,
+   * and the public page cannot render a version whose file size and type it
+   * cannot read — which is how a published resume ended up invisible to
+   * everyone but its author. The exception is scoped to the active version and
+   * revoked the moment it is deactivated.
+   *
+   * The blanket "zero private rows" assertion is therefore narrowed rather than
+   * deleted: everything private that is NOT that one row must still be
+   * unreachable, and the certificate-original check above is the case that
+   * matters most.
+   */
+  select count(*) into n
+    from public.media_assets m
+   where m.visibility = 'private'
+     and not exists (
+       select 1 from public.resume_versions rv
+        where rv.media_id = m.id and rv.is_active and not rv.is_archived
+     );
+  perform pg_temp.assert(n = 0,
+    'anon sees NO private media beyond the active resume''s metadata row');
+
+  select count(*) into n from public.media_assets
+   where visibility = 'private' and kind = 'certificate_original';
+  perform pg_temp.assert(n = 0, 'anon sees ZERO certificate originals, without exception');
 
   -- The public projection must not even expose the column.
   perform pg_temp.assert(
@@ -466,8 +534,26 @@ begin
   select count(*) into n from public.audit_logs;
   perform pg_temp.assert(n = 0, 'a logged-in non-admin CANNOT read audit logs');
 
-  select count(*) into n from public.media_assets where visibility = 'private';
-  perform pg_temp.assert(n = 0, 'a logged-in non-admin CANNOT read private media');
+  /*
+   * Narrowed for the same reason as the anonymous case: the active resume's
+   * metadata row is readable by any visitor, signed in or not, because the file
+   * behind it is publicly downloadable either way. Everything else private
+   * stays invisible to an account without an admin role.
+   */
+  select count(*) into n
+    from public.media_assets m
+   where m.visibility = 'private'
+     and not exists (
+       select 1 from public.resume_versions rv
+        where rv.media_id = m.id and rv.is_active and not rv.is_archived
+     );
+  perform pg_temp.assert(n = 0,
+    'a logged-in non-admin reads NO private media beyond the active resume row');
+
+  select count(*) into n from public.media_assets
+   where visibility = 'private' and kind = 'certificate_original';
+  perform pg_temp.assert(n = 0,
+    'a logged-in non-admin reads ZERO certificate originals');
 
   begin
     insert into public.projects (slug, status) values ('nonadmin-injected', 'draft');
@@ -739,6 +825,11 @@ end $$;
 
 do $$
 begin
+  delete from public.resume_versions rv
+   using public.media_assets m
+   where rv.media_id = m.id and m.original_filename like 'rls-fixture-%-cv.pdf';
+  delete from public.media_assets where original_filename like 'rls-fixture-%-cv.pdf';
+
   delete from public.project_metrics
    where label_en in ('Verified metric', 'Unverified metric', 'No source');
   delete from public.projects where slug like 'rls-fixture-%' or slug like 'rls-gate-%';
