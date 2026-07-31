@@ -15,14 +15,14 @@ import {
   MEDIA_KINDS,
   type MediaKind,
 } from "@/lib/media/kinds";
-import { formatBytes } from "@/lib/media/validate";
+import { formatBytes, MAX_UPLOAD_SIZE_BYTES } from "@/lib/media/validate";
 
 /**
  * Media upload form.
  *
  * Uses a plain `fetch` with `FormData` and `XMLHttpRequest`-free progress via the
- * upload's own state, because Server Actions cap request bodies at a size that a
- * 25 MB certificate scan exceeds.
+ * upload's own state, because Server Actions cap request bodies at 2 MB — well
+ * under the 10 MB an upload here is allowed to be.
  *
  * The privacy consequence of the chosen "kind" is stated before the upload happens,
  * not after: selecting "Certificate original" shows that the file will be private
@@ -47,6 +47,7 @@ export function MediaUploader() {
 
   const isPrivate = isPrivateKind(kind);
   const isPdfKind = kind === "certificate_original" || kind === "resume_file";
+  const maxSizeLabel = formatBytes(MAX_UPLOAD_SIZE_BYTES);
   const needsAltText = !isPrivate && kind !== "resume_file";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -177,8 +178,8 @@ export function MediaUploader() {
             label="File"
             description={
               isPdfKind
-                ? "PDF, JPEG, PNG or WebP. Up to 25 MB."
-                : "JPEG, PNG, WebP or AVIF. Up to 10 MB. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions."
+                ? `PDF, JPEG, PNG or WebP. Up to ${maxSizeLabel}.`
+                : `JPEG, PNG, WebP or AVIF. Up to ${maxSizeLabel}. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
             }
             required
             requiredLabel="required"
@@ -195,7 +196,30 @@ export function MediaUploader() {
                     : "image/jpeg,image/png,image/webp,image/avif"
                 }
                 aria-describedby={describedBy}
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => {
+                  const chosen = event.target.files?.[0] ?? null;
+
+                  /*
+                   * Rejected here as well as on the server, so an oversized file
+                   * fails instantly instead of after a long upload that ends in
+                   * a 400. The server check is the real one — this is only to
+                   * avoid wasting the editor's time and bandwidth.
+                   */
+                  if (chosen && chosen.size > MAX_UPLOAD_SIZE_BYTES) {
+                    toast.show({
+                      tone: "error",
+                      title: "That file is too large",
+                      description: `“${chosen.name}” is ${formatBytes(chosen.size)}. The limit is ${maxSizeLabel} — resize or re-export it and try again.`,
+                    });
+                    // Cleared so the form cannot be submitted with a file the
+                    // server is certain to reject.
+                    setFile(null);
+                    event.target.value = "";
+                    return;
+                  }
+
+                  setFile(chosen);
+                }}
                 className="w-full rounded-(--radius-md) border border-border-strong bg-surface p-2.5 text-small file:mr-3 file:rounded-(--radius-sm) file:border-0 file:bg-primary file:px-3 file:py-2 file:text-small file:font-medium file:text-primary-foreground"
               />
             )}

@@ -63,13 +63,35 @@ const SIGNATURES: Record<
   "application/pdf": [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46, 0x2d] }], // "%PDF-"
 };
 
-/** Size limits, mirroring the per-bucket limits set in migration 0010. */
+/**
+ * One upload ceiling for every kind: 10 MB.
+ *
+ * Previously each kind had its own limit (8 MB for a certificate preview, 25 MB
+ * for an original), which meant an upload could be rejected for a reason the
+ * editor had no way to predict from the UI. A single number is explainable, and
+ * it is the number the storage bucket, the database CHECK constraint and the
+ * upload form all state.
+ *
+ * The per-kind keys are kept rather than collapsed into a single constant so the
+ * upload route still reads as "this kind, this limit" — and so a future kind
+ * that genuinely needs a different ceiling has somewhere to say so.
+ *
+ * Note what this does *not* change: a certificate original is still stored
+ * byte-for-byte with no re-encoding. It just has to arrive under 10 MB. A 300 dpi
+ * A4 colour scan can exceed that, so scan at 200 dpi or as greyscale if one is
+ * rejected — the readable evidence survives either.
+ */
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 export const SIZE_LIMITS = {
-  publicImage: 10 * 1024 * 1024,
-  certificatePreview: 8 * 1024 * 1024,
-  certificateOriginal: 25 * 1024 * 1024,
-  resume: 10 * 1024 * 1024,
+  publicImage: MAX_UPLOAD_BYTES,
+  certificatePreview: MAX_UPLOAD_BYTES,
+  certificateOriginal: MAX_UPLOAD_BYTES,
+  resume: MAX_UPLOAD_BYTES,
 } as const;
+
+/** The ceiling itself, for anything that needs to display or enforce it. */
+export const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_BYTES;
 
 export type ValidationFailure = {
   code:

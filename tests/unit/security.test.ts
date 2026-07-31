@@ -8,6 +8,7 @@ import {
   isAllowedUploadType,
   sanitizeFilename,
   SIZE_LIMITS,
+  MAX_UPLOAD_SIZE_BYTES,
   validateUpload,
 } from "@/lib/media/validate";
 import { isPrivateKind, MEDIA_KINDS } from "@/lib/media/kinds";
@@ -337,6 +338,33 @@ function makeAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
     ...overrides,
   };
 }
+
+describe("upload size ceiling", () => {
+  it("is 10 MB for every kind", () => {
+    // One number the form, the route, the buckets and the CHECK constraint all
+    // agree on. A per-kind limit is what made a rejected upload look arbitrary.
+    for (const [kind, limit] of Object.entries(SIZE_LIMITS)) {
+      expect(limit, `${kind} should share the common ceiling`).toBe(
+        MAX_UPLOAD_SIZE_BYTES,
+      );
+    }
+    expect(MAX_UPLOAD_SIZE_BYTES).toBe(10 * 1024 * 1024);
+  });
+
+  it("rejects a file one byte over, for every kind", () => {
+    for (const limit of Object.values(SIZE_LIMITS)) {
+      expect(
+        validateUpload({
+          filename: "photo.jpg",
+          declaredType: "image/jpeg",
+          size: limit + 1,
+          buffer: JPEG_HEADER,
+          maxBytes: limit,
+        })?.code,
+      ).toBe("too_large");
+    }
+  });
+});
 
 describe("publicStorageUrl", () => {
   it("builds a URL for a public bucket", () => {
