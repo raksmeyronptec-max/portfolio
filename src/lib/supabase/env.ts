@@ -71,12 +71,45 @@ export function serviceRoleKey(): string {
  * sitemap, Open Graph URLs and JSON-LD `@id`s.
  */
 export function siteUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.URL as string | undefined) ?? // Netlify provides this
-    "http://127.0.0.1:3000";
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return stripTrailingSlash(explicit);
 
-  return raw.replace(/\/+$/, "");
+  /*
+   * Platform-provided fallbacks, in order of how trustworthy they are as a
+   * *canonical* origin.
+   *
+   * Getting this wrong is not cosmetic: this value is the origin for every
+   * canonical link, hreflang pair, sitemap entry, Open Graph URL and JSON-LD
+   * `@id`. Before this, the only fallback was Netlify's `URL`, so a Vercel
+   * deployment with `NEXT_PUBLIC_SITE_URL` unset silently emitted
+   * `http://127.0.0.1:3000` as its canonical host — which tells search engines
+   * the entire site lives on localhost.
+   *
+   *   VERCEL_PROJECT_PRODUCTION_URL  the stable production domain. Correct for
+   *                                  canonicals even when rendering a preview,
+   *                                  which is what we want: a preview must
+   *                                  never advertise itself as canonical.
+   *   VERCEL_URL                     the per-deployment URL. Only used when the
+   *                                  production domain is unknown.
+   *   URL                            Netlify's equivalent, kept so an existing
+   *                                  Netlify deploy is not broken by this.
+   *
+   * The Vercel variables carry no protocol, so https is added.
+   */
+  const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelProduction) return `https://${stripTrailingSlash(vercelProduction)}`;
+
+  const vercelDeployment = process.env.VERCEL_URL;
+  if (vercelDeployment) return `https://${stripTrailingSlash(vercelDeployment)}`;
+
+  const netlify = process.env.URL as string | undefined;
+  if (netlify) return stripTrailingSlash(netlify);
+
+  return "http://127.0.0.1:3000";
+}
+
+function stripTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, "");
 }
 
 /** Build an absolute URL against the configured origin. */

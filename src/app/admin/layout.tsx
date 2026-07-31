@@ -29,9 +29,12 @@ export const metadata: Metadata = {
     template: "%s · Portfolio admin",
     default: "Portfolio admin",
   },
-  // Belt and braces with the X-Robots-Tag header set in next.config.ts,
-  // netlify.toml and middleware.ts. Three independent layers, because an
-  // accidentally indexed admin login page is a permanent embarrassment.
+  // Belt and braces with the X-Robots-Tag header set in next.config.ts and the
+  // gating in middleware.ts — both of which are host-independent, so they hold
+  // on Vercel, Netlify or a self-hosted node. (netlify.toml sets it a third
+  // time, but only when deployed to Netlify; it is not load-bearing.)
+  // Redundant on purpose: an accidentally indexed admin login page is a
+  // permanent embarrassment.
   robots: {
     index: false,
     follow: false,
@@ -56,8 +59,8 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
           robots meta elements on any admin page that set its own `robots` value —
           one saying "noindex, nofollow, noarchive, noimageindex" and one saying
           just "noindex, nofollow". Two sources of truth for one directive.
-          The response headers (next.config.ts, netlify.toml, middleware.ts) are
-          the redundancy; a duplicate tag is not.
+          The response headers (next.config.ts, middleware.ts) are the
+          redundancy; a duplicate tag is not.
         */}
       </head>
       <body className="min-h-dvh bg-background text-foreground">
