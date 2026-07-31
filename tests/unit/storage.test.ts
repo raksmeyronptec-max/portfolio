@@ -91,3 +91,35 @@ describe("isStorageProvider", () => {
     expect(isStorageProvider("")).toBe(false);
   });
 });
+
+/**
+ * PDFs and public buckets.
+ *
+ * The upload route rejects a PDF whenever the resolved visibility is public.
+ * That rule used to be belt-and-braces: Supabase storage also enforced a
+ * per-bucket MIME allowlist that had no `application/pdf` entry for the public
+ * buckets. Cloudflare R2 has no equivalent, so the route check is now the only
+ * thing standing between "Other" and a permanently addressable public PDF.
+ *
+ * These assertions describe the bucket routing that check depends on.
+ */
+describe("PDF routing", () => {
+  const publicKinds = ["public-media", "certificate-previews"] as const;
+  const privateKinds = ["certificate-originals", "resumes"] as const;
+
+  it("keeps the two PDF-carrying buckets private", () => {
+    // `resumes` holds the CV, `certificate-originals` the raw scans. Both are
+    // read server-side or through a signed URL, never from a public origin.
+    for (const bucket of privateKinds) {
+      expect(isPublicBucket(bucket)).toBe(false);
+      expect(r2BucketFor(bucket, BUCKETS)).toBe(BUCKETS.privateBucket);
+    }
+  });
+
+  it("keeps every public bucket out of the private one, and vice versa", () => {
+    for (const bucket of publicKinds) {
+      expect(r2BucketFor(bucket, BUCKETS)).toBe(BUCKETS.publicBucket);
+      expect(r2BucketFor(bucket, BUCKETS)).not.toBe(BUCKETS.privateBucket);
+    }
+  });
+});

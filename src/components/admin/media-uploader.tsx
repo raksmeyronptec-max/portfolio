@@ -179,7 +179,7 @@ export function MediaUploader() {
             description={
               isPdfKind
                 ? `PDF, JPEG, PNG or WebP. Up to ${maxSizeLabel}.`
-                : `JPEG, PNG, WebP or AVIF. Up to ${maxSizeLabel}. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
+                : `Images only — JPEG, PNG, WebP or AVIF, up to ${maxSizeLabel}. To upload a PDF, choose “Certificate original” or “Resume PDF” above; PDFs are always stored privately. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
             }
             required
             requiredLabel="required"

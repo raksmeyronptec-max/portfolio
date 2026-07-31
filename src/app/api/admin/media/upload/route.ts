@@ -119,15 +119,26 @@ export async function POST(request: NextRequest) {
 
   const isPdf = file.type === "application/pdf";
 
-  // A PDF cannot be a public image; catching this here avoids storing something the
-  // gallery would then fail to render.
-  if (isPdf && visibility === "public" && kind !== "other") {
+  /*
+   * A PDF never belongs in a public bucket.
+   *
+   * This used to carry an exemption for `kind === "other"`, which was harmless
+   * only because Supabase storage enforced a per-bucket MIME allowlist that
+   * rejected the upload anyway. Cloudflare R2 has no such allowlist, so the
+   * exemption stopped being dead code the moment the bytes moved: a PDF chosen
+   * as "Other" would now land in the public bucket and be served from a
+   * permanent public URL. Removed rather than special-cased — there is no
+   * workflow here that wants a publicly addressable PDF, and the resume, which
+   * is the one public-facing document, is deliberately streamed from a private
+   * bucket through its own route.
+   */
+  if (isPdf && visibility === "public") {
     return json(
       {
         ok: false,
         error: "type_not_allowed",
         message:
-          "PDFs cannot be used as a public image. Upload a PDF as a certificate original or a resume file.",
+          "A PDF cannot be stored publicly. Choose “Certificate original” or “Resume PDF” — both are private — or upload an image instead.",
       },
       400,
     );
