@@ -20,7 +20,21 @@
       "Bash(curl -s http://127.0.0.1:3100/en/this-page-does-not-exist)",
       "Bash(git -c user.email=mongkul.digital@gmail.com -c user.name=\"Ron Raksmey\" commit -q -F -)",
       "Bash(export FILTER_BRANCH_SQUELCH_WARNING=1)",
-      "Bash(git filter-branch *)"
+      "Bash(git filter-branch *)",
+      "Bash(git update-ref *)",
+      "Bash(git reflog *)",
+      "Bash(git gc *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Bash(git count-objects *)",
+      "Bash(git push *)",
+      "Bash(git ls-remote *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)",
+      "Bash(kill 52583)",
+      "Bash(curl -s -o /dev/null -w \"port 3000 now: %{http_code}\\\\n\" http://localhost:3000/en)",
+      "Bash(pkill -f \"next-server\")"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"
