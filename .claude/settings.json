@@ -82,7 +82,14 @@
       "Bash(curl -s -o /dev/null -w \"GET /admin/profile -> %{http_code}\\\\n\" --max-time 60 http://localhost:3300/admin/profile)",
       "Bash(node qa-nokey.mjs)",
       "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3400/en)",
-      "Bash(node qa-save.mjs)"
+      "Bash(node qa-save.mjs)",
+      "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3500/en)",
+      "Bash(curl -sS --max-time 60 http://localhost:3500/en)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -sS --max-time 60 \"http://localhost:3500/en\")",
+      "Bash(curl -sS --max-time 60 \"http://localhost:3500/km\")",
+      "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3600/en)",
+      "Bash(curl -sS --max-time 60 http://localhost:3600/en)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

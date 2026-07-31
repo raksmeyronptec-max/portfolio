@@ -171,19 +171,105 @@ export async function getSocialLinks(locale: Locale): Promise<SocialLink[]> {
       .eq("is_published", true)
       .order("sort_order", { ascending: true });
 
-    if (error || !data) return [];
+    if (error) return [];
 
-    return data.map((row) => ({
-      id: row.id,
-      platform: row.platform,
-      label: pickLocalized(locale, row.label_en, row.label_km) ?? row.platform,
-      url: row.url,
-      handle: row.handle,
-      icon: row.icon,
-    }));
+    if (data && data.length > 0) {
+      return data.map((row) => ({
+        id: row.id,
+        platform: row.platform,
+        label: pickLocalized(locale, row.label_en, row.label_km) ?? row.platform,
+        url: row.url,
+        handle: row.handle,
+        icon: row.icon,
+      }));
+    }
+
+    /*
+     * Fall back to the contact fields in Settings.
+     *
+     * `social_links` is a richer table — per-platform labels in both languages,
+     * ordering, an is_published flag — but it has no editor anywhere in the
+     * admin and is written only by seed.sql. On any database that was created by
+     * migrations rather than by a local `db reset`, it is therefore empty and
+     * always will be.
+     *
+     * Meanwhile the Settings page collects an email, a Telegram handle and
+     * Facebook, GitHub and LinkedIn URLs, stores them on `site_settings`, and
+     * nothing public ever rendered them. Filling in that form and seeing no
+     * change on the site is exactly the hardcoded-content problem this rebuild
+     * set out to remove.
+     *
+     * So the table stays authoritative when it has rows, and Settings answers
+     * when it does not.
+     */
+    return socialLinksFromSettings(await getSiteSettings(locale), locale);
   } catch {
     return [];
   }
+}
+
+/** Telegram is stored as a handle, a t.me URL, or an @handle. Accept all three. */
+function telegramUrl(handle: string): string {
+  const trimmed = handle.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://t.me/${trimmed.replace(/^@/, "")}`;
+}
+
+/**
+ * Social links derived from the Settings page.
+ *
+ * Only fields the owner actually filled in produce a link — an empty field is
+ * absent rather than rendered as a dead tile.
+ */
+function socialLinksFromSettings(
+  settings: SiteSettings,
+  locale: Locale,
+): SocialLink[] {
+  const links: SocialLink[] = [];
+
+  const add = (
+    platform: string,
+    labelEn: string,
+    labelKm: string,
+    url: string | null,
+    handle: string | null,
+    icon: string,
+  ) => {
+    if (!url) return;
+    links.push({
+      // Stable, derived id: these rows do not exist in the database, and the
+      // list is keyed by it in the footer.
+      id: `settings-${platform}`,
+      platform,
+      label: pickLocalized(locale, labelEn, labelKm) ?? labelEn,
+      url,
+      handle,
+      icon,
+    });
+  };
+
+  add(
+    "email",
+    "Email",
+    "អ៊ីមែល",
+    settings.contactEmail ? `mailto:${settings.contactEmail}` : null,
+    settings.contactEmail,
+    "mail",
+  );
+  add(
+    "telegram",
+    "Telegram",
+    "តេឡេក្រាម",
+    settings.telegramHandle ? telegramUrl(settings.telegramHandle) : null,
+    settings.telegramHandle,
+    "telegram",
+  );
+  add("facebook", "Facebook", "ហ្វេសប៊ុក", settings.facebookUrl, null, "facebook");
+  add("github", "GitHub", "GitHub", settings.githubUrl, null, "github");
+  // The icon set has no LinkedIn mark; a globe is honest rather than wrong.
+  add("linkedin", "LinkedIn", "LinkedIn", settings.linkedinUrl, null, "globe");
+
+  return links;
 }
 
 // ── Languages ───────────────────────────────────────────────────────────────
