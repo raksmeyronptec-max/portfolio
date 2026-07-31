@@ -110,6 +110,45 @@ export function ProjectForm({
     [values.translations, activeLocale],
   );
 
+  /*
+   * ── Repeatable lists ──────────────────────────────────────────────────────
+   * Features and metrics are edited as ordered arrays. Display order is the
+   * array order, so "move up" is a real move rather than the editor typing
+   * sort-order numbers and hoping they stay unique. One generic updater keeps
+   * the two lists behaving identically.
+   */
+  const updateList = useCallback(
+    <K extends "features" | "metrics">(
+      key: K,
+      mutate: (current: ProjectFormValues[K]) => ProjectFormValues[K],
+    ) => {
+      setValues((current) => ({ ...current, [key]: mutate(current[key]) }));
+      setIsDirty(true);
+    },
+    [],
+  );
+
+  const moveInList = useCallback(
+    (key: "features" | "metrics", index: number, direction: -1 | 1) => {
+      updateList(key, (current) => {
+        const target = index + direction;
+        if (target < 0 || target >= current.length) return current;
+
+        // Index-based swap rather than destructuring, so the compiler does not
+        // have to reason about a possibly-undefined element under
+        // noUncheckedIndexedAccess.
+        return current.map((item, position) =>
+          position === index
+            ? current[target]!
+            : position === target
+              ? current[index]!
+              : item,
+        ) as typeof current;
+      });
+    },
+    [updateList],
+  );
+
   // Recomputed on every keystroke, so the checklist is always current.
   const blockers = useMemo(() => publishBlockers(values), [values]);
   const canPublish = blockers.length === 0;
@@ -513,6 +552,337 @@ export function ProjectForm({
               </div>
             </CardBody>
           </Card>
+
+          {/* ── Key features ─────────────────────────────────────────────── */}
+          <Card>
+            <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-h4 font-semibold">Key features</h2>
+                <p className="text-[0.8125rem] text-foreground-muted">
+                  Rendered as a grid on the case study, in this order. Aim for
+                  5–12 — the important ones, not every button.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                iconStart="plus"
+                onClick={() =>
+                  updateList("features", (current) => [
+                    ...current,
+                    {
+                      title_en: "",
+                      title_km: null,
+                      description_en: null,
+                      description_km: null,
+                      icon: null,
+                    },
+                  ])
+                }
+              >
+                Add feature
+              </Button>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-4">
+              {values.features.length === 0 ? (
+                <p className="text-small text-foreground-muted">
+                  No features yet. The features section is simply not rendered
+                  when this list is empty.
+                </p>
+              ) : null}
+
+              {values.features.map((feature, index) => (
+                <RepeatableRow
+                  key={index}
+                  label={feature.title_en || `Feature ${index + 1}`}
+                  index={index}
+                  count={values.features.length}
+                  onMove={(direction) => moveInList("features", index, direction)}
+                  onRemove={() =>
+                    updateList("features", (current) =>
+                      current.filter((_, position) => position !== index),
+                    )
+                  }
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SimpleField
+                      label="Title (English)"
+                      value={feature.title_en}
+                      onChange={(value) =>
+                        updateList("features", (current) =>
+                          current.map((item, position) =>
+                            position === index ? { ...item, title_en: value } : item,
+                          ),
+                        )
+                      }
+                      required
+                      error={friendlyError(errors[`features.${index}.title_en`])}
+                    />
+                    <SimpleField
+                      label="Title (Khmer)"
+                      value={feature.title_km ?? ""}
+                      onChange={(value) =>
+                        updateList("features", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, title_km: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      optional
+                      lang="km"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SimpleTextArea
+                      label="Description (English)"
+                      value={feature.description_en ?? ""}
+                      onChange={(value) =>
+                        updateList("features", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, description_en: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      rows={3}
+                      optional
+                    />
+                    <SimpleTextArea
+                      label="Description (Khmer)"
+                      value={feature.description_km ?? ""}
+                      onChange={(value) =>
+                        updateList("features", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, description_km: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      rows={3}
+                      optional
+                      lang="km"
+                    />
+                  </div>
+
+                  <SimpleField
+                    label="Icon"
+                    value={feature.icon ?? ""}
+                    onChange={(value) =>
+                      updateList("features", (current) =>
+                        current.map((item, position) =>
+                          position === index ? { ...item, icon: value || null } : item,
+                        ),
+                      )
+                    }
+                    optional
+                    placeholder="shield"
+                    description="An icon name from the site's set. An unknown name falls back to a checkmark rather than breaking."
+                  />
+                </RepeatableRow>
+              ))}
+            </CardBody>
+          </Card>
+
+          {/* ── Measured results ─────────────────────────────────────────── */}
+          <Card>
+            <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-h4 font-semibold">Measured results</h2>
+                <p className="text-[0.8125rem] text-foreground-muted">
+                  Numbers only, each with its source. Prose belongs in the
+                  Results section of the case study.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                iconStart="plus"
+                onClick={() =>
+                  updateList("metrics", (current) => [
+                    ...current,
+                    {
+                      label_en: "",
+                      label_km: null,
+                      value: "",
+                      unit: null,
+                      metric_type: "other" as const,
+                      source_note: null,
+                      measured_at: null,
+                      // Unverified by default: a number has to earn its way onto
+                      // the public page, not be published and checked later.
+                      is_verified: false,
+                    },
+                  ])
+                }
+              >
+                Add result
+              </Button>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-4">
+              <Notice tone="info" icon="info">
+                <p>
+                  Only results marked verified are shown to visitors, and a
+                  verified result must state where the number came from — the
+                  source is printed next to it. Anything you cannot source stays
+                  unverified and stays private.
+                </p>
+              </Notice>
+
+              {values.metrics.map((metric, index) => (
+                <RepeatableRow
+                  key={index}
+                  label={metric.label_en || `Result ${index + 1}`}
+                  index={index}
+                  count={values.metrics.length}
+                  onMove={(direction) => moveInList("metrics", index, direction)}
+                  onRemove={() =>
+                    updateList("metrics", (current) =>
+                      current.filter((_, position) => position !== index),
+                    )
+                  }
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SimpleField
+                      label="Label (English)"
+                      value={metric.label_en}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index ? { ...item, label_en: value } : item,
+                          ),
+                        )
+                      }
+                      required
+                      error={friendlyError(errors[`metrics.${index}.label_en`])}
+                    />
+                    <SimpleField
+                      label="Label (Khmer)"
+                      value={metric.label_km ?? ""}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, label_km: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      optional
+                      lang="km"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <SimpleField
+                      label="Value"
+                      value={metric.value}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index ? { ...item, value } : item,
+                          ),
+                        )
+                      }
+                      required
+                      error={friendlyError(errors[`metrics.${index}.value`])}
+                    />
+                    <SimpleField
+                      label="Unit"
+                      value={metric.unit ?? ""}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, unit: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      optional
+                      placeholder="s"
+                    />
+                    <LabelledSelect
+                      label="Type"
+                      value={metric.metric_type}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? {
+                                  ...item,
+                                  metric_type:
+                                    value as (typeof current)[number]["metric_type"],
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                    >
+                      {METRIC_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </LabelledSelect>
+                  </div>
+
+                  <SimpleTextArea
+                    label="Source"
+                    description="Where this number came from. Required before it can be verified, and shown publicly."
+                    value={metric.source_note ?? ""}
+                    onChange={(value) =>
+                      updateList("metrics", (current) =>
+                        current.map((item, position) =>
+                          position === index
+                            ? { ...item, source_note: value || null }
+                            : item,
+                        ),
+                      )
+                    }
+                    rows={2}
+                    error={friendlyError(errors[`metrics.${index}.source_note`])}
+                  />
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <SimpleField
+                      label="Measured on"
+                      value={metric.measured_at ?? ""}
+                      onChange={(value) =>
+                        updateList("metrics", (current) =>
+                          current.map((item, position) =>
+                            position === index
+                              ? { ...item, measured_at: value || null }
+                              : item,
+                          ),
+                        )
+                      }
+                      type="date"
+                      optional
+                    />
+                    <div className="flex items-end pb-1">
+                      <Checkbox
+                        id={`metric-verified-${index}`}
+                        label="Verified — show this publicly"
+                        checked={metric.is_verified}
+                        onChange={(event) =>
+                          updateList("metrics", (current) =>
+                            current.map((item, position) =>
+                              position === index
+                                ? { ...item, is_verified: event.target.checked }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </RepeatableRow>
+              ))}
+            </CardBody>
+          </Card>
         </div>
 
         {/* ══ Sidebar ══════════════════════════════════════════════════════ */}
@@ -690,6 +1060,80 @@ export function ProjectForm({
   );
 }
 
+// ── Repeatable list row ─────────────────────────────────────────────────────
+
+const METRIC_TYPES = [
+  "scale",
+  "performance",
+  "efficiency",
+  "accessibility",
+  "seo",
+  "deployment",
+  "other",
+] as const;
+
+/**
+ * One entry in an ordered list, with its own move and remove controls.
+ *
+ * Reordering is two buttons rather than drag-and-drop on purpose: buttons work
+ * from the keyboard and with a screen reader without any extra work, and these
+ * lists are short enough that dragging would not be meaningfully faster.
+ */
+function RepeatableRow({
+  label,
+  index,
+  count,
+  onMove,
+  onRemove,
+  children,
+}: {
+  label: string;
+  index: number;
+  count: number;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="flex flex-col gap-4 rounded-(--radius-lg) border border-border p-4">
+      <legend className="flex items-center gap-2 px-1 text-small font-semibold">
+        {label}
+      </legend>
+
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="ghost"
+          iconStart="chevronUp"
+          disabled={index === 0}
+          onClick={() => onMove(-1)}
+          aria-label={`Move “${label}” up`}
+        >
+          Up
+        </Button>
+        <Button
+          variant="ghost"
+          iconStart="chevronDown"
+          disabled={index === count - 1}
+          onClick={() => onMove(1)}
+          aria-label={`Move “${label}” down`}
+        >
+          Down
+        </Button>
+        <Button
+          variant="ghost"
+          iconStart="trash"
+          onClick={onRemove}
+          aria-label={`Remove “${label}”`}
+        >
+          Remove
+        </Button>
+      </div>
+
+      {children}
+    </fieldset>
+  );
+}
+
 // ── Case-study field definitions ────────────────────────────────────────────
 
 const CASE_STUDY_FIELDS: Array<{
@@ -798,6 +1242,7 @@ function SimpleTextArea({
   maxLength,
   hint,
   optional = false,
+  lang,
 }: {
   label: string;
   value: string;
@@ -808,6 +1253,8 @@ function SimpleTextArea({
   maxLength?: number;
   hint?: string;
   optional?: boolean;
+  /** Marks Khmer inputs, so the field renders in the right script and font. */
+  lang?: string;
 }) {
   const id = useId();
 
@@ -826,6 +1273,7 @@ function SimpleTextArea({
           id={id}
           rows={rows}
           value={value}
+          lang={lang}
           maxLength={maxLength}
           aria-describedby={describedBy}
           aria-invalid={invalid || undefined}

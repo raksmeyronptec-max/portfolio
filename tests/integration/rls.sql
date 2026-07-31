@@ -205,10 +205,38 @@ begin
   select count(*) into n from public.projects where slug = 'rls-fixture-soft-deleted';
   perform pg_temp.assert(n = 0, 'anon CANNOT read a soft-deleted project');
 
-  -- The seeded real projects are all drafts, so none of them may be visible.
+  /*
+   * The three real platforms are published on purpose (migration 0015), so the
+   * assertion here is the opposite of what it was when they were seeded as
+   * drafts: all three must be readable by anon, or the public Projects page is
+   * empty again. Draft-hiding is still covered — by the fixtures above, which
+   * is where it belongs, because a fixture cannot be accidentally published by
+   * a content migration.
+   */
   select count(*) into n from public.projects
    where slug in ('krusmart', 'ptec-digital-library', 'ptec-storage');
-  perform pg_temp.assert(n = 0, 'anon CANNOT read the seeded draft projects');
+  perform pg_temp.assert(n = 3, 'anon CAN read the three published platform projects');
+
+  -- Their case studies and structured content must come with them, in both
+  -- languages: a visible project whose prose is hidden renders as a bare title.
+  select count(*) into n from public.project_translations t
+    join public.projects p on p.id = t.project_id
+   where p.slug in ('krusmart', 'ptec-digital-library', 'ptec-storage');
+  perform pg_temp.assert(n = 6, 'anon CAN read both translations of each platform project');
+
+  select count(*) into n from public.project_features f
+    join public.projects p on p.id = f.project_id
+   where p.slug in ('krusmart', 'ptec-digital-library', 'ptec-storage');
+  perform pg_temp.assert(n > 0, 'anon CAN read the platform projects'' features');
+
+  -- Every imported metric states its source, so all of them are verified and
+  -- all of them are public. An unsourced one could not have been marked
+  -- verified in the first place — the CHECK constraint refuses it.
+  select count(*) into n from public.project_metrics m
+    join public.projects p on p.id = m.project_id
+   where p.slug in ('krusmart', 'ptec-digital-library', 'ptec-storage')
+     and (m.source_note is null or btrim(m.source_note) = '');
+  perform pg_temp.assert(n = 0, 'no public platform metric is missing its source');
 
   select count(*) into n from public.project_translations t
     join public.projects p on p.id = t.project_id

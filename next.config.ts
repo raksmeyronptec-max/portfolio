@@ -6,7 +6,19 @@ import type { NextConfig } from "next";
  */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+/** Host *including* the port. What a CSP origin needs. */
 let supabaseHost: string | null = null;
+/**
+ * Host *excluding* the port, plus the port on its own.
+ *
+ * `next/image` remotePatterns splits these into two fields, and passing a
+ * "host:port" string as `hostname` matches nothing — the optimiser then rejects
+ * every CMS image with "hostname is not configured", which is exactly what it
+ * did locally where Supabase runs on 127.0.0.1:55321. A hosted project has no
+ * explicit port, so this is a no-op in production.
+ */
+let supabaseHostname: string | null = null;
+let supabasePort = "";
 /** `http` or `https`, taken from the configured URL rather than assumed. */
 let supabaseScheme: "http" | "https" = "https";
 
@@ -14,10 +26,13 @@ try {
   if (supabaseUrl) {
     const parsed = new URL(supabaseUrl);
     supabaseHost = parsed.host;
+    supabaseHostname = parsed.hostname;
+    supabasePort = parsed.port;
     supabaseScheme = parsed.protocol === "http:" ? "http" : "https";
   }
 } catch {
   supabaseHost = null;
+  supabaseHostname = null;
 }
 
 /*
@@ -31,6 +46,18 @@ try {
  * Deriving the scheme keeps production exactly as strict as before (a hosted
  * Supabase project is always https) without lying about the configured origin.
  */
+/**
+ * Is the configured Supabase a local stack rather than a hosted project?
+ *
+ * Matched on the hostname, not on NODE_ENV: what matters is where the images
+ * actually come from. A production build pointed at a hosted project is
+ * correctly false here even when someone runs it with NODE_ENV unset.
+ */
+const isLocalSupabase =
+  supabaseHostname === "127.0.0.1" ||
+  supabaseHostname === "localhost" ||
+  supabaseHostname === "::1";
+
 const supabaseOrigin = supabaseHost ? `${supabaseScheme}://${supabaseHost}` : null;
 const supabaseSocket = supabaseHost
   ? `${supabaseScheme === "http" ? "ws" : "wss"}://${supabaseHost}`
@@ -103,18 +130,35 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: supabaseHost
+    remotePatterns: supabaseHostname
       ? [
           {
             // Same reasoning as the CSP: local storage is served over http, and a
             // hard-coded https here made every local media thumbnail a 400 from
             // the image optimiser.
             protocol: supabaseScheme,
-            hostname: supabaseHost,
+            // Hostname only — the port is its own field. See the note above.
+            hostname: supabaseHostname,
+            ...(supabasePort ? { port: supabasePort } : {}),
             pathname: "/storage/v1/object/public/**",
           },
         ]
       : [],
+    /*
+     * Next 16 refuses to optimise an upstream image that resolves to a private
+     * IP — sensible SSRF protection, and it must stay on in production.
+     *
+     * It also breaks local development completely: the Supabase stack runs on
+     * 127.0.0.1, so every CMS image (project covers, screenshots, certificate
+     * previews) rendered as a broken box locally while being perfectly fine
+     * once deployed. That is the worst kind of difference between environments,
+     * because the thing you cannot see locally is the thing you ship.
+     *
+     * So it is relaxed only when the configured Supabase URL is itself a local
+     * address. A hosted project never matches, and the guard stays fully armed
+     * in production even if NODE_ENV were somehow wrong.
+     */
+    dangerouslyAllowLocalIP: isLocalSupabase,
     // Widths that match the container/grid breakpoints in the design system.
     deviceSizes: [320, 375, 430, 640, 768, 1024, 1280, 1440, 1920],
     imageSizes: [64, 96, 128, 192, 256, 384, 512],

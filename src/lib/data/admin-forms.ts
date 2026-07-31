@@ -101,6 +101,8 @@ export function emptyProjectFormValues(): ProjectFormValues {
     review_note: null,
     categoryIds: [],
     technologyIds: [],
+    features: [],
+    metrics: [],
     // A row for every locale, so the editor always has both tabs available rather
     // than having to "add" a language.
     translations: locales.map((locale) => ({
@@ -147,7 +149,11 @@ export async function getProjectFormValues(
       .select(
         `*, project_translations(*),
          project_category_links(category_id),
-         project_technologies(technology_id, sort_order)`,
+         project_technologies(technology_id, sort_order),
+         project_features(id, title_en, title_km, description_en, description_km,
+                          icon, sort_order),
+         project_metrics(id, label_en, label_km, value, unit, metric_type,
+                         source_note, measured_at, is_verified, sort_order)`,
       )
       .eq("id", projectId)
       .maybeSingle();
@@ -158,6 +164,27 @@ export async function getProjectFormValues(
       project_translations: Array<Record<string, unknown>>;
       project_category_links: Array<{ category_id: string }>;
       project_technologies: Array<{ technology_id: string; sort_order: number }>;
+      project_features: Array<{
+        id: string;
+        title_en: string;
+        title_km: string | null;
+        description_en: string | null;
+        description_km: string | null;
+        icon: string | null;
+        sort_order: number;
+      }>;
+      project_metrics: Array<{
+        id: string;
+        label_en: string;
+        label_km: string | null;
+        value: string;
+        unit: string | null;
+        metric_type: string;
+        source_note: string | null;
+        measured_at: string | null;
+        is_verified: boolean;
+        sort_order: number;
+      }>;
     };
 
     const base = emptyProjectFormValues();
@@ -211,6 +238,34 @@ export async function getProjectFormValues(
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((link) => link.technology_id),
+      // Sorted here so the editor's array order *is* the display order — the
+      // form then never has to show a sort-order number.
+      features: row.project_features
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((feature) => ({
+          id: feature.id,
+          title_en: feature.title_en,
+          title_km: feature.title_km,
+          description_en: feature.description_en,
+          description_km: feature.description_km,
+          icon: feature.icon,
+        })),
+      metrics: row.project_metrics
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((metric) => ({
+          id: metric.id,
+          label_en: metric.label_en,
+          label_km: metric.label_km,
+          value: metric.value,
+          unit: metric.unit,
+          metric_type:
+            metric.metric_type as ProjectFormValues["metrics"][number]["metric_type"],
+          source_note: metric.source_note,
+          measured_at: metric.measured_at,
+          is_verified: metric.is_verified,
+        })),
       translations,
     };
   } catch {

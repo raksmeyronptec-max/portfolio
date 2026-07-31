@@ -601,6 +601,21 @@ select s.id, p.id
   join public.projects p on p.slug = l.proj_slug
 on conflict do nothing;
 
+-- ── Full case-study content ─────────────────────────────────────────────────
+--  Everything above is the thin, single-request version of these three
+--  projects. The researched case studies — full bilingual prose, structured
+--  features and sourced metrics — live in migration 0016 as
+--  `public.import_project_case_studies()`.
+--
+--  It is called from here rather than duplicated here because `db reset` runs
+--  migrations *before* this file: when 0016 ran, these rows did not exist yet,
+--  so its own call was a no-op. This is the call that actually lands the
+--  content on a freshly reset database.
+--
+--  Idempotent, and it skips any project whose `needs_review` flag a human has
+--  already cleared.
+select public.import_project_case_studies();
+
 -- ═══════════════════════════════════════════════════════════════════════════
 --  TESTIMONIALS
 --

@@ -115,6 +115,56 @@ export const projectTranslationSchema = z.object({
     ),
 });
 
+/**
+ * One key feature.
+ *
+ * Both languages live on a single record rather than one row per locale — that
+ * is how `project_features` is shaped, and it means a feature cannot exist in
+ * English but silently vanish from the Khmer page.
+ */
+export const projectFeatureSchema = z.object({
+  id: z.uuid().optional(),
+  title_en: z.string().trim().min(1, { message: "featureTitleRequired" }).max(160),
+  title_km: optionalText(160),
+  description_en: optionalText(600),
+  description_km: optionalText(600),
+  icon: optionalText(40),
+});
+
+/**
+ * One measured result.
+ *
+ * `source_note` is required whenever `is_verified` is set, mirroring the
+ * `project_metrics_verified_needs_source` CHECK constraint. Only verified
+ * metrics reach the public site, so in practice this makes "where did this
+ * number come from?" a required field for anything a visitor can see — which is
+ * the entire point of the table.
+ */
+export const projectMetricSchema = z
+  .object({
+    id: z.uuid().optional(),
+    label_en: z.string().trim().min(1, { message: "metricLabelRequired" }).max(120),
+    label_km: optionalText(120),
+    value: z.string().trim().min(1, { message: "metricValueRequired" }).max(40),
+    unit: optionalText(20),
+    metric_type: z.enum([
+      "performance",
+      "scale",
+      "efficiency",
+      "accessibility",
+      "seo",
+      "deployment",
+      "other",
+    ]),
+    source_note: optionalText(400),
+    measured_at: optionalDate,
+    is_verified: z.boolean(),
+  })
+  .refine((metric) => !metric.is_verified || Boolean(metric.source_note?.trim()), {
+    message: "metricSourceRequired",
+    path: ["source_note"],
+  });
+
 export const projectSchema = z.object({
   slug: slugSchema,
   status: z.enum(publicationStatuses),
@@ -155,6 +205,11 @@ export const projectSchema = z.object({
   categoryIds: z.array(z.uuid()).max(20).default([]),
   technologyIds: z.array(z.uuid()).max(40).default([]),
 
+  // Order is the array order, so reordering in the UI is a move, not a number
+  // the editor has to keep consistent by hand.
+  features: z.array(projectFeatureSchema).max(24).default([]),
+  metrics: z.array(projectMetricSchema).max(12).default([]),
+
   translations: z
     .array(projectTranslationSchema)
     .min(1, { message: "atLeastOneTranslation" }),
@@ -162,6 +217,8 @@ export const projectSchema = z.object({
 
 export type ProjectInput = z.infer<typeof projectSchema>;
 export type ProjectTranslationInput = z.infer<typeof projectTranslationSchema>;
+export type ProjectFeatureInput = z.infer<typeof projectFeatureSchema>;
+export type ProjectMetricInput = z.infer<typeof projectMetricSchema>;
 
 /**
  * Publish readiness.
@@ -206,6 +263,11 @@ export const publishBlockerLabels: Record<string, string> = {
   coverMissing: "A cover image is required for the card and the social preview.",
   needsReview:
     "This project is still marked “needs review”. Confirm the unverified facts, then clear the flag.",
+  featureTitleRequired: "Every feature needs an English title.",
+  metricLabelRequired: "Every measured result needs an English label.",
+  metricValueRequired: "Every measured result needs a value.",
+  metricSourceRequired:
+    "A verified result must say where the number came from — the source is shown next to it on the public page.",
 };
 
 /**

@@ -193,6 +193,53 @@ export async function saveProject(
       );
     }
 
+    /*
+     * ── Features and metrics ────────────────────────────────────────────────
+     * Replaced in place, like the join tables above, because `sort_order` is
+     * derived from the array order: an editor reorders by dragging, not by
+     * renumbering. Rewriting the set is also what keeps a deleted row deleted —
+     * an upsert would leave it behind.
+     *
+     * `is_verified` is passed through as the editor set it. The database still
+     * refuses a verified metric without a source note, and the public query
+     * still filters unverified rows out entirely, so an unsourced number cannot
+     * reach a visitor by either route.
+     */
+    await supabase.from("project_features").delete().eq("project_id", id);
+    if (data.features.length > 0) {
+      const { error: featureError } = await supabase.from("project_features").insert(
+        data.features.map((feature, index) => ({
+          project_id: id,
+          title_en: feature.title_en,
+          title_km: feature.title_km ?? null,
+          description_en: feature.description_en ?? null,
+          description_km: feature.description_km ?? null,
+          icon: feature.icon ?? null,
+          sort_order: index,
+        })),
+      );
+      if (featureError) return fromPostgresError(featureError);
+    }
+
+    await supabase.from("project_metrics").delete().eq("project_id", id);
+    if (data.metrics.length > 0) {
+      const { error: metricError } = await supabase.from("project_metrics").insert(
+        data.metrics.map((metric, index) => ({
+          project_id: id,
+          label_en: metric.label_en,
+          label_km: metric.label_km ?? null,
+          value: metric.value,
+          unit: metric.unit ?? null,
+          metric_type: metric.metric_type,
+          source_note: metric.source_note ?? null,
+          measured_at: metric.measured_at ?? null,
+          is_verified: metric.is_verified,
+          sort_order: index,
+        })),
+      );
+      if (metricError) return fromPostgresError(metricError);
+    }
+
     // ── Revision snapshot ───────────────────────────────────────────────────
     await recordRevision(supabase, {
       entityType: "project",
@@ -271,6 +318,10 @@ export async function setProjectStatus(
           []) as unknown as ProjectInput["translations"],
         categoryIds: [],
         technologyIds: [],
+        // Not loaded here, and not consulted: publishing is gated on the case
+        // study being written, not on how many features are listed.
+        features: [],
+        metrics: [],
       });
 
       if (blockers.length > 0) {
