@@ -107,7 +107,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[--radius-full] border px-2.5 py-1",
+        "inline-flex items-center gap-1.5 rounded-(--radius-full) border px-2.5 py-1",
         "text-[0.8125rem] font-medium leading-tight",
         badgeTones[tone],
         className,
@@ -154,7 +154,7 @@ export function Tag({ className, children }: { className?: string; children: Rea
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[--radius-sm] border border-border",
+        "inline-flex items-center rounded-(--radius-sm) border border-border",
         "bg-surface px-2 py-1 text-[0.8125rem] leading-tight text-foreground-muted",
         className,
       )}
@@ -205,10 +205,10 @@ export function Card({
   return (
     <Component
       className={cn(
-        "rounded-[--radius-lg] border border-border bg-surface",
-        "shadow-[--shadow-xs]",
+        "rounded-(--radius-lg) border border-border bg-surface",
+        "shadow-(--shadow-xs)",
         interactive &&
-          "transition-[border-color,box-shadow] hover:border-border-interactive hover:shadow-[--shadow-sm] focus-within:border-border-interactive",
+          "transition-[border-color,box-shadow] hover:border-border-interactive hover:shadow-(--shadow-sm) focus-within:border-border-interactive",
         className,
       )}
       {...rest}

@@ -321,7 +321,7 @@ export function ProjectForm({
                       aria-selected={activeLocale === tab.locale}
                       onClick={() => setActiveLocale(tab.locale)}
                       className={cn(
-                        "inline-flex min-h-10 items-center gap-2 rounded-[--radius-md] border px-3 text-small font-medium",
+                        "inline-flex min-h-10 items-center gap-2 rounded-(--radius-md) border px-3 text-small font-medium",
                         activeLocale === tab.locale
                           ? "border-primary bg-primary-subtle text-primary-subtle-foreground"
                           : "border-border text-foreground-muted hover:bg-surface-muted",
@@ -917,7 +917,7 @@ function CheckboxGroup({
                         : selected.filter((id) => id !== option.id),
                     )
                   }
-                  className="size-4 rounded-[--radius-xs] border border-border-strong accent-[--primary]"
+                  className="size-4 rounded-(--radius-xs) border border-border-strong accent-(--primary)"
                 />
                 {option.label}
               </label>

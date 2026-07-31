@@ -61,6 +61,7 @@ export function ProjectFilters({
   technologies,
   statuses,
   resultLabel,
+  mode = "full",
 }: {
   locale: Locale;
   t: Dictionary;
@@ -69,6 +70,18 @@ export function ProjectFilters({
   technologies: FilterOption[];
   statuses: FilterOption[];
   resultLabel: string;
+  /**
+   * How much filtering UI to show. Chosen by the page from the *unfiltered*
+   * published count, so the controls grow with the collection instead of
+   * dominating a page with three projects on it — the brief's progressive
+   * filtering rule.
+   *
+   *   chips  category chips only, scrollable on narrow screens
+   *   full   search plus the category/technology/status selects
+   *
+   * The "none" case is handled by the page not rendering this at all.
+   */
+  mode?: "chips" | "full";
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -156,13 +169,72 @@ export function ProjectFilters({
     });
   }
 
+  /*
+   * Chip mode: a single scrollable row of category toggles and nothing else.
+   *
+   * Still a real GET form with real submit buttons, so it works without
+   * JavaScript exactly like the full variant — each chip submits `category`.
+   */
+  if (mode === "chips") {
+    return (
+      <form
+        method="get"
+        action={localePath(locale, "projects")}
+        aria-label={t.projects.filterCategory}
+        className="flex flex-col gap-3"
+        onSubmit={(event) => event.preventDefault()}
+      >
+        {/* `-mx-*`/`px-*` lets the row bleed to the viewport edge while
+            scrolling, so a chip is never half-hidden under the container
+            padding on a narrow screen. */}
+        <ul className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+          {[{ value: "", label: t.projects.allCategories }, ...categories].map((option) => {
+            const active = state.category === option.value;
+
+            return (
+              <li key={option.value || "all"} className="snap-start">
+                <button
+                  type="submit"
+                  name="category"
+                  value={option.value}
+                  aria-pressed={active}
+                  onClick={() =>
+                    setState((current) => ({ ...current, category: option.value }))
+                  }
+                  className={cn(
+                    "inline-flex min-h-10 cursor-pointer items-center whitespace-nowrap rounded-(--radius-full) border px-4",
+                    "text-small font-medium transition-colors duration-200",
+                    active
+                      ? "border-transparent bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-foreground-muted hover:border-border-interactive hover:text-foreground",
+                  )}
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p
+          className={cn(
+            "text-small tabular-nums text-foreground-subtle transition-opacity",
+            isPending && "opacity-50",
+          )}
+        >
+          {resultLabel}
+        </p>
+      </form>
+    );
+  }
+
   return (
     <form
       method="get"
       action={localePath(locale, "projects")}
       role="search"
       aria-label={t.projects.searchLabel}
-      className="flex flex-col gap-4 rounded-[--radius-lg] border border-border bg-surface p-4 sm:p-5"
+      className="flex flex-col gap-4 rounded-(--radius-lg) border border-border bg-surface p-4 sm:p-5"
       onSubmit={(event) => {
         // The debounced effect already navigates; prevent a double navigation
         // when JavaScript is available.
@@ -287,7 +359,7 @@ export function ProjectFilters({
                 featuredOnly: event.target.checked,
               }))
             }
-            className="size-5 cursor-pointer rounded-[--radius-xs] border border-border-strong accent-[--primary]"
+            className="size-5 cursor-pointer rounded-(--radius-xs) border border-border-strong accent-(--primary)"
           />
           <label htmlFor={featuredId} className="cursor-pointer text-small">
             {t.projects.featuredOnly}
@@ -315,7 +387,7 @@ export function ProjectFilters({
           <noscript>
             <button
               type="submit"
-              className="inline-flex min-h-11 items-center rounded-[--radius-md] bg-primary px-4 text-small font-medium text-primary-foreground"
+              className="inline-flex min-h-11 items-center rounded-(--radius-md) bg-primary px-4 text-small font-medium text-primary-foreground"
             >
               {t.common.search}
             </button>

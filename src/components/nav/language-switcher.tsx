@@ -34,7 +34,12 @@ export function LanguageSwitcher({
   currentLocale: Locale;
   label: string;
   className?: string;
-  variant?: "segmented" | "list";
+  /**
+   * `minimal` is the header treatment: two text labels separated by a hairline,
+   * with no surrounding box. The brief called the old boxed pair too heavy for
+   * a control that is used once per visit at most.
+   */
+  variant?: "segmented" | "list" | "minimal";
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -110,7 +115,7 @@ export function LanguageSwitcher({
                 if (!isCurrent) handleSwitch(locale, href, event);
               }}
               className={cn(
-                "flex min-h-11 items-center justify-between gap-2 rounded-[--radius-md] px-3 text-base",
+                "flex min-h-11 items-center justify-between gap-2 rounded-(--radius-md) px-3 text-base",
                 isCurrent
                   ? "bg-primary-subtle font-medium text-primary-subtle-foreground"
                   : "text-foreground hover:bg-surface-muted",
@@ -125,10 +130,58 @@ export function LanguageSwitcher({
     );
   }
 
+  if (variant === "minimal") {
+    return (
+      <div
+        className={cn("flex items-center gap-1", className)}
+        role="group"
+        aria-label={label}
+      >
+        {locales.map((locale, index) => {
+          const isCurrent = locale === currentLocale;
+          const meta = localeMeta[locale];
+
+          return (
+            <span key={locale} className="flex items-center gap-1">
+              {index > 0 ? (
+                <span aria-hidden="true" className="text-foreground-subtle/50">
+                  /
+                </span>
+              ) : null}
+
+              {isCurrent ? (
+                <span
+                  aria-current="true"
+                  lang={meta.tag}
+                  className="inline-flex min-h-9 items-center px-1 text-[0.8125rem] font-semibold text-foreground"
+                >
+                  {meta.shortLabel}
+                </span>
+              ) : (
+                <Link
+                  href={switchLocaleInPath(pathname, locale)}
+                  hrefLang={meta.tag}
+                  lang={meta.tag}
+                  onClick={(event) =>
+                    handleSwitch(locale, switchLocaleInPath(pathname, locale), event)
+                  }
+                  className="inline-flex min-h-9 items-center rounded-(--radius-xs) px-1 text-[0.8125rem] font-medium text-foreground-subtle transition-colors hover:text-foreground"
+                >
+                  {meta.shortLabel}
+                  <span className="sr-only"> — {meta.englishName}</span>
+                </Link>
+              )}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "flex items-center rounded-[--radius-md] border border-border p-0.5",
+        "flex items-center rounded-(--radius-md) border border-border p-0.5",
         className,
       )}
       role="group"
@@ -146,7 +199,7 @@ export function LanguageSwitcher({
               key={locale}
               aria-current="true"
               lang={meta.tag}
-              className="inline-flex min-h-9 items-center rounded-[--radius-sm] bg-primary px-2.5 text-[0.8125rem] font-semibold text-primary-foreground"
+              className="inline-flex min-h-9 items-center rounded-(--radius-sm) bg-primary px-2.5 text-[0.8125rem] font-semibold text-primary-foreground"
             >
               {meta.shortLabel}
             </span>
@@ -162,7 +215,7 @@ export function LanguageSwitcher({
             hrefLang={meta.tag}
             lang={meta.tag}
             onClick={(event) => handleSwitch(locale, href, event)}
-            className="inline-flex min-h-9 items-center rounded-[--radius-sm] px-2.5 text-[0.8125rem] font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+            className="inline-flex min-h-9 items-center rounded-(--radius-sm) px-2.5 text-[0.8125rem] font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground"
           >
             {meta.shortLabel}
             <span className="sr-only"> — {meta.englishName}</span>

@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs, Pagination } from "@/components/ui/navigation";
+import { Pagination } from "@/components/ui/navigation";
 import { ButtonLink } from "@/components/ui/button";
-import { SectionHeading } from "@/components/ui/primitives";
-import { EmptyState, Notice } from "@/components/ui/states";
+import { Icon } from "@/components/ui/icon";
+import { EmptyState } from "@/components/ui/states";
+import { PageHeader } from "@/components/layout/page-header";
+import { Reveal } from "@/components/motion/reveal";
 import { CertificateCard } from "@/components/public/certificate-card";
 import { getDictionary, plural } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
-import { getSeoOverride } from "@/lib/data/site";
+import { getSeoOverride, getSiteCounts } from "@/lib/data/site";
 import {
   getCertificateCategories,
   getCertificateFacets,
@@ -64,7 +66,7 @@ export default async function CertificatesPage({
   const year = Number.isFinite(yearParam) ? yearParam : undefined;
   const page = toPositiveInt(single(query.page), 1);
 
-  const [result, categories, facets] = await Promise.all([
+  const [result, categories, facets, counts] = await Promise.all([
     listCertificates(locale, {
       category: category || undefined,
       issuer: issuer || undefined,
@@ -74,6 +76,8 @@ export default async function CertificatesPage({
     }),
     getCertificateCategories(locale),
     getCertificateFacets(),
+    // The *unfiltered* published total, used to size the filter chrome.
+    getSiteCounts(),
   ]);
 
   const resultLabel = plural(
@@ -83,6 +87,18 @@ export default async function CertificatesPage({
   );
 
   const hasFilters = Boolean(category || issuer || year);
+
+  /*
+   * Progressive filtering, per the brief. Eleven category buttons above an
+   * empty grid was the single loudest thing on the old page.
+   *
+   *    0–8 published   no filter chrome
+   *   9–20 published   category chips only
+   *    >20 published   chips plus the year and issuer rows
+   */
+  const publishedTotal = counts.publishedCertificates ?? 0;
+  const showCategoryChips = publishedTotal >= 9 || hasFilters;
+  const showSecondaryFacets = publishedTotal > 20 || hasFilters;
 
   // Only offer a category chip when it can actually return something.
   const availableCategories = categories.filter((item) =>
@@ -124,102 +140,121 @@ export default async function CertificatesPage({
     <>
       <JsonLd data={structuredData} />
 
-      <div className="container-content flex flex-col gap-8 py-10 sm:py-14">
-        <Breadcrumbs
-          items={[
-            { label: t.nav.home, href: localePath(locale) },
-            { label: t.nav.certificates },
-          ]}
-          label={t.a11y.breadcrumb}
-        />
-
-        <SectionHeading
-          headingLevel={1}
-          title={t.certificates.title}
-          description={t.certificates.description}
-        />
-
+      <PageHeader
+        title={t.certificates.title}
+        description={t.certificates.description}
+        eyebrow={t.home.certificates.eyebrow}
+        breadcrumbs={[
+          { label: t.nav.home, href: localePath(locale) },
+          { label: t.nav.certificates },
+        ]}
+        breadcrumbLabel={t.a11y.breadcrumb}
+        watermark="✓"
+      >
         {/*
-          Privacy note, shown unconditionally. Visitors should know that what they
-          are looking at is a redacted copy, not the original document.
+          Privacy note. Demoted from a full-width info banner to one quiet line
+          beside a shield: it is standing context, not a warning, and the brief
+          was explicit that a blue alert should be reserved for actual warnings.
         */}
-        <Notice tone="info" icon="shield">
-          <p>{t.certificates.previewNote}</p>
-        </Notice>
-
-        {/* ── Filter chips ─────────────────────────────────────────────────── */}
-        <nav aria-label={t.a11y.filters} className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterChip href={buildHref({ category: undefined })} active={!category}>
-              {t.certificates.allCategories}
-            </FilterChip>
-
-            {availableCategories.map((item) => (
-              <FilterChip
-                key={item.id}
-                href={buildHref({ category: item.slug })}
-                active={category === item.slug}
-              >
-                {item.name}
-              </FilterChip>
-            ))}
-          </div>
-
-          {facets.years.length > 1 || facets.issuers.length > 1 ? (
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border pt-4">
-              {facets.years.length > 1 ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[0.8125rem] font-medium text-foreground-muted">
-                    {t.certificates.filterYear}
-                  </span>
-                  <FilterChip href={buildHref({ year: undefined })} active={!year}>
-                    {t.certificates.allYears}
-                  </FilterChip>
-                  {facets.years.map((value) => (
-                    <FilterChip
-                      key={value}
-                      href={buildHref({ year: value })}
-                      active={year === value}
-                    >
-                      {value}
-                    </FilterChip>
-                  ))}
-                </div>
-              ) : null}
-
-              {facets.issuers.length > 1 ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[0.8125rem] font-medium text-foreground-muted">
-                    {t.certificates.filterIssuer}
-                  </span>
-                  <FilterChip href={buildHref({ issuer: undefined })} active={!issuer}>
-                    {t.certificates.allIssuers}
-                  </FilterChip>
-                  {facets.issuers.map((value) => (
-                    <FilterChip
-                      key={value}
-                      href={buildHref({ issuer: value })}
-                      active={issuer === value}
-                    >
-                      {value}
-                    </FilterChip>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </nav>
-
-        <p aria-live="polite" aria-atomic="true" className="text-small text-foreground-muted">
-          {resultLabel}
+        <p className="flex items-center gap-2 text-small text-foreground-muted">
+          <Icon name="shield" size={16} className="text-secondary" />
+          {t.certificates.privacyShort}
         </p>
+      </PageHeader>
+
+      <div className="container-content flex flex-col gap-10 py-14 sm:py-16">
+        {/* ── Filters ────────────────────────────────────────────────────────
+            Progressive, per the brief:
+              ≤8 published   nothing at all
+              9–20           category chips
+              >20            chips plus the year and issuer rows
+            Sized from the unfiltered total so filtering down does not make the
+            controls vanish, and always shown when a filter is already active so
+            a visitor arriving on a filtered URL can get back out. */}
+        {showCategoryChips ? (
+          <nav aria-label={t.a11y.filters} className="flex flex-col gap-4">
+            {/* Bleeds to the viewport edge while scrolling so no chip is left
+                half-hidden under the container padding on a narrow screen. */}
+            <div className="-mx-4 flex snap-x flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+              <FilterChip href={buildHref({ category: undefined })} active={!category}>
+                {t.certificates.allCategories}
+              </FilterChip>
+
+              {availableCategories.map((item) => (
+                <FilterChip
+                  key={item.id}
+                  href={buildHref({ category: item.slug })}
+                  active={category === item.slug}
+                >
+                  {item.name}
+                </FilterChip>
+              ))}
+            </div>
+
+            {showSecondaryFacets && (facets.years.length > 1 || facets.issuers.length > 1) ? (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border pt-4">
+                {facets.years.length > 1 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[0.8125rem] font-medium text-foreground-subtle">
+                      {t.certificates.filterYear}
+                    </span>
+                    <FilterChip href={buildHref({ year: undefined })} active={!year}>
+                      {t.certificates.allYears}
+                    </FilterChip>
+                    {facets.years.map((value) => (
+                      <FilterChip
+                        key={value}
+                        href={buildHref({ year: value })}
+                        active={year === value}
+                      >
+                        {value}
+                      </FilterChip>
+                    ))}
+                  </div>
+                ) : null}
+
+                {facets.issuers.length > 1 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[0.8125rem] font-medium text-foreground-subtle">
+                      {t.certificates.filterIssuer}
+                    </span>
+                    <FilterChip href={buildHref({ issuer: undefined })} active={!issuer}>
+                      {t.certificates.allIssuers}
+                    </FilterChip>
+                    {facets.issuers.map((value) => (
+                      <FilterChip
+                        key={value}
+                        href={buildHref({ issuer: value })}
+                        active={issuer === value}
+                      >
+                        {value}
+                      </FilterChip>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <p
+              aria-live="polite"
+              aria-atomic="true"
+              className="text-small text-foreground-subtle"
+            >
+              {resultLabel}
+            </p>
+          </nav>
+        ) : (
+          <p aria-live="polite" aria-atomic="true" className="sr-only">
+            {resultLabel}
+          </p>
+        )}
 
         {result.items.length === 0 ? (
-          <EmptyState
-            icon="award"
-            title={hasFilters ? t.certificates.noResults : t.certificates.emptyState}
-            actions={
-              hasFilters ? (
+          hasFilters ? (
+            <EmptyState
+              icon="award"
+              title={t.certificates.noResults}
+              actions={
                 <ButtonLink
                   href={localePath(locale, "certificates")}
                   variant="outline"
@@ -227,19 +262,33 @@ export default async function CertificatesPage({
                 >
                   {t.a11y.clearFilters}
                 </ButtonLink>
-              ) : undefined
-            }
-          />
+              }
+            />
+          ) : (
+            // Compact and calm rather than a full-width bordered box: nothing has
+            // gone wrong, the credentials are simply still in privacy review.
+            <div className="flex max-w-[52ch] flex-col gap-2 rounded-(--radius-lg) bg-surface-muted/60 p-8">
+              <h2 className="flex items-center gap-2.5 text-h4 font-semibold">
+                <Icon name="shield" size={20} className="text-secondary" />
+                {t.certificates.emptyHeading}
+              </h2>
+              <p className="text-small text-foreground-muted">
+                {t.certificates.emptyBody}
+              </p>
+            </div>
+          )
         ) : (
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {result.items.map((certificate) => (
+            {result.items.map((certificate, index) => (
               <li key={certificate.id} className="flex">
-                <CertificateCard
-                  certificate={certificate}
-                  locale={locale}
-                  t={t}
-                  headingLevel={2}
-                />
+                <Reveal delay={Math.min(index, 8) * 50} className="flex flex-1">
+                  <CertificateCard
+                    certificate={certificate}
+                    locale={locale}
+                    t={t}
+                    headingLevel={2}
+                  />
+                </Reveal>
               </li>
             ))}
           </ul>
@@ -286,7 +335,7 @@ function FilterChip({
       href={href}
       aria-current={active ? "true" : undefined}
       className={cn(
-        "inline-flex min-h-9 items-center rounded-[--radius-full] border px-3.5 text-[0.8125rem] transition-colors",
+        "inline-flex min-h-9 items-center rounded-(--radius-full) border px-3.5 text-[0.8125rem] transition-colors",
         active
           ? "border-primary bg-primary font-semibold text-primary-foreground"
           : "border-border bg-surface text-foreground-muted hover:border-border-interactive hover:text-foreground",

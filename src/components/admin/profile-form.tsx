@@ -255,7 +255,7 @@ export function ProfileForm({
 
           {previewUrl ? (
             <figure className="flex flex-col gap-2">
-              <div className="h-28 w-28 overflow-hidden rounded-[--radius-md] border border-border bg-surface-muted">
+              <div className="h-28 w-28 overflow-hidden rounded-(--radius-md) border border-border bg-surface-muted">
                 {/*
                   A plain <img> rather than next/image: the value is operator-entered
                   and may point at a host that is not in the remote-image allowlist,

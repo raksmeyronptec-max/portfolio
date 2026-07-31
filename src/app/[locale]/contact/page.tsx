@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/ui/navigation";
-import { Card, CardBody, SectionHeading } from "@/components/ui/primitives";
+import { StatusDot } from "@/components/ui/primitives";
 import { Icon, toIconName } from "@/components/ui/icon";
 import { Notice } from "@/components/ui/states";
+import { PageHeader } from "@/components/layout/page-header";
 import { ContactForm } from "@/components/public/contact-form";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { getDictionary } from "@/i18n/dictionary";
@@ -65,83 +65,87 @@ export default async function ContactPage({
     <>
       <JsonLd data={structuredData} />
 
-      <div className="container-content flex flex-col gap-8 py-10 sm:py-14">
-        <Breadcrumbs
-          items={[
-            { label: t.nav.home, href: localePath(locale) },
-            { label: t.nav.contact },
-          ]}
-          label={t.a11y.breadcrumb}
-        />
+      <PageHeader
+        title={t.home.cta.heading}
+        description={t.contact.description}
+        eyebrow={t.nav.contact}
+        breadcrumbs={[
+          { label: t.nav.home, href: localePath(locale) },
+          { label: t.nav.contact },
+        ]}
+        breadcrumbLabel={t.a11y.breadcrumb}
+        watermark="@"
+      />
 
-        <SectionHeading
-          headingLevel={1}
-          title={t.contact.title}
-          description={t.contact.description}
-        />
-
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-14">
-          {/* ── Form ─────────────────────────────────────────────────────── */}
-          <section aria-labelledby="contact-form-heading">
-            <h2 id="contact-form-heading" className="text-h3 font-semibold">
-              {t.contact.formHeading}
-            </h2>
-
-            <div className="mt-5">
-              {settings.contactFormEnabled ? (
-                <ContactForm locale={locale} t={t} />
-              ) : (
-                // Disabling the form must not leave visitors with no way to make
-                // contact, so the direct channels are surfaced instead.
-                <Notice tone="info">
-                  <p>{t.contact.directHeading}</p>
-                </Notice>
-              )}
+      <div className="container-content py-14 sm:py-16">
+        {/*
+          Invitation on the left, form on the right. v2 put the form first and
+          then a column of outlined cards, which read as a support ticket queue;
+          the brief asked for something warmer, with the direct channels easy to
+          find rather than boxed.
+        */}
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
+          {/* ── Invitation and direct channels ───────────────────────────── */}
+          <section
+            aria-labelledby="contact-direct-heading"
+            className="flex flex-col gap-7 lg:sticky lg:top-28 lg:self-start"
+          >
+            <div className="flex flex-col gap-3">
+              <h2 id="contact-direct-heading" className="text-h3">
+                {t.contact.directHeading}
+              </h2>
+              <p className="max-w-[44ch] text-body-lg text-foreground-muted">
+                {t.contact.responseTime}
+              </p>
             </div>
-          </section>
 
-          {/* ── Direct channels ──────────────────────────────────────────── */}
-          <section aria-labelledby="contact-direct-heading" className="flex flex-col gap-4">
-            <h2 id="contact-direct-heading" className="text-h3 font-semibold">
-              {t.contact.directHeading}
-            </h2>
+            {settings.isAvailableForWork ? (
+              <p className="inline-flex w-fit items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3.5 py-2 text-small text-foreground-muted">
+                <StatusDot tone="success" />
+                {settings.availabilityStatus ?? t.home.hero.availableForWork}
+              </p>
+            ) : null}
 
-            <ul className="flex flex-col gap-3">
+            {/* Plain rows on hairlines rather than a stack of cards. */}
+            <ul className="flex flex-col">
               {socialLinks.map((link) => (
-                <li key={link.id}>
-                  <Card interactive>
-                    <CardBody className="p-4">
-                      <OutboundLink
-                        href={link.url}
-                        newTabHint={t.a11y.opensInNewTab}
-                        event={{
-                          name:
-                            link.platform === "telegram"
-                              ? "telegram_click"
-                              : link.platform === "email"
-                                ? "email_click"
-                                : "social_link_click",
-                          locale,
-                          entityType: "social_link",
-                          entityId: link.id,
-                          properties: { url: link.url },
-                        }}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[--radius-md] bg-primary-subtle text-primary-subtle-foreground">
-                          <Icon name={toIconName(link.icon, "globe")} size={18} />
+                <li key={link.id} className="border-b border-border first:border-t">
+                  <OutboundLink
+                    href={link.url}
+                    newTabHint={t.a11y.opensInNewTab}
+                    event={{
+                      name:
+                        link.platform === "telegram"
+                          ? "telegram_click"
+                          : link.platform === "email"
+                            ? "email_click"
+                            : "social_link_click",
+                      locale,
+                      entityType: "social_link",
+                      entityId: link.id,
+                      properties: { url: link.url },
+                    }}
+                    className="group flex min-h-14 items-center gap-4 py-3 transition-colors hover:text-primary"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-(--radius-full) border border-border bg-surface-muted text-foreground-muted transition-colors group-hover:border-border-interactive group-hover:text-primary">
+                      <Icon name={toIconName(link.icon, "globe")} size={17} />
+                    </span>
+
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-small font-semibold">{link.label}</span>
+                      {link.handle ? (
+                        <span className="truncate text-[0.8125rem] text-foreground-muted">
+                          {link.handle}
                         </span>
-                        <span className="flex min-w-0 flex-col">
-                          <span className="text-small font-semibold">{link.label}</span>
-                          {link.handle ? (
-                            <span className="truncate text-[0.8125rem] text-foreground-muted">
-                              {link.handle}
-                            </span>
-                          ) : null}
-                        </span>
-                      </OutboundLink>
-                    </CardBody>
-                  </Card>
+                      ) : null}
+                    </span>
+
+                    <Icon
+                      name="arrowRight"
+                      size={16}
+                      className="travel shrink-0 text-foreground-subtle"
+                    />
+                  </OutboundLink>
                 </li>
               ))}
             </ul>
@@ -152,6 +156,23 @@ export default async function ContactPage({
                 {settings.location}
               </p>
             ) : null}
+          </section>
+
+          {/* ── Form ─────────────────────────────────────────────────────── */}
+          <section aria-labelledby="contact-form-heading" className="flex flex-col gap-5">
+            <h2 id="contact-form-heading" className="text-h3">
+              {t.contact.formHeading}
+            </h2>
+
+            {settings.contactFormEnabled ? (
+              <ContactForm locale={locale} t={t} />
+            ) : (
+              // Disabling the form must not leave visitors with no way to make
+              // contact, so the direct channels above remain the route in.
+              <Notice tone="info">
+                <p>{t.contact.directHeading}</p>
+              </Notice>
+            )}
           </section>
         </div>
       </div>

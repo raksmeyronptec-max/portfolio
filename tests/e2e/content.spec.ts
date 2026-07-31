@@ -5,21 +5,37 @@ import { expect, test } from "@playwright/test";
  * what must never appear publicly.
  */
 
+/*
+ * Filtering is progressive: the controls grow with the collection rather than
+ * sitting above it from the first project.
+ *
+ *    0–6 published   no filter chrome at all
+ *   7–12 published   category chips
+ *    >12 published   search plus the category/technology/status selects
+ *
+ * Three projects are published, so these tests exercise the chips tier. The
+ * search tier is covered by unit tests over the mode selection rather than by
+ * seeding thirteen fixture projects, which would mean inventing content.
+ */
 test.describe("project filters", () => {
-  test("filters live in the URL and are shareable", async ({ page }) => {
+  test("no filter chrome is shown while the collection is small", async ({ page }) => {
     await page.goto("/en/projects");
 
-    await page.getByLabel(/^category$/i).selectOption({ index: 1 });
-
-    // Debounced; the URL is the source of truth for the filter state.
-    await expect(page).toHaveURL(/\?category=/, { timeout: 5000 });
+    // The page must open on work, not on a search box and three dropdowns.
+    await expect(page.getByRole("searchbox")).toHaveCount(0);
+    await expect(page.getByLabel(/^category$/i)).toHaveCount(0);
   });
 
-  test("search state survives a reload", async ({ page }) => {
-    await page.goto("/en/projects?q=library");
-    // By role: the wrapping <form> also carries aria-label="Search projects", so a
-    // label match alone is ambiguous.
-    await expect(page.getByRole("searchbox")).toHaveValue("library");
+  test("filters live in the URL and are shareable", async ({ page }) => {
+    // Arriving on a filtered URL keeps the controls mounted, so a visitor can
+    // always get back out of a filter someone shared with them.
+    await page.goto("/en/projects?category=education-technology");
+
+    const chips = page.getByRole("button", { name: /all categories/i });
+    await expect(chips).toBeVisible();
+
+    await chips.click();
+    await expect(page).toHaveURL(/\/en\/projects(\?|$)/, { timeout: 5000 });
   });
 
   test("the empty state offers a way out", async ({ page }) => {
@@ -43,11 +59,14 @@ test.describe("project filters", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/en/projects");
+    // A filtered URL so the controls are rendered at this collection size.
+    await page.goto("/en/projects?category=education-technology");
 
-    // It is a real <form method="get">, so submitting navigates with a query string.
-    const form = page.locator('form[role="search"]');
+    // Still a real <form method="get"> whose chips are real submit buttons, so
+    // filtering navigates with a query string even with no JavaScript at all.
+    const form = page.locator("form").filter({ has: page.getByRole("button") }).first();
     await expect(form).toHaveAttribute("method", "get");
+    await expect(form.getByRole("button").first()).toBeVisible();
 
     await context.close();
   });
@@ -57,8 +76,15 @@ test.describe("certificates", () => {
   test("the privacy note is always shown", async ({ page }) => {
     await page.goto("/en/certificates");
 
-    // Visitors should know they are looking at a redacted copy.
-    await expect(page.getByText(/redacted copies/i)).toBeVisible();
+    /*
+     * Visitors must still be told the previews are redacted. The wording moved
+     * from a full-width info banner to one quiet line beside a shield icon —
+     * the brief reserved coloured alert banners for actual warnings — so the
+     * assertion follows the new copy rather than the old banner text.
+     */
+    await expect(
+      page.getByText(/sensitive personal information removed/i),
+    ).toBeVisible();
   });
 
   test("category chips filter via the URL", async ({ page }) => {
@@ -199,16 +225,37 @@ test.describe("contact form", () => {
 });
 
 test.describe("content that must never be public", () => {
-  test("draft projects do not appear anywhere", async ({ page }) => {
-    for (const path of ["/en", "/en/projects", "/km", "/km/projects"]) {
+  /*
+   * The three platform projects used to be the fixture for this guarantee,
+   * because they were seeded as drafts. They are now published on purpose — a
+   * portfolio whose Projects page says "no projects yet" while all three
+   * platforms are live reads as abandoned — so the guarantee is re-anchored on
+   * content that is still genuinely draft.
+   *
+   * The testimonials are the right canary: they are other people's words about
+   * Ron, and publishing those is a consent decision for a human to make, so
+   * they stay draft and must never leak.
+   */
+  test("draft content does not appear anywhere", async ({ page }) => {
+    for (const path of ["/en", "/en/projects", "/en/about", "/km", "/km/projects"]) {
       await page.goto(path);
       const content = await page.content();
 
-      // All three seeded projects are drafts pending review.
-      expect(content, path).not.toContain("KruSmart");
-      expect(content, path).not.toContain("PTEC Digital Library");
-      expect(content, path).not.toContain("PTEC Storage");
+      for (const author of ["Ron Saroeun", "Kem Deth", "Hum Sanet"]) {
+        expect(content, `${author} on ${path}`).not.toContain(author);
+      }
     }
+  });
+
+  test("the published platform projects are public", async ({ page }) => {
+    // The counterpart to the test above: these are published, so they must be
+    // visible. Asserting it here means an accidental unpublish is caught.
+    await page.goto("/en/projects");
+    const content = await page.content();
+
+    expect(content).toContain("KruSmart");
+    expect(content).toContain("PTEC Digital Library");
+    expect(content).toContain("PTEC Storage");
   });
 
   test("removed v1 content has not returned", async ({ page }) => {

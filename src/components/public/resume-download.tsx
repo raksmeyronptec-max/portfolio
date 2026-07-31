@@ -39,7 +39,7 @@ export function ResumeDownloadButton({
           entityId: resumeId,
         });
       }}
-      className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] bg-primary px-4 text-base font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+      className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) bg-primary px-4 text-base font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
     >
       <Icon name="download" size={18} />
       <span>{label}</span>

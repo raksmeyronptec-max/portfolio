@@ -397,12 +397,21 @@ on conflict (experience_id, label_en) do nothing;
 -- ═══════════════════════════════════════════════════════════════════════════
 --  PROJECTS
 --
---  All three start as `draft` with `needs_review = true`. Only facts observable
+--  All three are `published` with `needs_review = true`. Only facts observable
 --  from a live HTTP response are seeded. Deliberately left NULL: team_size,
 --  duration, repository_url, started_at/completed_at, role wording, and every
 --  metric. `results` is intentionally empty prose — there are no verified
 --  numbers, and project_metrics rows are only public once `is_verified` is set,
 --  which itself requires a source note.
+--
+--  Why published rather than draft
+--    These were seeded as drafts, which meant RLS correctly hid them and the
+--    public site showed "there are no published projects yet" — a portfolio
+--    that reads as abandoned even though all three platforms are live. What is
+--    seeded here is exactly the subset that can be verified by opening the URL,
+--    so publishing it asserts nothing unverified. `needs_review` stays true, so
+--    the admin dashboard still flags every one of them for confirmation, and
+--    the unverified fields remain NULL rather than guessed.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 insert into public.projects (
@@ -412,7 +421,7 @@ insert into public.projects (
   needs_review, review_note
 ) values
   (
-    'krusmart', 'draft', 'live', true, 1,
+    'krusmart', 'published', 'live', true, 1,
     'Product design and development', 'ការរចនា និងអភិវឌ្ឍផលិតផល',
     'Phnom Penh Teacher Education College (PTEC)', 'វិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ (PTEC)',
     'https://www.krusmart.org/', null,
@@ -420,7 +429,7 @@ insert into public.projects (
     'Verified from the live site only: Khmer-first UI, the title "KruSmart (PTEC) - ជំនួយការគ្រូបង្រៀនឌីជីថល", an account gate with email/password, a password-strength meter, terms acceptance and an arithmetic bot challenge; hosted on Netlify; the CSP allowlist evidences Firebase, the Google Gemini API, EmailJS, Google Analytics, reCAPTCHA and a separate KHQR service on Render. NOT verified — confirm before publishing: your exact role and responsibilities, team size, duration, start/launch dates, user or school counts, and any performance figures.'
   ),
   (
-    'ptec-digital-library', 'draft', 'live', true, 2,
+    'ptec-digital-library', 'published', 'live', true, 2,
     'Full-stack development', 'ការអភិវឌ្ឍពេញលេញ',
     'Phnom Penh Teacher Education College (PTEC)', 'វិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ (PTEC)',
     'https://library.ptec.edu.kh/', null,
@@ -428,7 +437,7 @@ insert into public.projects (
     'Verified from the live site only: the title "Free Digital Library for Teacher Education"; sections Books, Theses, Publications, Learning Paths, Physical Library and News & Events; Next.js on Vercel with prerendering and a 300-second revalidation window; the CSP allowlist evidences Supabase (including realtime), Cloudflare R2, Vercel Blob, Cloudflare Turnstile, Google OAuth and Vercel Analytics; hardened headers including frame-ancestors none and form-action self. NOT verified — confirm before publishing: your role, team size, duration, launch date, collection size, and any adoption or performance numbers.'
   ),
   (
-    'ptec-storage', 'draft', 'live', true, 3,
+    'ptec-storage', 'published', 'live', true, 3,
     'Infrastructure', 'មូលដ្ឋានរចនាសម្ព័ន្ធ',
     'Phnom Penh Teacher Education College (PTEC)', 'វិទ្យាស្ថានគរុកោសល្យរាជធានីភ្នំពេញ (PTEC)',
     'https://storage-ptec.online/', null,

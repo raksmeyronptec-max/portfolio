@@ -34,6 +34,31 @@ for (const page of PUBLIC_PAGES) {
   }) => {
     await browserPage.goto(page.path);
 
+    /*
+     * Wait for React to own the document before scanning.
+     *
+     * `goto()` resolves on `load`, which is before hydration finishes. That is
+     * harmless on every route whose server HTML is already correct, but the 404
+     * is served as Next's built-in shell — `<html id="__next_error__">` with no
+     * `lang` and no `<title>` — and React only replaces it during hydration.
+     * Scanning at `load` therefore raced hydration and made this test pass or
+     * fail on timing rather than on the page, which is exactly the kind of
+     * flake that hides real regressions.
+     *
+     * `lang` is the signal because the public layout always sets it and the
+     * error shell never does.
+     *
+     * NOTE: the shell itself is a real, separate defect — a crawler or a no-JS
+     * visitor still receives a document with no language and no title. It is
+     * pre-existing (it reproduces on the pre-redesign commit) and is recorded
+     * in docs/ACCESSIBILITY.md rather than papered over here.
+     */
+    await browserPage.waitForFunction(
+      () => document.documentElement.lang.length > 0,
+      undefined,
+      { timeout: 10_000 },
+    );
+
     const results = await new AxeBuilder({ page: browserPage })
       .withTags(WCAG_TAGS)
       .analyze();

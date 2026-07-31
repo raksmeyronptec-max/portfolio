@@ -13,8 +13,15 @@ import { cn } from "@/lib/utils/cn";
  * A Client Component solely to read `usePathname()` for the active state. It
  * ships no other behaviour, so the JavaScript cost is a single hook.
  *
- * The active item is marked with `aria-current="page"` and with a visible
- * underline — never colour alone.
+ * Styling note: the underline is drawn by `.link-underline`, which animates
+ * `background-size` from 0 to 100% on hover and stays at 100% while
+ * `data-active` is set. That replaces v2's filled pill, which read as a button
+ * and made the header look like a toolbar.
+ *
+ * The underline is never the only signal. `aria-current` carries the state for
+ * assistive technology, and the active link is also a weight step heavier — so
+ * it survives forced-colors mode, which drops the background image the
+ * underline is painted with.
  */
 export function DesktopNav({
   locale,
@@ -38,20 +45,16 @@ export function DesktopNav({
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : undefined}
                 className={cn(
-                  "relative inline-flex min-h-11 items-center rounded-[--radius-md] px-3 text-small font-medium transition-colors",
+                  "link-underline inline-flex min-h-9 items-center px-2.5",
+                  "text-[0.9375rem] transition-colors duration-200",
                   active
-                    ? "text-primary"
-                    : "text-foreground-muted hover:bg-surface-muted hover:text-foreground",
+                    ? "font-semibold text-foreground"
+                    : "font-medium text-foreground-muted hover:text-foreground",
                 )}
               >
                 {item.label}
-                {active ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-x-3 bottom-1.5 h-0.5 rounded-full bg-primary"
-                  />
-                ) : null}
               </Link>
             </li>
           );

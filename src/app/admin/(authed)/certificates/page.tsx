@@ -110,12 +110,12 @@ export default async function AdminCertificatesPage({
               defaultValue={search}
               aria-label="Search certificates by title, slug or issuer"
               placeholder="Search by title, slug or issuer"
-              className="min-h-11 w-full rounded-[--radius-md] border border-border-strong bg-surface pl-10 pr-3 text-base"
+              className="min-h-11 w-full rounded-(--radius-md) border border-border-strong bg-surface pl-10 pr-3 text-base"
             />
           </div>
           <button
             type="submit"
-            className="inline-flex min-h-11 items-center rounded-[--radius-md] border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
+            className="inline-flex min-h-11 items-center rounded-(--radius-md) border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
           >
             Search
           </button>
@@ -167,7 +167,7 @@ export default async function AdminCertificatesPage({
                   <tr key={certificate.id} className="hover:bg-surface-muted/50">
                     <Td>
                       <div className="flex items-start gap-3">
-                        <span className="relative size-12 shrink-0 overflow-hidden rounded-[--radius-sm] border border-border bg-surface-muted">
+                        <span className="relative size-12 shrink-0 overflow-hidden rounded-(--radius-sm) border border-border bg-surface-muted">
                           {preview ? (
                             <Image
                               src={preview.src}

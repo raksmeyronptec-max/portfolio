@@ -63,7 +63,7 @@ export default function AdminRootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-dvh bg-background text-foreground">
         <a
           href="#admin-content"
-          className="sr-only-focusable fixed left-4 top-4 z-50 rounded-[--radius-md] bg-primary px-4 py-2.5 text-small font-semibold text-primary-foreground shadow-[--shadow-md]"
+          className="sr-only-focusable fixed left-4 top-4 z-50 rounded-(--radius-md) bg-primary px-4 py-2.5 text-small font-semibold text-primary-foreground shadow-(--shadow-md)"
         >
           Skip to main content
         </a>

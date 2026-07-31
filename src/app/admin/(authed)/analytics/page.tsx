@@ -59,7 +59,7 @@ export default async function AdminAnalyticsPage({
               href={`/admin/analytics?days=${window}`}
               aria-current={days === window ? "true" : undefined}
               className={cn(
-                "inline-flex min-h-9 items-center rounded-[--radius-full] border px-3.5 text-[0.8125rem] transition-colors",
+                "inline-flex min-h-9 items-center rounded-(--radius-full) border px-3.5 text-[0.8125rem] transition-colors",
                 days === window
                   ? "border-primary bg-primary font-semibold text-primary-foreground"
                   : "border-border bg-surface text-foreground-muted hover:border-border-interactive hover:text-foreground",

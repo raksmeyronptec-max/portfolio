@@ -125,7 +125,7 @@ function MobileNavLink({ item, active }: { item: NavItem; active: boolean }) {
         href={item.href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex min-h-11 items-center gap-3 rounded-[--radius-md] px-3 text-base",
+          "flex min-h-11 items-center gap-3 rounded-(--radius-md) px-3 text-base",
           active
             ? "bg-primary-subtle font-semibold text-primary-subtle-foreground"
             : "text-foreground hover:bg-surface-muted",

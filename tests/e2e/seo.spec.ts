@@ -230,12 +230,25 @@ test.describe("robots and sitemap", () => {
     expect(body).toContain("hreflang");
   });
 
-  test("the sitemap contains no unpublished content", async ({ request }) => {
+  test("the sitemap lists the published projects", async ({ request }) => {
     const body = await (await request.get("/sitemap.xml")).text();
 
-    // The seeded projects are drafts, so their URLs must be absent.
-    expect(body).not.toContain("/projects/krusmart");
-    expect(body).not.toContain("/projects/ptec-digital-library");
+    /*
+     * Inverted from the original assertion. These three were seeded as drafts
+     * and were therefore expected to be absent; they are published now, so
+     * their absence would mean the sitemap had stopped tracking published
+     * content — a real SEO regression.
+     */
+    expect(body).toContain("/projects/krusmart");
+    expect(body).toContain("/projects/ptec-digital-library");
+    expect(body).toContain("/projects/ptec-storage");
+  });
+
+  test("the sitemap never lists admin or API routes", async ({ request }) => {
+    const body = await (await request.get("/sitemap.xml")).text();
+
+    expect(body).not.toContain("/admin");
+    expect(body).not.toContain("/api/");
   });
 });
 

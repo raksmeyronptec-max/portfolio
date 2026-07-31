@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox, ErrorSummary, Field, Select, TextArea, TextInput } from "@/components/ui/field";
+import { Icon } from "@/components/ui/icon";
 import { Notice } from "@/components/ui/states";
 import { formatDuration, interpolate, type Dictionary } from "@/i18n/dictionary";
 import type { Locale } from "@/i18n/config";
@@ -215,7 +216,7 @@ export function ContactForm({
       <div
         role="status"
         aria-live="polite"
-        className="flex flex-col gap-4 rounded-[--radius-lg] border border-success/30 bg-success-subtle p-6"
+        className="flex flex-col gap-4 rounded-(--radius-lg) border border-success/30 bg-success-subtle p-6"
       >
         <p className="text-h4 font-semibold text-success-foreground">
           {t.contact.successHeading}
@@ -333,31 +334,12 @@ export function ContactForm({
         </Field>
 
         <Field
-          id={organizationId}
-          label={t.contact.fields.organization}
-          optionalLabel={t.a11y.optional}
-          showOptional
-          error={localizeError(fieldErrors.organization)}
-        >
-          {({ describedBy, invalid }) => (
-            <TextInput
-              id={organizationId}
-              name="organization"
-              autoComplete="organization"
-              maxLength={contactLimits.organizationMax}
-              aria-describedby={describedBy}
-              aria-invalid={invalid || undefined}
-              placeholder={t.contact.fields.organizationPlaceholder}
-            />
-          )}
-        </Field>
-
-        <Field
           id={subjectId}
           label={t.contact.fields.subject}
           optionalLabel={t.a11y.optional}
           showOptional
           error={localizeError(fieldErrors.subject)}
+          className="sm:col-span-2"
         >
           {({ describedBy, invalid }) => (
             <TextInput
@@ -368,46 +350,6 @@ export function ContactForm({
               aria-invalid={invalid || undefined}
               placeholder={t.contact.fields.subjectPlaceholder}
             />
-          )}
-        </Field>
-
-        <Field
-          id={projectTypeId}
-          label={t.contact.fields.projectType}
-          optionalLabel={t.a11y.optional}
-          showOptional
-        >
-          {({ describedBy }) => (
-            <Select id={projectTypeId} name="projectType" aria-describedby={describedBy}>
-              <option value="">{t.common.notSpecified}</option>
-              {projectTypes.map((type) => (
-                <option key={type} value={type}>
-                  {t.contact.projectTypes[type]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-
-        <Field
-          id={preferredContactId}
-          label={t.contact.fields.preferredContact}
-          optionalLabel={t.a11y.optional}
-          showOptional
-        >
-          {({ describedBy }) => (
-            <Select
-              id={preferredContactId}
-              name="preferredContact"
-              aria-describedby={describedBy}
-            >
-              <option value="">{t.common.notSpecified}</option>
-              {preferredContactMethods.map((method) => (
-                <option key={method} value={method}>
-                  {t.contact.preferredContact[method]}
-                </option>
-              ))}
-            </Select>
           )}
         </Field>
       </div>
@@ -436,6 +378,92 @@ export function ContactForm({
           />
         )}
       </Field>
+
+      {/*
+        Optional detail, collapsed by default.
+
+        The brief asked for four fields before the message rather than six.
+        A native <details> is the right control here: the inputs stay in the
+        DOM, so they still submit and still restore their values after a failed
+        validation round-trip, and the open/close behaviour, keyboard support
+        and screen-reader semantics come from the platform rather than from a
+        hand-rolled toggle.
+      */}
+      <details className="group rounded-(--radius-md) border border-border bg-surface-muted/40">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-small font-medium [&::-webkit-details-marker]:hidden">
+          <Icon
+            name="chevronDown"
+            size={16}
+            className="shrink-0 text-foreground-muted transition-transform duration-200 group-open:rotate-180"
+          />
+          {t.contact.moreDetails}
+          <span className="font-normal text-foreground-subtle">
+            — {t.contact.moreDetailsHint}
+          </span>
+        </summary>
+
+        <div className="grid gap-5 border-t border-border p-4 sm:grid-cols-2">
+          <Field
+            id={organizationId}
+            label={t.contact.fields.organization}
+            optionalLabel={t.a11y.optional}
+            showOptional
+            error={localizeError(fieldErrors.organization)}
+          >
+            {({ describedBy, invalid }) => (
+              <TextInput
+                id={organizationId}
+                name="organization"
+                autoComplete="organization"
+                maxLength={contactLimits.organizationMax}
+                aria-describedby={describedBy}
+                aria-invalid={invalid || undefined}
+                placeholder={t.contact.fields.organizationPlaceholder}
+              />
+            )}
+          </Field>
+
+          <Field
+            id={projectTypeId}
+            label={t.contact.fields.projectType}
+            optionalLabel={t.a11y.optional}
+            showOptional
+          >
+            {({ describedBy }) => (
+              <Select id={projectTypeId} name="projectType" aria-describedby={describedBy}>
+                <option value="">{t.common.notSpecified}</option>
+                {projectTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {t.contact.projectTypes[type]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          <Field
+            id={preferredContactId}
+            label={t.contact.fields.preferredContact}
+            optionalLabel={t.a11y.optional}
+            showOptional
+          >
+            {({ describedBy }) => (
+              <Select
+                id={preferredContactId}
+                name="preferredContact"
+                aria-describedby={describedBy}
+              >
+                <option value="">{t.common.notSpecified}</option>
+                {preferredContactMethods.map((method) => (
+                  <option key={method} value={method}>
+                    {t.contact.preferredContact[method]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        </div>
+      </details>
 
       <Checkbox
         id={consentId}

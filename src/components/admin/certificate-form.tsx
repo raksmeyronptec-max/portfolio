@@ -336,7 +336,7 @@ export function CertificateForm({
                         aria-selected={activeLocale === locale}
                         onClick={() => setActiveLocale(locale)}
                         className={cn(
-                          "inline-flex min-h-10 items-center gap-2 rounded-[--radius-md] border px-3 text-small font-medium",
+                          "inline-flex min-h-10 items-center gap-2 rounded-(--radius-md) border px-3 text-small font-medium",
                           activeLocale === locale
                             ? "border-primary bg-primary-subtle text-primary-subtle-foreground"
                             : "border-border text-foreground-muted hover:bg-surface-muted",
@@ -475,7 +475,7 @@ export function CertificateForm({
                 <ul className="flex flex-wrap gap-2">
                   {values.skills.map((skill) => (
                     <li key={skill}>
-                      <span className="inline-flex items-center gap-1.5 rounded-[--radius-sm] border border-border bg-surface px-2 py-1 text-[0.8125rem]">
+                      <span className="inline-flex items-center gap-1.5 rounded-(--radius-sm) border border-border bg-surface px-2 py-1 text-[0.8125rem]">
                         {skill}
                         <button
                           type="button"
@@ -486,7 +486,7 @@ export function CertificateForm({
                               values.skills.filter((item) => item !== skill),
                             )
                           }
-                          className="rounded-[--radius-xs] text-foreground-muted hover:text-danger"
+                          className="rounded-(--radius-xs) text-foreground-muted hover:text-danger"
                         >
                           <Icon name="close" size={13} />
                         </button>
@@ -663,7 +663,7 @@ export function CertificateForm({
                                 : values.relatedProjectIds.filter((id) => id !== option.id),
                             )
                           }
-                          className="size-4 rounded-[--radius-xs] border border-border-strong accent-[--primary]"
+                          className="size-4 rounded-(--radius-xs) border border-border-strong accent-(--primary)"
                         />
                         {option.label}
                       </label>

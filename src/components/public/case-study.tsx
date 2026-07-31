@@ -109,7 +109,7 @@ export function CaseStudyBody({
               <li key={feature.id}>
                 <Card className="h-full">
                   <CardBody className="flex gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-[--radius-md] bg-secondary-subtle text-secondary-subtle-foreground">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-(--radius-md) bg-secondary-subtle text-secondary-subtle-foreground">
                       <Icon name={toIconName(feature.icon, "check")} size={18} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -170,7 +170,7 @@ function ProjectMetrics({
         {project.metrics.map((metric) => (
           <div
             key={metric.id}
-            className="flex flex-col gap-1 rounded-[--radius-lg] border border-border bg-surface p-5"
+            className="flex flex-col gap-1 rounded-(--radius-lg) border border-border bg-surface p-5"
           >
             <dd className="text-h2 font-bold tabular-nums text-primary">
               {metric.value}
@@ -245,7 +245,7 @@ function ProjectGallery({
                         ? t.projects.gallery.before
                         : t.projects.gallery.after}
                     </Badge>
-                    <div className="relative aspect-[16/10] overflow-hidden rounded-[--radius-md] border border-border bg-surface-muted">
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-(--radius-md) border border-border bg-surface-muted">
                       <Image
                         src={image.src}
                         alt={image.alt}
@@ -291,8 +291,8 @@ function ProjectGallery({
                   <div
                     className={
                       item.variant === "mobile_screenshot"
-                        ? "relative mx-auto aspect-[9/16] w-full max-w-[16rem] overflow-hidden rounded-[--radius-md] border border-border bg-surface-muted"
-                        : "relative aspect-[16/10] overflow-hidden rounded-[--radius-md] border border-border bg-surface-muted"
+                        ? "relative mx-auto aspect-[9/16] w-full max-w-[16rem] overflow-hidden rounded-(--radius-md) border border-border bg-surface-muted"
+                        : "relative aspect-[16/10] overflow-hidden rounded-(--radius-md) border border-border bg-surface-muted"
                     }
                   >
                     <Image

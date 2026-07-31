@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl -pi -e \"s/'\\(krusmart|ptec-digital-library|ptec-storage\\)', 'draft', 'live'/'\\\\$1', 'published', 'live'/\" supabase/seed.sql)",
+      "Bash(node -e ' *)",
+      "Bash(perl -pi -e 's/watermark=\"02\"/watermark=\"01\"/; s/watermark=\"03\"/watermark=\"02\"/; s/watermark=\"04\"/watermark=\"03\"/; s/watermark=\"05\"/watermark=\"04\"/; s/watermark=\"06\"/watermark=\"05\"/' src/components/public/home-sections.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(perl -0pi -e 's{import \\\\{ Breadcrumbs \\\\} from \"\\\\@/components/ui/navigation\";\\\\n}{}' \"src/app/[locale]/education/page.tsx\")",
+      "Bash(perl -0pi -e 's{\\(import \\\\{ EmptyState \\\\} from \"\\\\@/components/ui/states\";\\\\n\\)}{$1import { PageHeader } from \"\\\\@/components/layout/page-header\";\\\\n}' \"src/app/[locale]/education/page.tsx\")",
+      "Bash(perl -0pi -e 's{\\\\n  SectionHeading,}{}' \"src/app/[locale]/education/page.tsx\")",
+      "Bash(perl -0pi -e 's{\\(import \\\\{ resolveImage \\\\} from \"\\\\@/lib/content/media\";\\)}{$1\\\\nimport { coverFallbackFor } from \"\\\\@/lib/data/live-platforms\";}' \"src/app/[locale]/projects/[slug]/page.tsx\")",
+      "Bash(perl -0pi -e 's{\\\\n  SectionHeading,}{}' \"src/app/[locale]/resume/page.tsx\")",
+      "Bash(node .tmp-shots/shots.mjs after)",
+      "Bash(curl -s http://localhost:3000/km)",
+      "Bash(npx kill-port *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s -o /dev/null -w \"dev:%{http_code}\\\\n\" http://localhost:3000/en)",
+      "Bash(npx playwright *)",
+      "Bash(curl -s http://localhost:3000/en)",
+      "Bash(curl -s http://127.0.0.1:3100/en/this-page-does-not-exist)",
+      "Bash(git -c user.email=mongkul.digital@gmail.com -c user.name=\"Ron Raksmey\" commit -q -F -)",
+      "Bash(export FILTER_BRANCH_SQUELCH_WARNING=1)",
+      "Bash(git filter-branch *)"
+    ],
+    "additionalDirectories": [
+      "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"
+    ]
+  }
+}

@@ -18,6 +18,7 @@ import { absoluteUrl } from "@/lib/supabase/env";
 import { publicStorageUrl, resolveImage } from "@/lib/content/media";
 import { langAttribute } from "@/lib/content/translation";
 import { getProjectBySlug, getPublishedProjectSlugs } from "@/lib/data/projects";
+import { coverFallbackFor } from "@/lib/data/live-platforms";
 import { buildPageMetadata, truncateDescription } from "@/lib/seo/metadata";
 import {
   JsonLd,
@@ -88,6 +89,20 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const cover = resolveImage(project.cover, locale, "preview");
+
+  /*
+   * The hero image. A CMS cover always wins; the fallback is a committed
+   * screenshot of the live site, so a case study without an uploaded cover
+   * still opens on the product rather than on a wall of text.
+   */
+  const coverFallback = cover
+    ? null
+    : coverFallbackFor(project.slug, t.projects.screenshotAlt);
+  const heroImage = cover
+    ? cover
+    : coverFallback
+      ? { ...coverFallback, blurDataURL: null as string | null, caption: null }
+      : null;
   const sections = caseStudySections(project, t);
   const contentLang = langAttribute(locale, project.contentLocale);
 
@@ -140,9 +155,31 @@ export default async function ProjectDetailPage({
       />
 
       <article>
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header className="border-b border-border bg-surface-muted/40">
-          <div className="container-content flex flex-col gap-6 py-10 sm:py-14">
+        {/* ── Header ───────────────────────────────────────────────────────
+            An ink editorial hero, matching every other public page, with the
+            cover image overlapping its lower edge below. Pulled up under the
+            sticky header for the same reason as PageHeader — see the comment
+            there. */}
+        <header
+          data-scheme="ink"
+          className="decorated bg-background text-foreground"
+          style={{ marginTop: "calc(-1 * var(--header-height))" }}
+        >
+          <div
+            aria-hidden="true"
+            className="glow"
+            style={{ "--glow-x": "80%", "--glow-y": "12%", "--glow-alpha": "0.2" } as object}
+          />
+          <div
+            aria-hidden="true"
+            className="grid-lines"
+            style={{ "--grid-alpha": "0.045" } as object}
+          />
+
+          <div
+            className="container-content flex flex-col gap-6 pb-16"
+            style={{ paddingTop: "calc(var(--header-height) + clamp(2rem, 4vw, 3.5rem))" }}
+          >
             <Breadcrumbs items={breadcrumbs} label={t.a11y.breadcrumb} />
 
             <div className="flex flex-wrap items-center gap-2">
@@ -166,7 +203,7 @@ export default async function ProjectDetailPage({
               ))}
             </div>
 
-            <h1 className="text-h1 max-w-[26ch] font-bold" lang={contentLang}>
+            <h1 className="text-display max-w-[20ch]" lang={contentLang}>
               {project.title}
             </h1>
 
@@ -192,7 +229,7 @@ export default async function ProjectDetailPage({
                     entitySlug: project.slug,
                     properties: { url: project.liveUrl },
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-(--radius-full) bg-accent px-6 text-base font-semibold text-accent-foreground transition-colors hover:bg-accent-hover"
                 >
                   {t.projects.liveSite}
                   <span aria-hidden="true">
@@ -217,7 +254,7 @@ export default async function ProjectDetailPage({
                     entitySlug: project.slug,
                     properties: { url: project.repositoryUrl },
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] border border-border-strong bg-surface px-4 text-base font-medium hover:bg-surface-muted"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-(--radius-full) border border-border-strong bg-surface px-6 text-base font-medium transition-colors hover:bg-surface-muted"
                 >
                   {t.projects.repository}
                 </OutboundLink>
@@ -234,26 +271,30 @@ export default async function ProjectDetailPage({
           </div>
         </header>
 
-        {/* ── Cover ──────────────────────────────────────────────────────── */}
-        {cover ? (
-          <div className="container-content -mt-2 pt-8">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-[--radius-lg] border border-border bg-surface-muted">
-              <Image
-                src={cover.src}
-                alt={cover.alt}
-                fill
-                sizes="(min-width: 1280px) 76rem, 100vw"
-                priority
-                placeholder={cover.blurDataURL ? "blur" : undefined}
-                blurDataURL={cover.blurDataURL ?? undefined}
-                className="object-cover"
-              />
-            </div>
-            {cover.caption ? (
-              <p className="mt-2 text-[0.8125rem] text-foreground-muted">
-                {cover.caption}
-              </p>
-            ) : null}
+        {/* ── Cover ────────────────────────────────────────────────────────
+            Lifted so it straddles the boundary between the ink hero and the
+            body, which is what stops the page reading as two stacked slabs. */}
+        {heroImage ? (
+          <div className="container-content -mt-12 sm:-mt-16">
+            <figure className="flex flex-col gap-3">
+              <div className="relative aspect-[16/9] overflow-hidden rounded-(--radius-xl) border border-border bg-surface-muted shadow-(--shadow-xl)">
+                <Image
+                  src={heroImage.src}
+                  alt={heroImage.alt}
+                  fill
+                  sizes="(min-width: 1280px) 76rem, 100vw"
+                  priority
+                  placeholder={heroImage.blurDataURL ? "blur" : undefined}
+                  blurDataURL={heroImage.blurDataURL ?? undefined}
+                  className="object-cover object-top"
+                />
+              </div>
+              {heroImage.caption ? (
+                <figcaption className="text-[0.8125rem] text-foreground-subtle">
+                  {heroImage.caption}
+                </figcaption>
+              ) : null}
+            </figure>
           </div>
         ) : null}
 

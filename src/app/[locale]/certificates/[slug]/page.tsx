@@ -154,7 +154,7 @@ export default async function CertificateDetailPage({
           {/* ── Preview ─────────────────────────────────────────────────── */}
           <div className="flex flex-col gap-3">
             <figure className="flex flex-col gap-3">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[--radius-lg] border border-border bg-surface-muted">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-(--radius-lg) border border-border bg-surface-muted">
                 {preview ? (
                   <Image
                     src={preview.src}
@@ -300,7 +300,7 @@ export default async function CertificateDetailPage({
                     entitySlug: certificate.slug,
                     properties: { url: certificate.verificationUrl },
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
                 >
                   {t.certificates.verify}
                 </OutboundLink>

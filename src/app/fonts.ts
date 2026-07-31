@@ -1,4 +1,4 @@
-import { Inter, Noto_Sans_Khmer } from "next/font/google";
+import { Inter, Noto_Sans_Khmer, Plus_Jakarta_Sans } from "next/font/google";
 
 /**
  * Fonts, shared by the public and admin root layouts.
@@ -23,6 +23,22 @@ export const inter = Inter({
   preload: true,
 });
 
+/**
+ * Display face, used for headings and the hero.
+ *
+ * Inter is an excellent UI face but a deliberately neutral one; at hero size it
+ * reads as a system font rather than as somebody's portfolio. Plus Jakarta Sans
+ * is geometric and slightly humanist, so it carries personality at 6rem while
+ * still pairing cleanly with Inter for body copy. Variable, so the whole weight
+ * range costs one file.
+ */
+export const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-display",
+  preload: true,
+});
+
 export const notoSansKhmer = Noto_Sans_Khmer({
   subsets: ["khmer"],
   weight: ["400", "500", "700"],
@@ -32,4 +48,4 @@ export const notoSansKhmer = Noto_Sans_Khmer({
   preload: true,
 });
 
-export const fontVariables = `${inter.variable} ${notoSansKhmer.variable}`;
+export const fontVariables = `${inter.variable} ${plusJakarta.variable} ${notoSansKhmer.variable}`;

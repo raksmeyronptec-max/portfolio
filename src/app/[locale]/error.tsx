@@ -32,27 +32,57 @@ export default function PublicError({
   }, [error]);
 
   return (
-    <div className="container-prose flex min-h-[60vh] flex-col items-center justify-center gap-6 py-16 text-center">
-      <span
+    /*
+     * Ink-scoped, for the same reason as not-found.tsx: the site header is
+     * transparent and ink-scoped until the visitor scrolls, so a light page at
+     * the top of the document leaves the header's own controls light-on-light.
+     * Every public entry point opens on ink.
+     */
+    <section
+      data-scheme="ink"
+      className="decorated flex flex-1 flex-col bg-background text-foreground"
+      style={{ marginTop: "calc(-1 * var(--header-height))" }}
+    >
+      <div
         aria-hidden="true"
-        className="flex size-14 items-center justify-center rounded-full bg-danger-subtle text-danger-foreground"
+        className="glow"
+        style={{ "--glow-x": "50%", "--glow-y": "22%", "--glow-alpha": "0.14" } as object}
+      />
+
+      <div
+        className="container-prose flex flex-1 flex-col items-center justify-center gap-7 pb-24 text-center"
+        style={{ paddingTop: "calc(var(--header-height) + clamp(3rem, 8vw, 6rem))" }}
       >
-        <Icon name="alertTriangle" size={26} />
-      </span>
+        <span
+          aria-hidden="true"
+          className="flex size-16 items-center justify-center rounded-(--radius-lg) bg-danger-subtle text-danger-foreground"
+        >
+          <Icon name="alertTriangle" size={28} />
+        </span>
 
-      <div className="flex flex-col gap-3">
-        <h1 className="text-h2 font-bold">{t.errors.genericTitle}</h1>
-        <p className="text-body-lg text-foreground-muted">{t.errors.genericBody}</p>
-      </div>
+        <div className="flex flex-col gap-3">
+          <h1 className="text-h2">{t.errors.genericTitle}</h1>
+          <p className="text-body-lg text-foreground-muted">{t.errors.genericBody}</p>
+        </div>
 
-      <div className="flex flex-wrap justify-center gap-3">
-        <Button variant="primary" iconStart="refresh" onClick={reset}>
-          {t.common.retry}
-        </Button>
-        <ButtonLink href={localePath(defaultLocale)} variant="outline">
-          {t.errors.notFoundHome}
-        </ButtonLink>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button
+            variant="accent"
+            iconStart="refresh"
+            onClick={reset}
+            className="rounded-(--radius-full) px-5"
+          >
+            {t.common.retry}
+          </Button>
+          <ButtonLink
+            href={localePath(defaultLocale)}
+            variant="outline"
+            className="rounded-(--radius-full) px-5"
+          >
+            {t.errors.notFoundHome}
+          </ButtonLink>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

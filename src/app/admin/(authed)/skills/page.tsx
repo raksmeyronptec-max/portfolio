@@ -69,7 +69,7 @@ export default async function AdminSkillsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[--radius-md] bg-primary-subtle text-primary-subtle-foreground">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-(--radius-md) bg-primary-subtle text-primary-subtle-foreground">
                         <Icon name={toIconName(group.icon, "target")} size={17} />
                       </span>
                       <div className="flex flex-col gap-0.5">

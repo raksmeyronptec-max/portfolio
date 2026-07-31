@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import {
+  AboutPreview,
   Capabilities,
   CertificatesPreview,
   ContactCta,
@@ -164,11 +165,20 @@ export default async function HomePage({
         settings={settings}
         profile={profile}
         languages={languages}
+        socialLinks={socialLinks}
       />
 
       <CredibilityStrip t={t} counts={counts} />
 
       <FeaturedProjects locale={locale} t={t} projects={featuredProjects} />
+
+      <AboutPreview
+        locale={locale}
+        t={t}
+        settings={settings}
+        profile={profile}
+        languages={languages}
+      />
 
       <Capabilities locale={locale} t={t} groups={capabilities} />
 

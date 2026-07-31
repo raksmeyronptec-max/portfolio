@@ -152,12 +152,12 @@ export default async function AdminMediaPage({
                 defaultValue={search}
                 aria-label="Search media by filename or alt text"
                 placeholder="Search by filename or alt text"
-                className="min-h-11 w-full rounded-[--radius-md] border border-border-strong bg-surface pl-10 pr-3 text-base"
+                className="min-h-11 w-full rounded-(--radius-md) border border-border-strong bg-surface pl-10 pr-3 text-base"
               />
             </div>
             <button
               type="submit"
-              className="inline-flex min-h-11 items-center rounded-[--radius-md] border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
+              className="inline-flex min-h-11 items-center rounded-(--radius-md) border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
             >
               Search
             </button>
@@ -213,7 +213,7 @@ function SummaryTile({
       <CardBody className="flex items-center gap-3 p-4">
         <span
           className={cn(
-            "flex size-9 items-center justify-center rounded-[--radius-md]",
+            "flex size-9 items-center justify-center rounded-(--radius-md)",
             tone === "warning"
               ? "bg-warning-subtle text-warning-foreground"
               : "bg-primary-subtle text-primary-subtle-foreground",
@@ -230,7 +230,7 @@ function SummaryTile({
   );
 
   return href ? (
-    <Link href={href} className="block h-full rounded-[--radius-lg]">
+    <Link href={href} className="block h-full rounded-(--radius-lg)">
       {content}
     </Link>
   ) : (
@@ -252,7 +252,7 @@ function FilterChip({
       href={href}
       aria-current={active ? "true" : undefined}
       className={cn(
-        "inline-flex min-h-9 items-center rounded-[--radius-full] border px-3 text-[0.8125rem] capitalize transition-colors",
+        "inline-flex min-h-9 items-center rounded-(--radius-full) border px-3 text-[0.8125rem] capitalize transition-colors",
         active
           ? "border-primary bg-primary font-semibold text-primary-foreground"
           : "border-border bg-surface text-foreground-muted hover:border-border-interactive hover:text-foreground",

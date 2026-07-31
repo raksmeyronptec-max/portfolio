@@ -48,3 +48,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Redesign review screenshots — kept on disk for review, too heavy for git.
+/docs/redesign-screenshots/

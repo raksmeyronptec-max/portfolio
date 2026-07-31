@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
-import { Breadcrumbs } from "@/components/ui/navigation";
+import { PageHeader } from "@/components/layout/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { PrintButton } from "@/components/public/print-button";
 import { ResumeDownloadButton } from "@/components/public/resume-download";
@@ -13,7 +13,6 @@ import {
   Divider,
   MetaList,
   ProseText,
-  SectionHeading,
   SmartLink,
   Tag,
 } from "@/components/ui/primitives";
@@ -121,22 +120,24 @@ export default async function ResumePage({
       <JsonLd data={structuredData} />
       <PageViewTracker locale={locale} eventName="resume_view" entityType="resume" />
 
-      <div className="container-narrow flex flex-col gap-8 py-10 sm:py-14">
+      {/* `data-print="hide"` is set inside PageHeader's own section via the
+          global print rules; the band itself is decoration and never printed. */}
+      <div data-print="hide">
+        <PageHeader
+          title={t.resume.title}
+          description={t.resume.description}
+          eyebrow={t.nav.resume}
+          breadcrumbs={[
+            { label: t.nav.home, href: localePath(locale) },
+            { label: t.nav.resume },
+          ]}
+          breadcrumbLabel={t.a11y.breadcrumb}
+          watermark="CV"
+        />
+      </div>
+
+      <div className="container-narrow flex flex-col gap-8 py-14 sm:py-16">
         <div data-print="hide" className="flex flex-col gap-6">
-          <Breadcrumbs
-            items={[
-              { label: t.nav.home, href: localePath(locale) },
-              { label: t.nav.resume },
-            ]}
-            label={t.a11y.breadcrumb}
-          />
-
-          <SectionHeading
-            headingLevel={1}
-            title={t.resume.title}
-            description={t.resume.description}
-          />
-
           {/* ── Version + actions ───────────────────────────────────────── */}
           {resume ? (
             <Card>

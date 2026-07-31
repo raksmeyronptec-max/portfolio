@@ -173,10 +173,24 @@ test.describe("errors", () => {
     await expect(page.getByRole("link", { name: /go to the homepage/i })).toBeVisible();
   });
 
-  test("an unpublished project 404s rather than leaking a draft", async ({ page }) => {
-    // The seeded projects are all drafts; RLS must hide them from the public site.
-    const response = await page.goto("/en/projects/krusmart");
+  test("an unknown project slug 404s rather than rendering an empty shell", async ({
+    page,
+  }) => {
+    /*
+     * This used to point at `krusmart`, which was seeded as a draft. All three
+     * platform projects are published now, so the fixture is a slug that does
+     * not exist. The draft-visibility guarantee itself is covered by
+     * content.spec.ts ("draft content does not appear anywhere") and by the RLS
+     * suite, which tests it at the database rather than through the UI.
+     */
+    const response = await page.goto("/en/projects/no-such-project-exists");
     expect(response?.status()).toBe(404);
+  });
+
+  test("a published project renders its case study", async ({ page }) => {
+    const response = await page.goto("/en/projects/krusmart");
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/krusmart/i);
   });
 });
 

@@ -31,7 +31,7 @@ type Size = "sm" | "md" | "lg";
 const base = [
   "inline-flex items-center justify-center gap-2",
   "font-medium text-center",
-  "rounded-[--radius-md]",
+  "rounded-(--radius-md)",
   "border border-transparent",
   "transition-colors duration-150",
   "disabled:opacity-55 disabled:cursor-not-allowed disabled:pointer-events-none",
@@ -50,7 +50,7 @@ const variants: Record<Variant, string> = {
     "border-border-strong bg-surface text-foreground hover:bg-surface-muted hover:border-border-interactive",
   ghost: "bg-transparent text-foreground hover:bg-surface-muted",
   danger: "bg-danger text-white hover:brightness-95",
-  link: "bg-transparent text-primary underline underline-offset-4 hover:decoration-2 rounded-[--radius-xs]",
+  link: "bg-transparent text-primary underline underline-offset-4 hover:decoration-2 rounded-(--radius-xs)",
 };
 
 const sizes: Record<Size, string> = {

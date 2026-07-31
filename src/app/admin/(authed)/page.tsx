@@ -176,7 +176,7 @@ export default async function AdminDashboardPage() {
                     <Card>
                       <CardBody className="flex items-start gap-3 p-4">
                         <span
-                          className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[--radius-md] ${
+                          className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-(--radius-md) ${
                             item.tone === "danger"
                               ? "bg-danger-subtle text-danger-foreground"
                               : item.tone === "warning"
@@ -362,7 +362,7 @@ function StatCard({
       <CardBody className="flex flex-col gap-2 p-4">
         <div className="flex items-center justify-between gap-2">
           <span
-            className={`flex size-8 items-center justify-center rounded-[--radius-md] ${
+            className={`flex size-8 items-center justify-center rounded-(--radius-md) ${
               tone === "warning"
                 ? "bg-warning-subtle text-warning-foreground"
                 : tone === "accent"
@@ -387,7 +387,7 @@ function StatCard({
   );
 
   return href ? (
-    <Link href={href} className="block h-full rounded-[--radius-lg]">
+    <Link href={href} className="block h-full rounded-(--radius-lg)">
       {body}
     </Link>
   ) : (

@@ -79,7 +79,7 @@ export function OriginalViewer({ certificateId }: { certificateId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-[--radius-md] border border-border bg-surface-muted/40 p-3">
+    <div className="flex flex-col gap-2 rounded-(--radius-md) border border-border bg-surface-muted/40 p-3">
       <p className="flex items-center gap-2 text-[0.8125rem] font-medium">
         <Icon name="lock" size={15} />
         Private original
@@ -97,7 +97,7 @@ export function OriginalViewer({ certificateId }: { certificateId: string }) {
             href={state.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[--radius-md] bg-primary px-4 text-small font-medium text-primary-foreground hover:bg-primary-hover"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-(--radius-md) bg-primary px-4 text-small font-medium text-primary-foreground hover:bg-primary-hover"
           >
             <Icon name="externalLink" size={16} />
             Open {state.filename}

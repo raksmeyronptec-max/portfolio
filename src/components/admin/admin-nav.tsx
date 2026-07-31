@@ -142,7 +142,7 @@ export function AdminNav({
         </button>
 
         {unreadMessages > 0 ? (
-          <span className="rounded-[--radius-full] bg-accent px-2 py-0.5 text-[0.75rem] font-semibold text-accent-foreground">
+          <span className="rounded-(--radius-full) bg-accent px-2 py-0.5 text-[0.75rem] font-semibold text-accent-foreground">
             {unreadMessages} unread
           </span>
         ) : null}
@@ -179,7 +179,7 @@ export function AdminNav({
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex min-h-10 items-center gap-2.5 rounded-[--radius-md] px-2.5 text-small transition-colors",
+                          "flex min-h-10 items-center gap-2.5 rounded-(--radius-md) px-2.5 text-small transition-colors",
                           active
                             ? "bg-primary-subtle font-semibold text-primary-subtle-foreground"
                             : "text-foreground-muted hover:bg-surface-muted hover:text-foreground",
@@ -189,7 +189,7 @@ export function AdminNav({
                         <span className="flex-1">{entry.label}</span>
 
                         {entry.badge && entry.badge > 0 ? (
-                          <span className="rounded-[--radius-full] bg-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent-foreground">
+                          <span className="rounded-(--radius-full) bg-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent-foreground">
                             {entry.badge}
                             <span className="sr-only"> needing attention</span>
                           </span>

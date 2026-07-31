@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Badge, Card, StatusDot, TagList } from "@/components/ui/primitives";
+import { StatusDot } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/icon";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { resolveImage } from "@/lib/content/media";
@@ -9,17 +9,21 @@ import { langAttribute } from "@/lib/content/translation";
 import type { Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
 import type { ProjectCardData } from "@/lib/data/projects";
-import { cn } from "@/lib/utils/cn";
+import { coverFallbackFor } from "@/lib/data/live-platforms";
 
 /**
- * Project card.
+ * Project card, used on the projects index grid.
+ *
+ * Rebuilt from v2's bordered box: the screenshot now fills the top of the card
+ * edge to edge with no inner border, the whole card lifts on hover, and the
+ * metadata row sits over the image rather than adding another stacked strip.
  *
  * Link structure: the card is not one big anchor. The title links to the case
- * study and the live-site link is a separate anchor, because nesting an external
- * link inside a card-wide link is invalid HTML and produces unpredictable
- * keyboard behaviour. The title link is stretched over the card with a
- * pseudo-element so the whole surface is still clickable, while the live link sits
- * above it in the stacking order.
+ * study and the live-site link is a separate anchor, because nesting an
+ * external link inside a card-wide link is invalid HTML and produces
+ * unpredictable keyboard behaviour. The title link is stretched over the card
+ * with a pseudo-element so the whole surface is still clickable, while the live
+ * link sits above it in the stacking order.
  */
 export function ProjectCard({
   project,
@@ -35,19 +39,25 @@ export function ProjectCard({
   priority?: boolean;
   headingLevel?: 2 | 3 | 4;
 }) {
-  const cover = resolveImage(project.cover, locale, "card");
+  // A CMS cover always wins; the fallback is a committed screenshot of the live
+  // site. See `coverFallbackFor`.
+  const cmsCover = resolveImage(project.cover, locale, "card");
+  const fallback = cmsCover
+    ? null
+    : coverFallbackFor(project.slug, t.projects.screenshotAlt);
+  const cover =
+    cmsCover ??
+    (fallback ? { ...fallback, blurDataURL: null as string | null } : null);
+
   const href = localePath(locale, `projects/${project.slug}`);
   const contentLang = langAttribute(locale, project.contentLocale);
   const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
+  const category = project.categories[0]?.name ?? null;
 
   return (
-    <Card
-      as="article"
-      interactive
-      className="group relative isolate flex flex-col overflow-hidden"
-    >
+    <article className="lift group relative isolate flex flex-1 flex-col overflow-hidden rounded-(--radius-lg) border border-border bg-surface hover:border-border-interactive hover:shadow-(--shadow-lg)">
       {/* ── Cover ─────────────────────────────────────────────────────────── */}
-      <div className="relative aspect-[16/9] overflow-hidden bg-surface-muted">
+      <div className="relative aspect-[16/10] overflow-hidden bg-surface-muted">
         {cover ? (
           <Image
             src={cover.src}
@@ -58,11 +68,11 @@ export function ProjectCard({
             loading={priority ? undefined : "lazy"}
             placeholder={cover.blurDataURL ? "blur" : undefined}
             blurDataURL={cover.blurDataURL ?? undefined}
-            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.02]"
+            className="lift__media object-cover object-top"
           />
         ) : (
-          // Placeholder rather than a broken image: a project may legitimately
-          // have no cover yet.
+          // Designed placeholder rather than a broken image: a project may
+          // legitimately have no cover yet.
           <div
             className="flex h-full items-center justify-center text-foreground-subtle"
             aria-hidden="true"
@@ -71,19 +81,14 @@ export function ProjectCard({
           </div>
         )}
 
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          {project.featured ? (
-            <Badge tone="accent" icon="star">
-              {t.common.featured}
-            </Badge>
-          ) : null}
-        </div>
-      </div>
+        {/* Keeps the status pill legible over any screenshot. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/45 to-transparent"
+        />
 
-      {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.8125rem] text-foreground-muted">
-          <span className="inline-flex items-center gap-1.5">
+        <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-(--radius-full) bg-black/55 px-2.5 py-1 text-[0.75rem] font-medium text-white backdrop-blur-sm">
             <StatusDot
               tone={
                 project.projectStatus === "live"
@@ -96,19 +101,21 @@ export function ProjectCard({
             {t.projects.projectStatus[project.projectStatus]}
           </span>
 
-          {project.yearLabel ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{project.yearLabel}</span>
-            </>
+          {project.featured ? (
+            <span className="inline-flex items-center gap-1.5 rounded-(--radius-full) bg-accent px-2.5 py-1 text-[0.75rem] font-semibold text-accent-foreground">
+              <Icon name="star" size={12} />
+              {t.common.featured}
+            </span>
           ) : null}
+        </div>
+      </div>
 
-          {project.role ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{project.role}</span>
-            </>
-          ) : null}
+      {/* ── Body ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.8125rem] text-foreground-subtle">
+          {category ? <span>{category}</span> : null}
+          {category && project.yearLabel ? <span aria-hidden="true">·</span> : null}
+          {project.yearLabel ? <span>{project.yearLabel}</span> : null}
         </div>
 
         <Heading className="text-h4 font-semibold">
@@ -119,7 +126,7 @@ export function ProjectCard({
           <Link
             href={href}
             lang={contentLang}
-            className="after:absolute after:inset-0 after:content-[''] hover:text-primary"
+            className="transition-colors after:absolute after:inset-0 after:content-[''] hover:text-primary"
           >
             {project.title}
           </Link>
@@ -132,24 +139,24 @@ export function ProjectCard({
         ) : null}
 
         {project.technologies.length > 0 ? (
-          <TagList
-            label={t.projects.technologies}
-            className="mt-auto pt-1"
-            items={project.technologies.slice(0, 4).map((tech) => ({
-              id: tech.id,
-              label: tech.name,
-            }))}
-          />
+          <ul
+            aria-label={t.projects.technologies}
+            className="mt-auto flex flex-wrap gap-1.5 pt-2"
+          >
+            {project.technologies.slice(0, 4).map((tech) => (
+              <li key={tech.id}>
+                <span className="inline-flex rounded-(--radius-full) border border-border bg-surface-muted px-2.5 py-0.5 text-[0.75rem] text-foreground-muted">
+                  {tech.name}
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-4 pt-1 text-small font-medium">
+        <div className="flex flex-wrap items-center gap-4 border-t border-border pt-3 text-small font-medium">
           <span className="inline-flex items-center gap-1.5 text-primary">
             {t.home.featured.viewCaseStudy}
-            <Icon
-              name="arrowRight"
-              size={16}
-              className="transition-transform motion-safe:group-hover:translate-x-0.5"
-            />
+            <Icon name="arrowRight" size={16} className="travel" />
           </span>
 
           {project.liveUrl ? (
@@ -165,11 +172,7 @@ export function ProjectCard({
                 properties: { url: project.liveUrl },
               }}
               newTabHint={t.a11y.opensInNewTab}
-              className={cn(
-                "relative z-10 inline-flex items-center gap-1.5",
-                "text-foreground-muted underline decoration-transparent underline-offset-2",
-                "transition-colors hover:text-foreground hover:decoration-current",
-              )}
+              className="relative z-10 ms-auto inline-flex items-center gap-1.5 text-foreground-muted underline decoration-transparent underline-offset-2 transition-colors hover:text-foreground hover:decoration-current"
             >
               <Icon name="externalLink" size={15} />
               {t.home.featured.visitLive}
@@ -177,6 +180,6 @@ export function ProjectCard({
           ) : null}
         </div>
       </div>
-    </Card>
+    </article>
   );
 }

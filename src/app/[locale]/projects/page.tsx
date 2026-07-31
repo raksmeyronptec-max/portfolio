@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs, Pagination } from "@/components/ui/navigation";
+import { Pagination } from "@/components/ui/navigation";
 import { ButtonLink } from "@/components/ui/button";
-import { SectionHeading } from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/states";
+import { PageHeader } from "@/components/layout/page-header";
+import { Reveal } from "@/components/motion/reveal";
 import { ProjectCard } from "@/components/public/project-card";
+import { ProjectShowcase } from "@/components/public/project-showcase";
 import { ProjectFilters } from "@/components/public/project-filters";
+import { LivePlatformsFallback } from "@/components/public/home-sections";
 import { getDictionary, plural } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
-import { getSeoOverride } from "@/lib/data/site";
+import { getSeoOverride, getSiteCounts } from "@/lib/data/site";
 import {
   getProjectCategories,
   getUsedTechnologies,
@@ -83,7 +86,7 @@ export default async function ProjectsPage({
   const featuredOnly = single(query.featured) === "1";
   const page = toPositiveInt(single(query.page), 1);
 
-  const [result, categories, technologies] = await Promise.all([
+  const [result, categories, technologies, counts] = await Promise.all([
     listProjects(locale, {
       search,
       category: category || undefined,
@@ -95,6 +98,10 @@ export default async function ProjectsPage({
     }),
     getProjectCategories(locale),
     getUsedTechnologies(),
+    // The *unfiltered* published total. Filter chrome is sized from this rather
+    // than from `result.total`, so filtering down to one project does not make
+    // the controls disappear underneath the visitor.
+    getSiteCounts(),
   ]);
 
   const resultLabel = plural(
@@ -105,6 +112,32 @@ export default async function ProjectsPage({
 
   const hasFilters =
     Boolean(search) || Boolean(category) || Boolean(technology) || Boolean(status) || featuredOnly;
+
+  /*
+   * Progressive filtering, per the brief.
+   *
+   *    0–6 published   no filter chrome at all
+   *   7–12 published   category chips only
+   *    >12 published   search plus the full select row
+   *
+   * A page with three projects on it should never open with a search box and
+   * three dropdowns above the content — that is what made the old page read as
+   * a catalogue-management screen. The controls are also kept mounted whenever
+   * a filter is already active, so a visitor who arrives on a filtered URL can
+   * always get back out.
+   */
+  const publishedTotal = counts.publishedProjects ?? 0;
+  const filterMode: "none" | "chips" | "full" =
+    publishedTotal > 12 ? "full" : publishedTotal >= 7 ? "chips" : "none";
+  const showFilters = filterMode !== "none" || hasFilters;
+
+  // On an unfiltered first page, the leading project is promoted to a
+  // full-width showcase so the page opens with work rather than with controls.
+  // On a filtered or paginated view every result stays in the grid, because
+  // promoting an arbitrary match would imply a ranking that does not exist.
+  const promoteLead = !hasFilters && result.page === 1 && result.items.length > 0;
+  const lead = promoteLead ? result.items[0] : undefined;
+  const rest = promoteLead ? result.items.slice(1) : result.items;
 
   const breadcrumbs = [
     { label: t.nav.home, href: localePath(locale) },
@@ -129,39 +162,43 @@ export default async function ProjectsPage({
     <>
       <JsonLd data={structuredData} />
 
-      <div className="container-content flex flex-col gap-8 py-10 sm:py-14">
-        <Breadcrumbs items={breadcrumbs} label={t.a11y.breadcrumb} />
+      <PageHeader
+        title={t.projects.title}
+        description={t.projects.description}
+        eyebrow={t.home.featured.eyebrow}
+        breadcrumbs={breadcrumbs}
+        breadcrumbLabel={t.a11y.breadcrumb}
+        watermark="{ }"
+      />
 
-        <SectionHeading
-          headingLevel={1}
-          title={t.projects.title}
-          description={t.projects.description}
-        />
-
-        <ProjectFilters
-          locale={locale}
-          t={t}
-          initial={{
-            search,
-            category,
-            technology,
-            status: status ?? "",
-            featuredOnly,
-          }}
-          categories={categories.map((item) => ({
-            value: item.slug,
-            label: item.name,
-          }))}
-          technologies={technologies.map((item) => ({
-            value: item.slug,
-            label: item.name,
-          }))}
-          statuses={PROJECT_STATUSES.map((value) => ({
-            value,
-            label: t.projects.projectStatus[value],
-          }))}
-          resultLabel={resultLabel}
-        />
+      <div className="container-content flex flex-col gap-12 py-14 sm:py-16">
+        {showFilters ? (
+          <ProjectFilters
+            locale={locale}
+            t={t}
+            mode={filterMode === "full" ? "full" : "chips"}
+            initial={{
+              search,
+              category,
+              technology,
+              status: status ?? "",
+              featuredOnly,
+            }}
+            categories={categories.map((item) => ({
+              value: item.slug,
+              label: item.name,
+            }))}
+            technologies={technologies.map((item) => ({
+              value: item.slug,
+              label: item.name,
+            }))}
+            statuses={PROJECT_STATUSES.map((value) => ({
+              value,
+              label: t.projects.projectStatus[value],
+            }))}
+            resultLabel={resultLabel}
+          />
+        ) : null}
 
         {/*
           Polite live region. Announces the new count after filtering so a
@@ -173,12 +210,14 @@ export default async function ProjectsPage({
         </p>
 
         {result.items.length === 0 ? (
-          <EmptyState
-            icon="layers"
-            title={hasFilters ? t.projects.noResults : t.projects.emptyState}
-            description={hasFilters ? t.projects.noResultsHint : undefined}
-            actions={
-              hasFilters ? (
+          hasFilters ? (
+            // A genuinely empty *filter result* — the collection is fine, this
+            // query just matched nothing.
+            <EmptyState
+              icon="layers"
+              title={t.projects.noResults}
+              description={t.projects.noResultsHint}
+              actions={
                 <ButtonLink
                   href={localePath(locale, "projects")}
                   variant="outline"
@@ -186,23 +225,46 @@ export default async function ProjectsPage({
                 >
                   {t.a11y.clearFilters}
                 </ButtonLink>
-              ) : undefined
-            }
-          />
+              }
+            />
+          ) : (
+            // Nothing published at all. Never "there are no projects yet": the
+            // platforms are live, so link to them.
+            <LivePlatformsFallback locale={locale} t={t} />
+          )
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {result.items.map((project, index) => (
-              <li key={project.id} className="flex">
-                <ProjectCard
-                  project={project}
+          <div className="flex flex-col gap-14">
+            {lead ? (
+              <Reveal>
+                <ProjectShowcase
+                  project={lead}
                   locale={locale}
                   t={t}
-                  priority={index === 0}
+                  index={0}
+                  priority
                   headingLevel={2}
                 />
-              </li>
-            ))}
-          </ul>
+              </Reveal>
+            ) : null}
+
+            {rest.length > 0 ? (
+              <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {rest.map((project, index) => (
+                  <li key={project.id} className="flex">
+                    <Reveal delay={index * 60} className="flex flex-1">
+                      <ProjectCard
+                        project={project}
+                        locale={locale}
+                        t={t}
+                        priority={!lead && index === 0}
+                        headingLevel={2}
+                      />
+                    </Reveal>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         )}
 
         <Pagination

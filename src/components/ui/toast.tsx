@@ -161,8 +161,8 @@ function ToastCard({
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-start gap-3 rounded-[--radius-md] border p-3.5",
-        "shadow-[--shadow-md]",
+        "pointer-events-auto flex items-start gap-3 rounded-(--radius-md) border p-3.5",
+        "shadow-(--shadow-md)",
         classes,
       )}
     >

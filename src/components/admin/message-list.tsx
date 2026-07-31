@@ -268,7 +268,7 @@ export function MessageList({
                 href={`mailto:${open.email}?subject=${encodeURIComponent(
                   open.subject ? `Re: ${open.subject}` : "Re: your message",
                 )}`}
-                className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
+                className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
               >
                 <Icon name="mail" size={17} />
                 Reply by email
@@ -341,7 +341,7 @@ export function MessageList({
             <div className="flex flex-col gap-2">
               <h3 className="text-small font-semibold">Message</h3>
               {/* Rendered as text, never as HTML. */}
-              <p className="whitespace-pre-wrap rounded-[--radius-md] border border-border bg-surface-muted/40 p-4 text-small leading-relaxed">
+              <p className="whitespace-pre-wrap rounded-(--radius-md) border border-border bg-surface-muted/40 p-4 text-small leading-relaxed">
                 {open.message}
               </p>
             </div>

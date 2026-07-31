@@ -1,79 +1,100 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DESIGN SYSTEM — "Scholar × Builder"
+   DESIGN SYSTEM — "Signal" (v3)
    ───────────────────────────────────────────────────────────────────────────
-   Academic and modern, professional and approachable, calm and content-first.
+   A personal portfolio system for Ron Raksmey: educator, mathematics student
+   and full-stack product builder.
+
+   What changed from v2 and why
+     v2 was a correct but joyless academic-CMS look: every element sat in a
+     bordered white rectangle on a flat page. Two things fixed that here.
+
+       1. Depth instead of borders. Surfaces are separated by tone, glow and
+          shadow first; a border is the last resort, not the first.
+       2. An `ink` scope. Sections marked [data-scheme="ink"] re-declare the
+          semantic tokens to their dark values, so the hero and the closing
+          call-to-action are always the branded dark experience regardless of
+          the user's light/dark preference — while the editorial middle of the
+          page follows their choice. Components inside an ink section need no
+          special classes: they consume the same semantic tokens as everywhere
+          else and simply resolve darker.
 
    Palette rationale
-     Primary   deep indigo/navy — academic authority, reads as trustworthy
-     Accent    warm gold/amber  — Cambodian warmth, used sparingly for emphasis
-     Support   restrained teal  — the "builder"/systems half of the identity
-     Surfaces  warm off-white in light, deep blue-grey in dark
+     Primary   indigo-violet — the "builder": electric, modern, current
+     Accent    warm amber    — Cambodian warmth, and the educator's highlight
+     Support   cyan          — systems, data, infrastructure
+     Ink       deep midnight — the branded ground for hero and CTA
 
    Rules this file enforces
-     • Only semantic tokens are consumed by components. No component ever
-       references a raw palette step or a hex value.
-     • Every foreground/background pair below meets WCAG 2.2 AA for its size.
-     • Focus is never removed. It is redefined as a branded two-tone ring.
-     • All motion is opt-out via prefers-reduced-motion.
+     • Components consume semantic tokens only. No raw palette step, no hex.
+     • Every foreground/background pair meets WCAG 2.2 AA for its size, in
+       light, dark and ink.
+     • Focus is never removed. It is a compact two-tone ring, offset 4px.
+     • All motion is opt-out via prefers-reduced-motion, and no content is
+       hidden behind an animation that a crawler or a reduced-motion user
+       cannot trigger.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer theme {
   :root {
     /* ── Raw palette (never used directly by components) ─────────────────── */
-    --indigo-50: #f0f3fb;
-    --indigo-100: #dde4f6;
-    --indigo-200: #c1cdec;
-    --indigo-300: #94aade;
-    --indigo-400: #6781cb;
-    --indigo-500: #4560b4;
-    --indigo-600: #344a97;
-    --indigo-700: #2b3c7a;
-    --indigo-800: #1f2c5c;
-    --indigo-900: #16203f;
-    --indigo-950: #0d1428;
 
+    /* Indigo-violet: the builder half of the identity. */
+    --iris-50: #f1f0ff;
+    --iris-100: #e5e3ff;
+    --iris-200: #cdc9ff;
+    --iris-300: #ada6ff;
+    --iris-400: #8b8cff;
+    --iris-500: #6d68f5;
+    --iris-600: #574ee0;
+    --iris-700: #4740bd;
+    --iris-800: #3a3596;
+    --iris-900: #2b2870;
+    --iris-950: #1a1847;
+
+    /* Amber: the educator's highlight, and the warmth. */
     --amber-50: #fdf8ec;
-    --amber-100: #f8ecca;
-    --amber-200: #f1d792;
-    --amber-300: #e8bc57;
-    --amber-400: #dfa22f;
-    --amber-500: #c8871a;
+    --amber-100: #f9edcb;
+    --amber-200: #f3d894;
+    --amber-300: #ecbe5b;
+    --amber-400: #e2a333;
+    --amber-500: #c9871b;
     --amber-600: #a66916;
     --amber-700: #834f18;
     --amber-800: #6c401a;
     --amber-900: #5c3619;
 
-    --teal-50: #eef8f6;
-    --teal-100: #d3ece8;
-    --teal-200: #a9d9d2;
-    --teal-300: #77bfb6;
-    --teal-400: #4aa19a;
-    --teal-500: #348480;
-    --teal-600: #276a68;
-    --teal-700: #235555;
-    --teal-800: #1f4545;
-    --teal-900: #1c3a3a;
+    /* Cyan: systems, storage, data. */
+    --cyan-50: #ecfbfb;
+    --cyan-100: #cff4f5;
+    --cyan-200: #a2e8ea;
+    --cyan-300: #6bd6da;
+    --cyan-400: #38bcc2;
+    --cyan-500: #1f9ea6;
+    --cyan-600: #177f88;
+    --cyan-700: #16656d;
+    --cyan-800: #165159;
+    --cyan-900: #16444a;
 
-    --stone-50: #faf9f7;
-    --stone-100: #f3f1ed;
-    --stone-200: #e7e3dc;
-    --stone-300: #d5cfc4;
-    --stone-400: #a9a196;
-    /* #7d766c was the original step here. It measures 4.27:1 on --background,
-       which fails WCAG 1.4.3 for the 11–13px labels it was used on. Darkened to
-       #6f6960 — 5.16:1 on --background, 4.81:1 on --surface-muted, 5.50:1 on
-       --surface — so the smallest text in the system still clears AA. */
-    --stone-500: #6f6960;
-    --stone-600: #5e584f;
-    --stone-700: #4a453e;
-    --stone-800: #302c27;
-    --stone-900: #1d1a17;
+    /* Warm neutrals for the light editorial sections. */
+    --sand-50: #fbfaf9;
+    --sand-100: #f4f2ef;
+    --sand-200: #e8e4de;
+    --sand-300: #d6d0c7;
+    --sand-400: #a8a196;
+    --sand-500: #6f6960;
+    --sand-600: #5b554d;
+    --sand-700: #46413b;
+    --sand-800: #2c2926;
+    --sand-900: #1a1815;
 
-    --slate-850: #16202e;
-    --slate-900: #101823;
-    --slate-950: #0a0f17;
+    /* Ink: the branded dark ground. Blue-violet leaning, never neutral grey. */
+    --ink-700: #1b2036;
+    --ink-800: #141829;
+    --ink-850: #111522;
+    --ink-900: #0c0f1a;
+    --ink-950: #080a12;
 
     --red-100: #fde8e6;
     --red-500: #d1453b;
@@ -87,51 +108,51 @@
     --blue-700: #1d4e85;
 
     /* ── Semantic tokens — LIGHT (default) ───────────────────────────────── */
-    --background: var(--stone-50);
+    --background: var(--sand-50);
     --surface: #ffffff;
-    --surface-muted: var(--stone-100);
+    --surface-muted: var(--sand-100);
     --surface-raised: #ffffff;
-    --surface-inverse: var(--indigo-900);
+    --surface-inverse: var(--ink-900);
+    /* Translucent overlay used for cards that sit on a decorated background. */
+    --surface-veil: rgb(255 255 255 / 0.72);
 
-    --foreground: var(--stone-900);
-    /* 5.4:1 on --background. Deliberately not an opacity of --foreground:
-       v1 used opacity 0.55 on body text, which is how contrast bugs happen. */
-    --foreground-muted: var(--stone-600);
-    /* Used for 11–13px labels, so it is held to the 4.5:1 small-text threshold
-       rather than the 3:1 large-text one. 5.16:1 on --background. */
-    --foreground-subtle: var(--stone-500);
-    --foreground-inverse: var(--stone-50);
+    --foreground: var(--sand-900);
+    /* 8.1:1 on --background. Never an opacity of --foreground: that is how
+       contrast bugs get shipped. */
+    --foreground-muted: var(--sand-600);
+    /* Used for 13px labels, so held to the 4.5:1 small-text threshold rather
+       than the 3:1 large-text one. 5.16:1 on --background. */
+    --foreground-subtle: var(--sand-500);
+    --foreground-inverse: var(--sand-50);
 
-    --primary: var(--indigo-700);
-    --primary-hover: var(--indigo-800);
-    --primary-active: var(--indigo-900);
+    --primary: var(--iris-600);
+    --primary-hover: var(--iris-700);
+    --primary-active: var(--iris-800);
     --primary-foreground: #ffffff;
-    --primary-subtle: var(--indigo-50);
-    --primary-subtle-foreground: var(--indigo-800);
+    --primary-subtle: var(--iris-50);
+    --primary-subtle-foreground: var(--iris-800);
 
     --accent: var(--amber-500);
-    /* Hover goes *lighter*, not darker. Amber carries dark text, so darkening on
-       hover would lower the text contrast at the exact moment the control is
-       being interacted with. amber-400 with --accent-foreground is 7.4:1. */
+    /* Hover goes lighter, not darker: amber carries dark text, so darkening
+       would drop text contrast at the moment of interaction. */
     --accent-hover: var(--amber-400);
-    /* Was #ffffff, which measures 3.03:1 on amber-500 — a fail for the 17px
-       button label it was used on. This near-black amber gives 5.47:1 on
-       amber-500 and 7.38:1 on amber-400. */
     --accent-foreground: #2a1c05;
     --accent-subtle: var(--amber-50);
     --accent-subtle-foreground: var(--amber-800);
 
-    --secondary: var(--teal-600);
-    --secondary-hover: var(--teal-700);
+    --secondary: var(--cyan-600);
+    --secondary-hover: var(--cyan-700);
     --secondary-foreground: #ffffff;
-    --secondary-subtle: var(--teal-50);
-    --secondary-subtle-foreground: var(--teal-800);
+    --secondary-subtle: var(--cyan-50);
+    --secondary-subtle-foreground: var(--cyan-800);
 
-    --border: var(--stone-200);
-    --border-strong: var(--stone-300);
-    --border-interactive: var(--indigo-300);
+    --border: var(--sand-200);
+    --border-strong: var(--sand-300);
+    --border-interactive: var(--iris-300);
+    /* Hairline used on decorated surfaces where a solid border reads as a box. */
+    --border-veil: rgb(26 24 21 / 0.08);
 
-    --focus-ring: var(--indigo-600);
+    --focus-ring: var(--iris-600);
     --focus-ring-offset: var(--background);
 
     --success: var(--green-600);
@@ -147,35 +168,48 @@
     --info-subtle: var(--blue-100);
     --info-foreground: var(--blue-700);
 
-    /* Shadows stay deliberately shallow — the brief rules out oversized
-       shadows and heavy glassmorphism. */
-    --shadow-xs: 0 1px 2px 0 rgb(16 24 35 / 0.04);
-    --shadow-sm: 0 1px 3px 0 rgb(16 24 35 / 0.06), 0 1px 2px -1px rgb(16 24 35 / 0.05);
-    --shadow-md: 0 4px 10px -3px rgb(16 24 35 / 0.08), 0 2px 4px -2px rgb(16 24 35 / 0.05);
-    --shadow-lg: 0 10px 24px -8px rgb(16 24 35 / 0.12);
+    /* Glow colours for decoration. Kept as raw channels so they can be used at
+       arbitrary alpha without another token per opacity step. */
+    --glow-primary: 87 78 224;
+    --glow-accent: 201 135 27;
+    --glow-secondary: 23 127 136;
+
+    --shadow-xs: 0 1px 2px 0 rgb(12 15 26 / 0.04);
+    --shadow-sm: 0 1px 3px 0 rgb(12 15 26 / 0.06), 0 1px 2px -1px rgb(12 15 26 / 0.05);
+    --shadow-md: 0 6px 16px -6px rgb(12 15 26 / 0.12), 0 2px 6px -3px rgb(12 15 26 / 0.07);
+    --shadow-lg: 0 18px 40px -14px rgb(12 15 26 / 0.18), 0 4px 12px -6px rgb(12 15 26 / 0.08);
+    --shadow-xl: 0 32px 64px -20px rgb(12 15 26 / 0.24);
+    /* Coloured lift used by project cards on hover. */
+    --shadow-glow: 0 24px 56px -20px rgb(var(--glow-primary) / 0.4);
 
     /* ── Layout scale ───────────────────────────────────────────────────── */
-    --container-max: 76rem;
+    --container-max: 78rem;
     --container-prose: 44rem;
-    --container-narrow: 60rem;
-    --header-height: 4rem;
+    --container-narrow: 62rem;
+    --header-height: 4.5rem;
 
-    --radius-xs: 0.25rem;
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
+    /* Rounder than v2 across the board. The brief called the old UI boxed, and
+       the single biggest lever on that impression is corner radius. */
+    --radius-xs: 0.375rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1.125rem;
+    --radius-xl: 1.75rem;
+    --radius-2xl: 2.25rem;
     --radius-full: 999px;
 
-    --space-section: clamp(3.5rem, 7vw, 6.5rem);
+    --space-section: clamp(4.5rem, 9vw, 8.5rem);
     --space-block: clamp(1.75rem, 3.5vw, 3rem);
 
     /* ── Typography ─────────────────────────────────────────────────────── */
-    /* --font-latin / --font-khmer are injected by next/font in layout.tsx.
-       Khmer is listed first in --font-ui so Khmer glyphs never fall through to
-       a system font that clips their upper/lower marks. */
+    /* --font-display / --font-latin / --font-khmer are injected by next/font.
+       Khmer is listed after the Latin face so Latin glyphs keep their intended
+       shapes, but before any system fallback so Khmer marks are never clipped
+       by a font that lacks them. */
     --font-sans: var(--font-latin), var(--font-khmer), ui-sans-serif, system-ui,
       "Segoe UI", sans-serif;
+    --font-display-stack: var(--font-display), var(--font-latin),
+      var(--font-khmer), ui-sans-serif, system-ui, sans-serif;
     --font-khmer-stack: var(--font-khmer), "Noto Sans Khmer", "Khmer OS Battambang",
       "Khmer OS", sans-serif;
     --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
@@ -184,47 +218,49 @@
        diacritics above and subscripts below the baseline, and 1.5 clips them. */
     --leading-latin: 1.6;
     --leading-khmer: 1.95;
-    --leading-heading-latin: 1.15;
+    --leading-heading-latin: 1.05;
     --leading-heading-khmer: 1.5;
   }
 
   /* ── Semantic tokens — DARK ────────────────────────────────────────────── */
   [data-theme="dark"] {
-    --background: var(--slate-950);
-    --surface: var(--slate-900);
-    --surface-muted: var(--slate-850);
-    --surface-raised: var(--slate-850);
-    --surface-inverse: var(--stone-100);
+    --background: var(--ink-950);
+    --surface: var(--ink-850);
+    --surface-muted: var(--ink-800);
+    --surface-raised: var(--ink-700);
+    --surface-inverse: var(--sand-100);
+    --surface-veil: rgb(255 255 255 / 0.04);
 
-    --foreground: #eef1f6;
-    --foreground-muted: #a7b1c2;
-    --foreground-subtle: #8590a3;
-    --foreground-inverse: var(--stone-900);
+    --foreground: #f2f5fa;
+    --foreground-muted: #a3aec2;
+    --foreground-subtle: #8794aa;
+    --foreground-inverse: var(--sand-900);
 
-    /* Lighter primary in dark mode: indigo-700 on a near-black surface fails
-       contrast for text and looks muddy for fills. */
-    --primary: var(--indigo-300);
-    --primary-hover: var(--indigo-200);
-    --primary-active: var(--indigo-100);
-    --primary-foreground: var(--indigo-950);
-    --primary-subtle: #1a2440;
-    --primary-subtle-foreground: var(--indigo-200);
+    /* Lighter primary in dark: iris-600 on near-black fails for text and reads
+       muddy as a fill. */
+    --primary: var(--iris-400);
+    --primary-hover: var(--iris-300);
+    --primary-active: var(--iris-200);
+    --primary-foreground: var(--iris-950);
+    --primary-subtle: #1e1c4a;
+    --primary-subtle-foreground: var(--iris-200);
 
     --accent: var(--amber-300);
     --accent-hover: var(--amber-200);
     --accent-foreground: #2a1c05;
-    --accent-subtle: #2e2410;
+    --accent-subtle: #33280f;
     --accent-subtle-foreground: var(--amber-200);
 
-    --secondary: var(--teal-300);
-    --secondary-hover: var(--teal-200);
-    --secondary-foreground: #08211f;
-    --secondary-subtle: #17302f;
-    --secondary-subtle-foreground: var(--teal-200);
+    --secondary: var(--cyan-300);
+    --secondary-hover: var(--cyan-200);
+    --secondary-foreground: #062426;
+    --secondary-subtle: #12363a;
+    --secondary-subtle-foreground: var(--cyan-200);
 
-    --border: #24303f;
-    --border-strong: #33415a;
-    --border-interactive: var(--indigo-400);
+    --border: #232a42;
+    --border-strong: #354062;
+    --border-interactive: var(--iris-400);
+    --border-veil: rgb(255 255 255 / 0.09);
 
     --focus-ring: var(--amber-300);
     --focus-ring-offset: var(--background);
@@ -233,7 +269,7 @@
     --success-subtle: #13291d;
     --success-foreground: #9de0b4;
     --warning: var(--amber-300);
-    --warning-subtle: #2e2410;
+    --warning-subtle: #33280f;
     --warning-foreground: var(--amber-200);
     --danger: #f0796e;
     --danger-subtle: #331714;
@@ -242,16 +278,98 @@
     --info-subtle: #142438;
     --info-foreground: #b3d2f5;
 
+    --glow-primary: 139 140 255;
+    --glow-accent: 236 190 91;
+    --glow-secondary: 107 214 218;
+
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45);
-    --shadow-md: 0 4px 10px -3px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 24px -8px rgb(0 0 0 / 0.55);
+    --shadow-md: 0 6px 16px -6px rgb(0 0 0 / 0.55);
+    --shadow-lg: 0 18px 40px -14px rgb(0 0 0 / 0.6);
+    --shadow-xl: 0 32px 64px -20px rgb(0 0 0 / 0.7);
+    --shadow-glow: 0 24px 56px -20px rgb(var(--glow-primary) / 0.3);
+  }
+
+  /* ── Semantic tokens — INK ─────────────────────────────────────────────────
+     An always-dark scope, applied per section. This is what makes the hero and
+     the closing CTA read as the branded experience in *both* themes without
+     any component knowing it is on a dark ground: the tokens simply resolve
+     to their ink values inside the scope.
+
+     Declared after [data-theme="dark"] so an ink section inside a dark page
+     still gets these exact values rather than a mix. */
+  [data-scheme="ink"] {
+    --background: var(--ink-950);
+    --surface: rgb(255 255 255 / 0.045);
+    --surface-muted: rgb(255 255 255 / 0.07);
+    --surface-raised: var(--ink-800);
+    --surface-inverse: var(--sand-100);
+    --surface-veil: rgb(255 255 255 / 0.05);
+
+    --foreground: #f2f5fa;
+    --foreground-muted: #a9b3c6;
+    --foreground-subtle: #8b97ac;
+    --foreground-inverse: var(--sand-900);
+
+    --primary: var(--iris-400);
+    --primary-hover: var(--iris-300);
+    --primary-active: var(--iris-200);
+    --primary-foreground: var(--iris-950);
+    --primary-subtle: rgb(139 140 255 / 0.14);
+    --primary-subtle-foreground: var(--iris-200);
+
+    --accent: var(--amber-300);
+    --accent-hover: var(--amber-200);
+    --accent-foreground: #2a1c05;
+    --accent-subtle: rgb(236 190 91 / 0.14);
+    --accent-subtle-foreground: var(--amber-200);
+
+    --secondary: var(--cyan-300);
+    --secondary-hover: var(--cyan-200);
+    --secondary-foreground: #062426;
+    --secondary-subtle: rgb(107 214 218 / 0.14);
+    --secondary-subtle-foreground: var(--cyan-200);
+
+    --border: rgb(255 255 255 / 0.1);
+    --border-strong: rgb(255 255 255 / 0.18);
+    --border-interactive: var(--iris-400);
+    --border-veil: rgb(255 255 255 / 0.09);
+
+    --focus-ring: var(--amber-300);
+    --focus-ring-offset: var(--ink-950);
+
+    --success: #5cc282;
+    --success-subtle: rgb(92 194 130 / 0.16);
+    --success-foreground: #9de0b4;
+    --warning: var(--amber-300);
+    --warning-subtle: rgb(236 190 91 / 0.16);
+    --warning-foreground: var(--amber-200);
+    --danger: #f0796e;
+    --danger-subtle: rgb(240 121 110 / 0.16);
+    --danger-foreground: #f8b2ab;
+    --info: #7bb0ea;
+    --info-subtle: rgb(123 176 234 / 0.16);
+    --info-foreground: #b3d2f5;
+
+    --glow-primary: 139 140 255;
+    --glow-accent: 236 190 91;
+    --glow-secondary: 107 214 218;
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45);
+    --shadow-md: 0 6px 16px -6px rgb(0 0 0 / 0.55);
+    --shadow-lg: 0 18px 40px -14px rgb(0 0 0 / 0.6);
+    --shadow-xl: 0 32px 64px -20px rgb(0 0 0 / 0.7);
+    --shadow-glow: 0 24px 56px -20px rgb(var(--glow-primary) / 0.3);
+
+    color-scheme: dark;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Tailwind theme bridge — `inline` so utilities resolve the live CSS variable
-   and therefore follow the active theme without duplicating any utility.
+   and therefore follow the active theme (and the ink scope) without
+   duplicating a single utility.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
@@ -260,6 +378,7 @@
   --color-surface-muted: var(--surface-muted);
   --color-surface-raised: var(--surface-raised);
   --color-surface-inverse: var(--surface-inverse);
+  --color-surface-veil: var(--surface-veil);
 
   --color-foreground: var(--foreground);
   --color-foreground-muted: var(--foreground-muted);
@@ -288,6 +407,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-border-interactive: var(--border-interactive);
+  --color-border-veil: var(--border-veil);
   --color-focus-ring: var(--focus-ring);
 
   --color-success: var(--success);
@@ -304,6 +424,7 @@
   --color-info-foreground: var(--info-foreground);
 
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display-stack);
   --font-khmer: var(--font-khmer-stack);
   --font-mono: var(--font-mono);
 
@@ -312,11 +433,13 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
 
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
 
   --container-content: var(--container-max);
   --container-prose: var(--container-prose);
@@ -324,18 +447,25 @@
 
   /* Responsive type scale. clamp() keeps headings readable at 320px without a
      separate mobile stylesheet, and avoids the layout shift a JS-driven scale
-     would cause. */
+     would cause.
+
+     --text-hero is materially larger and tighter than v2's display size: the
+     hero is the one place the brief asks for real presence. */
+  --text-hero: clamp(2.75rem, 1.2rem + 7vw, 6.5rem);
+  --text-hero--line-height: 0.98;
+  --text-hero--letter-spacing: -0.04em;
   --text-display: clamp(2.25rem, 1.35rem + 4.2vw, 4rem);
-  --text-display--line-height: 1.08;
-  --text-display--letter-spacing: -0.02em;
-  --text-h1: clamp(1.875rem, 1.2rem + 3vw, 3rem);
-  --text-h1--line-height: 1.14;
-  --text-h1--letter-spacing: -0.015em;
-  --text-h2: clamp(1.5rem, 1.1rem + 1.8vw, 2.125rem);
-  --text-h2--line-height: 1.2;
-  --text-h2--letter-spacing: -0.01em;
-  --text-h3: clamp(1.25rem, 1.05rem + 0.9vw, 1.5rem);
-  --text-h3--line-height: 1.3;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-h1: clamp(2rem, 1.2rem + 3.4vw, 3.25rem);
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h2: clamp(1.625rem, 1.1rem + 2.2vw, 2.5rem);
+  --text-h2--line-height: 1.14;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: clamp(1.25rem, 1.05rem + 0.9vw, 1.625rem);
+  --text-h3--line-height: 1.26;
+  --text-h3--letter-spacing: -0.01em;
   --text-h4: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
   --text-h4--line-height: 1.4;
   /* 1rem floor — the brief rules out tiny text. */
@@ -347,7 +477,7 @@
   --text-small--line-height: 1.55;
   --text-eyebrow: 0.8125rem;
   --text-eyebrow--line-height: 1.4;
-  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--letter-spacing: 0.12em;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -365,7 +495,8 @@
     /* Anchors must not land under the sticky header. */
     scroll-padding-top: calc(var(--header-height) + 1.5rem);
     -webkit-text-size-adjust: 100%;
-    /* Avoids the horizontal scrollbar that long Khmer strings can force. */
+    /* Avoids the horizontal scrollbar that long Khmer strings, and the hero's
+       offset glow, can force. */
     overflow-x: hidden;
   }
 
@@ -379,6 +510,9 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-synthesis-weight: none;
+    /* Belt and braces with html: an absolutely-positioned decoration that
+       escapes its section must never create a scrollbar. */
+    overflow-x: clip;
   }
 
   /* Khmer pages get the Khmer stack first and the taller leading. Driven by
@@ -396,26 +530,25 @@
   :lang(km) h2,
   :lang(km) h3,
   :lang(km) h4 {
+    font-family: var(--font-khmer-stack);
     line-height: var(--leading-heading-khmer);
+    /* Khmer has no uppercase and no meaningful tracking; the Latin scale's
+       negative tracking actively collides its glyphs. */
     letter-spacing: normal;
-    /* Khmer has no uppercase and no meaningful tracking; negative tracking
-       from the Latin scale actively collides glyphs. */
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 650;
+    font-family: var(--font-display-stack);
+    font-weight: 640;
     text-wrap: balance;
     /*
-      No `color` here.
-     
-      An element selector beats inheritance, so `color: var(--foreground)` on this
-      rule overrode the colour a heading should inherit from its section. On the
-      dark call-to-action band (`bg-surface-inverse text-foreground-inverse`) the
-      heading came out near-black on navy — 1.5:1, which axe flagged as a serious
-      contrast failure while the paragraph beside it rendered correctly.
-     
-      `<body>` sets `color: var(--foreground)`, so a heading with no ancestor
-      override still gets exactly the same colour this rule was asking for.
+      No `color` here, deliberately.
+
+      An element selector beats inheritance, so `color: var(--foreground)` on
+      this rule would override the colour a heading should inherit from its
+      section — which is exactly how v1 put a near-black heading on the navy
+      CTA band at 1.5:1. `<body>` sets the colour; headings inherit it, and an
+      ink section overrides it for everything inside at once.
     */
   }
 
@@ -424,16 +557,17 @@
   }
 
   /* ── Focus ─────────────────────────────────────────────────────────────
-     Never removed, always branded. Two-tone: a ring in the focus colour plus
-     an offset ring in the page colour, so the indicator stays visible on both
-     light and dark surfaces and against coloured buttons. */
+     Never removed, always branded. Offset 4px per the brief, and compact
+     rather than the oversized double-rectangle v2 produced on nav links. */
   :focus-visible {
     outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
+    outline-offset: 4px;
+    border-radius: var(--radius-xs);
   }
 
-  /* Mouse users do not get a ring, keyboard users always do. */
+  /* Mouse users do not get a ring, keyboard users always do. Without this a
+     nav link kept a persistent box after being clicked, which the brief
+     called out. */
   :focus:not(:focus-visible) {
     outline: none;
   }
@@ -476,8 +610,7 @@
   }
 
   /* ── Motion ────────────────────────────────────────────────────────────
-     Everything animated in this app is gated on this query. v1 ran a
-     permanent requestAnimationFrame canvas regardless of the user's setting. */
+     Everything animated in this app is gated on this query. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -505,21 +638,21 @@
     width: 100%;
     max-width: var(--container-max);
     margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2rem);
+    padding-inline: clamp(1.125rem, 4vw, 2.5rem);
   }
 
   .container-prose {
     width: 100%;
     max-width: var(--container-prose);
     margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2rem);
+    padding-inline: clamp(1.125rem, 4vw, 2.5rem);
   }
 
   .container-narrow {
     width: 100%;
     max-width: var(--container-narrow);
     margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2rem);
+    padding-inline: clamp(1.125rem, 4vw, 2.5rem);
   }
 
   .section-y {
@@ -540,18 +673,129 @@
     border-width: 0;
   }
 
+  /* ── Header chrome ──────────────────────────────────────────────────────
+     Driven by `data-scrolled` on the server-rendered <header>, which
+     HeaderScrollSync flips from an effect. Kept in CSS rather than in a client
+     component so the <header> element never enters a client boundary — see the
+     comment in header-shell.tsx for the 404 regression that caused. */
+  .header-bar {
+    border-block-end: 1px solid transparent;
+    background-color: transparent;
+    transition:
+      background-color 300ms ease,
+      border-color 300ms ease,
+      box-shadow 300ms ease,
+      backdrop-filter 300ms ease;
+  }
+
+  .header-bar[data-scrolled="true"] {
+    border-block-end-color: var(--border);
+    background-color: color-mix(in oklab, var(--background) 85%, transparent);
+    box-shadow: var(--shadow-sm);
+  }
+
+  @supports (backdrop-filter: blur(1px)) {
+    .header-bar[data-scrolled="true"] {
+      background-color: color-mix(in oklab, var(--background) 70%, transparent);
+      backdrop-filter: blur(12px);
+    }
+  }
+
+  /* ── Section decoration ─────────────────────────────────────────────────
+     Depth without boxes. Each of these is decorative, sits behind content at a
+     negative z-index, and is cheap: no filters that force repaint, no
+     animation loops, no canvas.
+
+     `isolation: isolate` on the section keeps the negative z-index children
+     from escaping behind the page background. */
+  .decorated {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Soft radial wash. Positioned via custom properties so one class serves
+     every section; the defaults put it top-right. */
+  .glow {
+    --glow-x: 78%;
+    --glow-y: 8%;
+    --glow-size: 55%;
+    --glow-color: var(--glow-primary);
+    --glow-alpha: 0.16;
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse var(--glow-size) var(--glow-size) at var(--glow-x) var(--glow-y),
+      rgb(var(--glow-color) / var(--glow-alpha)),
+      transparent 70%
+    );
+  }
+
+  /* Fine grid, faded out toward the edges. Reads as engineering paper without
+     competing with text. */
+  .grid-lines {
+    --grid-size: 3.5rem;
+    --grid-alpha: 0.055;
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, currentColor 1px, transparent 1px),
+      linear-gradient(to bottom, currentColor 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    color: var(--foreground);
+    opacity: var(--grid-alpha);
+    mask-image: radial-gradient(ellipse 80% 65% at 50% 40%, #000 30%, transparent 78%);
+  }
+
+  /* A large, very faint section numeral or glyph. Decorative only — always
+     paired with aria-hidden. */
+  .watermark {
+    position: absolute;
+    z-index: -10;
+    pointer-events: none;
+    font-family: var(--font-display-stack);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--foreground);
+    opacity: 0.035;
+    user-select: none;
+  }
+
+  /* Hairline rule that fades at both ends, used between sections instead of a
+     hard border. */
+  .rule-fade {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--border-strong) 18%,
+      var(--border-strong) 82%,
+      transparent
+    );
+  }
+
   /* ── Long-form content ──────────────────────────────────────────────────
      Applied to rendered case-study blocks. Values are tuned so that switching
      to Khmer does not change the vertical rhythm enough to reflow the page. */
   .prose-content {
     max-width: 68ch;
     font-size: var(--text-body-lg);
-    line-height: 1.7;
-    color: var(--foreground);
+    line-height: 1.75;
+    color: var(--foreground-muted);
   }
 
   .prose-content > * + * {
     margin-block-start: 1.25em;
+  }
+
+  .prose-content h2,
+  .prose-content h3 {
+    color: var(--foreground);
   }
 
   .prose-content h2 {
@@ -602,8 +846,8 @@
   }
 
   .prose-content pre {
-    background-color: var(--surface-inverse);
-    color: var(--foreground-inverse);
+    background-color: var(--ink-900);
+    color: #f2f5fa;
     padding: 1rem 1.25rem;
     border-radius: var(--radius-md);
     overflow-x: auto;
@@ -635,22 +879,209 @@
   }
 
   /* ── Scroll reveal ─────────────────────────────────────────────────────
-     Opt-in and motion-safe. Elements start visible and are only hidden once
-     the observer confirms JS is running, so a no-JS or reduced-motion visitor
-     never sees blank sections — which is exactly what v1 got wrong. */
+     Opt-in and motion-safe. Elements start *visible*: they are only hidden
+     once the observer confirms JS is running and motion is allowed, so a
+     no-JS, crawler or reduced-motion visitor never sees a blank section —
+     which is exactly what v1 got wrong, and what the brief forbids.
+
+     `--reveal-delay` lets a parent stagger its children without a wrapper
+     component per item. */
   @media (prefers-reduced-motion: no-preference) {
     .reveal[data-reveal="pending"] {
       opacity: 0;
-      transform: translateY(12px);
+      transform: translateY(14px);
     }
 
     .reveal[data-reveal="visible"] {
       opacity: 1;
       transform: none;
       transition:
-        opacity 480ms cubic-bezier(0.22, 1, 0.36, 1),
-        transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 620ms cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+        transform 620ms cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
     }
+  }
+
+  /* ── Marquee ───────────────────────────────────────────────────────────
+     Used by the capability strip. The track holds two identical copies of the
+     content, so translating by -50% loops seamlessly. The duplicate is
+     aria-hidden so the list is announced once.
+
+     Paused on hover and on focus-within, so a keyboard user can read and
+     reach anything inside it. */
+  .marquee {
+    display: flex;
+    overflow: hidden;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+
+  .marquee__track {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--marquee-gap, 1rem);
+    padding-inline-end: var(--marquee-gap, 1rem);
+    min-width: 100%;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee__track {
+      animation: marquee-scroll var(--marquee-duration, 42s) linear infinite;
+      animation-direction: var(--marquee-direction, normal);
+    }
+
+    .marquee:hover .marquee__track,
+    .marquee:focus-within .marquee__track {
+      animation-play-state: paused;
+    }
+  }
+
+  @keyframes marquee-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(-100% - var(--marquee-gap, 1rem))); }
+  }
+
+  /* ── Interactive surfaces ──────────────────────────────────────────────
+     A card that lifts on hover using transform + shadow only. No width,
+     height or margin is animated, so nothing reflows and nothing shifts the
+     elements around it. */
+  .lift {
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 200ms ease;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .lift:hover,
+    .lift:focus-within {
+      transform: translateY(-4px);
+    }
+  }
+
+  /* Media inside a .lift container scales gently. Scoped to hover-capable
+     pointers so a tap on mobile does not leave a stuck zoom. */
+  .lift__media {
+    transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .lift:hover .lift__media,
+    .lift:focus-within .lift__media {
+      transform: scale(1.04);
+    }
+  }
+
+  /* Arrow that travels on hover, used by "view case study" style links. */
+  .travel {
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .group:hover .travel,
+    .group:focus-visible .travel,
+    a:hover > .travel,
+    button:hover > .travel {
+      transform: translateX(4px);
+    }
+  }
+
+  /* ── Text accents ──────────────────────────────────────────────────────── */
+
+  /* Gradient text for a single emphasised phrase in the hero. Falls back to a
+     solid colour where background-clip is unsupported. */
+  .text-gradient {
+    color: var(--primary);
+  }
+
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .text-gradient {
+      background-image: linear-gradient(
+        100deg,
+        var(--primary) 0%,
+        var(--secondary) 45%,
+        var(--accent) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      /* Descenders get clipped by the tight hero line-height without this. */
+      padding-block-end: 0.08em;
+    }
+  }
+
+  /* Underline that draws itself on hover, for inline navigation links. */
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 2px;
+    transition: background-size 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    padding-block-end: 2px;
+  }
+
+  .link-underline:hover,
+  .link-underline[data-active="true"] {
+    background-size: 100% 2px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Khmer type-scale overrides
+   ───────────────────────────────────────────────────────────────────────────
+   These live in `utilities`, not `base`, on purpose.
+
+   Tailwind v4 declares `@layer theme, base, components, utilities`, and a later
+   layer beats an earlier one regardless of specificity. So `:lang(km)
+   .text-hero { font-size: … }` written in `base` — despite being the more
+   specific selector — loses to the plain `.text-hero` utility every time. The
+   first version of this file made exactly that mistake and the caps silently
+   did nothing.
+
+   What they correct: the Latin scale is tuned for Latin counts and cap heights.
+   Khmer runs 20–40% longer for the same content, stacks marks above and below
+   the baseline, and needs roughly 1.5 leading. At the Latin sizes a hero
+   headline that is two lines in English becomes six in Khmer and pushes the
+   call to action below the fold.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  :lang(km) .text-hero,
+  :lang(km) .text-display,
+  :lang(km) .text-h1,
+  :lang(km) .text-h2,
+  :lang(km) .text-h3 {
+    font-family: var(--font-khmer-stack);
+    line-height: var(--leading-heading-khmer);
+    letter-spacing: normal;
+  }
+
+  :lang(km) .text-hero {
+    font-size: clamp(2rem, 1rem + 4.6vw, 4.25rem);
+  }
+
+  :lang(km) .text-display {
+    font-size: clamp(1.5rem, 1.05rem + 2.2vw, 2.5rem);
+  }
+
+  :lang(km) .text-h1 {
+    font-size: clamp(1.5rem, 1.05rem + 2vw, 2.375rem);
+  }
+
+  :lang(km) .text-h2 {
+    font-size: clamp(1.375rem, 1rem + 1.5vw, 1.875rem);
+  }
+
+  /* Tracking-heavy uppercase eyebrows are a Latin device. Khmer has no
+     uppercase, and letter-spacing pulls its clusters apart. */
+  :lang(km) .text-eyebrow {
+    letter-spacing: normal;
+    text-transform: none;
   }
 }
 
@@ -659,18 +1090,26 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
-  :root {
+  :root,
+  [data-theme="dark"],
+  [data-scheme="ink"] {
     --background: #ffffff;
     --surface: #ffffff;
     --surface-muted: #ffffff;
+    --surface-veil: #ffffff;
     --foreground: #000000;
     --foreground-muted: #333333;
+    --foreground-subtle: #444444;
     --border: #999999;
+    --border-veil: #999999;
   }
 
   [data-print="hide"],
   header[data-site-header],
-  footer[data-site-footer] {
+  footer[data-site-footer],
+  .glow,
+  .grid-lines,
+  .watermark {
     display: none !important;
   }
 

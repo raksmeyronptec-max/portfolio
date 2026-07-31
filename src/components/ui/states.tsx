@@ -24,7 +24,7 @@ export function Skeleton({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "block animate-pulse rounded-[--radius-sm] bg-surface-muted",
+        "block animate-pulse rounded-(--radius-sm) bg-surface-muted",
         className,
       )}
     />
@@ -54,7 +54,7 @@ export function SkeletonCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[--radius-lg] border border-border bg-surface",
+        "overflow-hidden rounded-(--radius-lg) border border-border bg-surface",
         className,
       )}
     >
@@ -123,7 +123,7 @@ function StateShell({
     <div
       role={role}
       className={cn(
-        "flex flex-col items-center gap-4 rounded-[--radius-lg] border border-border",
+        "flex flex-col items-center gap-4 rounded-(--radius-lg) border border-border",
         "bg-surface px-6 py-12 text-center",
         className,
       )}
@@ -293,7 +293,7 @@ export function Notice({
     <div
       role={tone === "danger" || tone === "warning" ? "alert" : "status"}
       className={cn(
-        "flex gap-3 rounded-[--radius-md] border p-4 text-small",
+        "flex gap-3 rounded-(--radius-md) border p-4 text-small",
         classes,
         className,
       )}

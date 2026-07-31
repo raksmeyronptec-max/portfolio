@@ -237,7 +237,7 @@ export function CvManager({
 
       {/* ── Deleted ─────────────────────────────────────────────────────────── */}
       {deleted.length > 0 ? (
-        <details className="rounded-[--radius-lg] border border-border bg-surface p-4">
+        <details className="rounded-(--radius-lg) border border-border bg-surface p-4">
           <summary className="cursor-pointer text-small font-medium text-foreground-muted">
             {deleted.length} deleted {deleted.length === 1 ? "entry" : "entries"}
           </summary>
@@ -248,7 +248,7 @@ export function CvManager({
                 key={item.id}
                 className={cn(
                   "flex flex-wrap items-center justify-between gap-3",
-                  "rounded-[--radius-md] border border-border p-3",
+                  "rounded-(--radius-md) border border-border p-3",
                 )}
               >
                 <span className="text-small">{item.primaryLabel}</span>

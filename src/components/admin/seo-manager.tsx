@@ -131,7 +131,7 @@ export function SeoManager({
                   return (
                     <div
                       key={locale}
-                      className="flex items-start justify-between gap-3 rounded-[--radius-md] border border-border p-3"
+                      className="flex items-start justify-between gap-3 rounded-(--radius-md) border border-border p-3"
                     >
                       <div className="flex min-w-0 flex-col gap-1">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -312,7 +312,7 @@ export function SeoManager({
           />
 
           {!indexable ? (
-            <p className="flex items-start gap-2 rounded-[--radius-md] bg-warning-subtle p-3 text-[0.8125rem] text-warning-foreground">
+            <p className="flex items-start gap-2 rounded-(--radius-md) bg-warning-subtle p-3 text-[0.8125rem] text-warning-foreground">
               <Icon name="alertTriangle" size={15} className="mt-0.5" />
               This page will be excluded from search results and from the sitemap.
             </p>

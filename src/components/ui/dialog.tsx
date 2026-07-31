@@ -168,11 +168,11 @@ export function Dialog({
           variant === "modal"
             ? cn(
                 "h-full max-h-full rounded-none",
-                "sm:h-auto sm:max-h-[min(90vh,44rem)] sm:rounded-[--radius-lg]",
+                "sm:h-auto sm:max-h-[min(90vh,44rem)] sm:rounded-(--radius-lg)",
                 sizes[size],
               )
             : "h-full",
-          "border border-border shadow-[--shadow-lg]",
+          "border border-border shadow-(--shadow-lg)",
           className,
         )}
       >
@@ -318,7 +318,7 @@ export function ConfirmDialog({
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             autoComplete="off"
-            className="min-h-11 w-full rounded-[--radius-md] border border-border-strong bg-surface px-3 py-2.5 font-mono text-base"
+            className="min-h-11 w-full rounded-(--radius-md) border border-border-strong bg-surface px-3 py-2.5 font-mono text-base"
           />
         </div>
       ) : null}

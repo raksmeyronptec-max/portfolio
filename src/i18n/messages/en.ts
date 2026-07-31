@@ -53,6 +53,31 @@ export const en = {
   home: {
     hero: {
       eyebrow: "Educator · Mathematics · Software Engineering",
+      greeting: "Hello, I'm",
+      /*
+       * The two-line positioning statement. Kept as two keys rather than one
+       * string with a newline so each line can be its own block element: the
+       * hero sets a very tight line-height, and a <br> inside a balanced
+       * text-wrap heading breaks unpredictably at Khmer's taller leading.
+       */
+      roleLine1: "Educator by purpose.",
+      roleLine2: "Product builder by practice.",
+      intro:
+        "I design and build practical digital products for education, teaching and access to academic resources.",
+      buildsLabel: "I build",
+      /*
+       * The rotating phrases. An object rather than an array because the
+       * Dictionary type maps strings recursively and would turn an array into
+       * an object with numeric keys anyway — this way the keys are readable and
+       * a missing Khmer phrase is still a compile error.
+       */
+      builds: {
+        libraries: "digital libraries",
+        platforms: "education platforms",
+        tools: "teacher tools",
+        systems: "academic systems",
+      },
+      exploreWork: "Explore My Work",
       viewProjects: "View My Projects",
       downloadResume: "Download Resume",
       contactMe: "Contact Me",
@@ -61,6 +86,18 @@ export const en = {
       basedIn: "Based in {location}",
       speaks: "Speaks",
       portraitAlt: "Portrait of Ron Raksmey",
+      scrollCue: "Scroll to explore",
+    },
+
+    about: {
+      eyebrow: "About",
+      heading: "Two practices, one purpose",
+      body: "I train as a primary-school teacher and study mathematics, and I build the software that teachers and students actually use. The teaching tells me what the tools have to do; the engineering makes it exist.",
+      factsHeading: "At a glance",
+      focusHeading: "Current focus",
+      locationLabel: "Based in",
+      languagesLabel: "Languages",
+      readMore: "More about me",
     },
     credibility: {
       heading: "At a glance",
@@ -80,6 +117,14 @@ export const en = {
       visitLive: "Visit live project",
       viewAll: "View all projects",
       empty: "Featured projects will appear here once they are published.",
+      /*
+       * The empty state is deliberately not "there are no projects yet". The
+       * platforms exist and are live; only the written case studies are
+       * outstanding, so the copy says that and then links to the real things.
+       */
+      emptyHeading: "Case studies are being prepared",
+      emptyBody: "Explore my live platforms in the meantime.",
+      liveNow: "Live",
     },
     capabilities: {
       eyebrow: "What I do",
@@ -95,12 +140,16 @@ export const en = {
       viewCredential: "View credential",
       viewAll: "View all certificates",
       empty: "Certificates will appear here once they have been reviewed and published.",
+      emptyHeading: "Credentials are in privacy review",
+      emptyBody:
+        "Certificates are published here once personal identifiers have been removed.",
     },
     journey: {
       eyebrow: "Education and journey",
       heading: "How I got here",
       present: "Present",
       expected: "expected",
+      viewAll: "View full experience",
     },
     testimonials: {
       eyebrow: "References",
@@ -109,11 +158,11 @@ export const en = {
       empty: "References will appear here once they have been confirmed.",
     },
     cta: {
-      heading: "Have an education, academic or digital-product project in mind?",
+      heading: "Let's build something meaningful.",
       description:
-        "I am open to teaching roles, tutoring, and building academic or educational platforms.",
+        "Have an education, teaching or digital-product idea? I am open to teaching roles, tutoring, and building academic platforms.",
       emailMe: "Email me",
-      openContactForm: "Use the contact form",
+      openContactForm: "Send a message",
       telegram: "Message on Telegram",
     },
   },
@@ -136,6 +185,13 @@ export const en = {
     noResults: "No projects match these filters",
     noResultsHint: "Try removing a filter or clearing your search.",
     emptyState: "There are no published projects yet.",
+    emptyHeading: "Case studies are being prepared",
+    emptyBody:
+      "The platforms below are live and in daily use. Written case studies are being added.",
+    exploreLive: "Explore my live platforms",
+    screenshotAlt: "Screenshot of the {name} home page",
+    showFilters: "Filter projects",
+    hideFilters: "Hide filters",
     loadMore: "Load more projects",
     role: "Role",
     organization: "Organisation",
@@ -215,6 +271,13 @@ export const en = {
     resultCountPlural: "{count} certificates",
     noResults: "No certificates match these filters",
     emptyState: "Certificates will appear here once they have been published.",
+    emptyHeading: "Credentials are in privacy review",
+    emptyBody:
+      "Certificates and academic credentials are added here after personal identifiers have been removed.",
+    /* Short enough to sit inline beside a shield icon rather than in a banner. */
+    privacyShort: "Public previews have sensitive personal information removed.",
+    showFilters: "Filter certificates",
+    featuredCredential: "Featured credential",
     issuer: "Issued by",
     issuedOn: "Issued",
     expiresOn: "Expires",
@@ -318,7 +381,9 @@ export const en = {
     description:
       "Get in touch about teaching, tutoring, academic platforms or a product collaboration.",
     formHeading: "Send a message",
-    directHeading: "Or reach me directly",
+    directHeading: "Reach me directly",
+    moreDetails: "Add more details",
+    moreDetailsHint: "Optional — helps me reply with something useful.",
     fields: {
       name: "Your name",
       namePlaceholder: "Sok Dara",
@@ -427,6 +492,7 @@ export const en = {
 
   footer: {
     tagline: "Educator, mathematics student and full-stack product builder.",
+    availability: "Available for education and digital-product collaboration.",
     navHeading: "Pages",
     connectHeading: "Connect",
     legalHeading: "About this site",

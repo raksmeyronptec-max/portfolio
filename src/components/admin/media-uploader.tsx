@@ -196,7 +196,7 @@ export function MediaUploader() {
                 }
                 aria-describedby={describedBy}
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                className="w-full rounded-[--radius-md] border border-border-strong bg-surface p-2.5 text-small file:mr-3 file:rounded-[--radius-sm] file:border-0 file:bg-primary file:px-3 file:py-2 file:text-small file:font-medium file:text-primary-foreground"
+                className="w-full rounded-(--radius-md) border border-border-strong bg-surface p-2.5 text-small file:mr-3 file:rounded-(--radius-sm) file:border-0 file:bg-primary file:px-3 file:py-2 file:text-small file:font-medium file:text-primary-foreground"
               />
             )}
           </Field>

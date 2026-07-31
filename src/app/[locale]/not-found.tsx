@@ -17,7 +17,23 @@ export default function NotFound() {
   const t = getDictionary(locale);
 
   return (
-    <div className="container-prose flex min-h-[60vh] flex-col items-center justify-center gap-6 py-16 text-center">
+    /*
+     * Ink-scoped and full height, like every other public page's opening band.
+     *
+     * This is not only cosmetic. The site header is transparent and ink-scoped
+     * until the visitor scrolls, which assumes the top of the page is dark. On
+     * the previous light 404 the header's own controls came out light-on-light
+     * and axe reported a serious colour-contrast violation. Every public entry
+     * point therefore opens on ink.
+     *
+     * The negative margin pulls the band under the sticky header; the padding
+     * gives the space back. Same technique as PageHeader.
+     */
+    <section
+      data-scheme="ink"
+      className="decorated flex flex-1 flex-col bg-background text-foreground"
+      style={{ marginTop: "calc(-1 * var(--header-height))" }}
+    >
       {/*
         A `not-found.tsx` file cannot export `metadata`, and page metadata is
         skipped when a page throws `notFound()` — so without this the 404 document
@@ -26,30 +42,55 @@ export default function NotFound() {
       */}
       <title>{t.errors.notFoundTitle}</title>
 
-      <span
+      <div aria-hidden="true" className="grid-lines" />
+      <div
         aria-hidden="true"
-        className="flex size-14 items-center justify-center rounded-full bg-surface-muted text-foreground-subtle"
+        className="glow"
+        style={{ "--glow-x": "50%", "--glow-y": "22%", "--glow-alpha": "0.18" } as object}
+      />
+
+      <div
+        className="container-prose flex flex-1 flex-col items-center justify-center gap-7 pb-24 text-center"
+        style={{ paddingTop: "calc(var(--header-height) + clamp(3rem, 8vw, 6rem))" }}
       >
-        <Icon name="search" size={26} />
-      </span>
+        <span
+          aria-hidden="true"
+          className="flex size-16 items-center justify-center rounded-(--radius-lg) border border-border bg-surface text-foreground-subtle"
+        >
+          <Icon name="search" size={28} />
+        </span>
 
-      <div className="flex flex-col gap-3">
-        <p className="font-mono text-small text-foreground-subtle">404</p>
-        <h1 className="text-h1 font-bold">{t.errors.notFoundTitle}</h1>
-        <p className="text-body-lg text-foreground-muted">{t.errors.notFoundBody}</p>
-      </div>
+        <div className="flex flex-col gap-3">
+          <p className="font-mono text-small text-foreground-subtle">404</p>
+          <h1 className="text-h1">{t.errors.notFoundTitle}</h1>
+          <p className="text-body-lg text-foreground-muted">{t.errors.notFoundBody}</p>
+        </div>
 
-      <div className="flex flex-wrap justify-center gap-3">
-        <ButtonLink href={localePath(locale)} variant="primary" iconStart="arrowLeft">
-          {t.errors.notFoundHome}
-        </ButtonLink>
-        <ButtonLink href={localePath(locale, "projects")} variant="outline">
-          {t.errors.notFoundProjects}
-        </ButtonLink>
-        <ButtonLink href={localePath(locale, "certificates")} variant="outline">
-          {t.errors.notFoundCertificates}
-        </ButtonLink>
+        <div className="flex flex-wrap justify-center gap-3">
+          <ButtonLink
+            href={localePath(locale)}
+            variant="accent"
+            iconStart="arrowLeft"
+            className="rounded-(--radius-full) px-5"
+          >
+            {t.errors.notFoundHome}
+          </ButtonLink>
+          <ButtonLink
+            href={localePath(locale, "projects")}
+            variant="outline"
+            className="rounded-(--radius-full) px-5"
+          >
+            {t.errors.notFoundProjects}
+          </ButtonLink>
+          <ButtonLink
+            href={localePath(locale, "certificates")}
+            variant="outline"
+            className="rounded-(--radius-full) px-5"
+          >
+            {t.errors.notFoundCertificates}
+          </ButtonLink>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

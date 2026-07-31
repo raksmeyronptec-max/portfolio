@@ -232,7 +232,7 @@ export function EntityEditor({
                   aria-selected={activeLocale === locale}
                   onClick={() => setActiveLocale(locale)}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-[--radius-md] border px-3 text-small font-medium",
+                    "inline-flex min-h-10 items-center gap-2 rounded-(--radius-md) border px-3 text-small font-medium",
                     activeLocale === locale
                       ? "border-primary bg-primary-subtle text-primary-subtle-foreground"
                       : "border-border text-foreground-muted hover:bg-surface-muted",

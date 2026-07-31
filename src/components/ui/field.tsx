@@ -25,7 +25,7 @@ import { Icon } from "./icon";
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const controlBase = [
-  "w-full rounded-[--radius-md] border bg-surface",
+  "w-full rounded-(--radius-md) border bg-surface",
   "px-3 py-2.5 min-h-11",
   "text-base text-foreground",
   "placeholder:text-foreground-subtle",
@@ -201,8 +201,8 @@ export function Checkbox({
           aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
           className={cn(
-            "mt-0.5 size-5 shrink-0 cursor-pointer rounded-[--radius-xs]",
-            "border border-border-strong accent-[--primary]",
+            "mt-0.5 size-5 shrink-0 cursor-pointer rounded-(--radius-xs)",
+            "border border-border-strong accent-(--primary)",
             "aria-[invalid=true]:border-danger",
           )}
           {...rest}
@@ -290,7 +290,7 @@ export function ErrorSummary({
       role="alert"
       tabIndex={-1}
       className={cn(
-        "rounded-[--radius-md] border border-danger/30 bg-danger-subtle p-4",
+        "rounded-(--radius-md) border border-danger/30 bg-danger-subtle p-4",
         className,
       )}
     >

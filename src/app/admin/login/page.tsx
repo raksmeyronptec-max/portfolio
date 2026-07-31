@@ -46,7 +46,7 @@ export default async function AdminLoginPage({
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <span
             aria-hidden="true"
-            className="flex size-12 items-center justify-center rounded-[--radius-lg] bg-primary text-primary-foreground"
+            className="flex size-12 items-center justify-center rounded-(--radius-lg) bg-primary text-primary-foreground"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 5H7l5.5 7L7 19h10" />

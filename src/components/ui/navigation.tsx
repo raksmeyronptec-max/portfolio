@@ -43,7 +43,7 @@ export function Breadcrumbs({
               {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className="rounded-[--radius-xs] underline decoration-transparent underline-offset-2 transition-colors hover:text-foreground hover:decoration-current"
+                  className="rounded-(--radius-xs) underline decoration-transparent underline-offset-2 transition-colors hover:text-foreground hover:decoration-current"
                 >
                   {item.label}
                 </Link>
@@ -107,7 +107,7 @@ export function Pagination({
   const pages = pageWindow(currentPage, totalPages);
 
   const arrowClasses =
-    "inline-flex min-h-11 items-center gap-1.5 rounded-[--radius-md] border border-border px-3 text-small font-medium";
+    "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border border-border px-3 text-small font-medium";
 
   return (
     <nav aria-label={labels.nav} className={cn("flex flex-col gap-3", className)}>
@@ -151,7 +151,7 @@ export function Pagination({
                 href={buildHref(page)}
                 aria-current={page === currentPage ? "page" : undefined}
                 className={cn(
-                  "inline-flex size-11 items-center justify-center rounded-[--radius-md] border text-small font-medium",
+                  "inline-flex size-11 items-center justify-center rounded-(--radius-md) border text-small font-medium",
                   page === currentPage
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-surface hover:bg-surface-muted",
@@ -245,7 +245,7 @@ export function LinkTabs({
               {item.count !== undefined ? (
                 <span
                   className={cn(
-                    "rounded-[--radius-full] px-1.5 py-0.5 text-[0.75rem] tabular-nums",
+                    "rounded-(--radius-full) px-1.5 py-0.5 text-[0.75rem] tabular-nums",
                     item.active
                       ? "bg-primary-subtle text-primary-subtle-foreground"
                       : "bg-surface-muted text-foreground-muted",
@@ -329,7 +329,7 @@ export function DataTable({
       role="region"
       aria-label={caption}
       className={cn(
-        "overflow-x-auto rounded-[--radius-lg] border border-border bg-surface",
+        "overflow-x-auto rounded-(--radius-lg) border border-border bg-surface",
         className,
       )}
     >

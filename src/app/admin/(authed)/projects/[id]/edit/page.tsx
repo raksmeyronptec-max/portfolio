@@ -50,7 +50,7 @@ export default async function EditProjectPage({
                 href={`/en/projects/${values.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-2 rounded-[--radius-md] border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
+                className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
               >
                 <Icon name="externalLink" size={16} />
                 Preview live page

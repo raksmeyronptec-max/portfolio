@@ -72,8 +72,11 @@ function applyTheme(next: Theme) {
 
 export function ThemeToggle({
   labels,
+  variant = "outline",
 }: {
   labels: { toggle: string; toLight: string; toDark: string };
+  /** `ghost` is the header treatment — no box, per the brief. */
+  variant?: "outline" | "ghost";
 }) {
   const theme = useSyncExternalStore<Theme | null>(
     subscribe,
@@ -104,7 +107,7 @@ export function ThemeToggle({
     <IconButton
       icon={isDark ? "sun" : "moon"}
       label={theme === null ? labels.toggle : isDark ? labels.toLight : labels.toDark}
-      variant="outline"
+      variant={variant}
       onClick={toggle}
       // Announces the current state, not just the action.
       aria-pressed={theme === null ? undefined : isDark}

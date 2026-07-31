@@ -76,7 +76,7 @@ export function PrivacyReviewPanel({
     <Card className="border-warning/40">
       <CardHeader className="bg-warning-subtle/40">
         <div className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[--radius-md] bg-warning-subtle text-warning-foreground">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-(--radius-md) bg-warning-subtle text-warning-foreground">
             <Icon name="shield" size={18} />
           </span>
           <div className="flex flex-col gap-1">
@@ -136,7 +136,7 @@ export function PrivacyReviewPanel({
                 <li key={item.id}>
                   <label
                     className={cn(
-                      "flex cursor-pointer items-start gap-3 rounded-[--radius-md] border p-3 transition-colors",
+                      "flex cursor-pointer items-start gap-3 rounded-(--radius-md) border p-3 transition-colors",
                       isTicked
                         ? "border-success/40 bg-success-subtle/40"
                         : "border-border hover:bg-surface-muted",
@@ -153,7 +153,7 @@ export function PrivacyReviewPanel({
                       type="checkbox"
                       checked={isTicked}
                       onChange={(event) => toggle(item.id, event.target.checked)}
-                      className="mt-0.5 size-5 shrink-0 rounded-[--radius-xs] border border-border-strong accent-[--primary]"
+                      className="mt-0.5 size-5 shrink-0 rounded-(--radius-xs) border border-border-strong accent-(--primary)"
                     />
                     <span className="flex flex-col gap-0.5">
                       <span className="text-small font-medium">{item.label}</span>
@@ -171,7 +171,7 @@ export function PrivacyReviewPanel({
         {/* ── Confirmation ─────────────────────────────────────────────────── */}
         <div
           className={cn(
-            "flex flex-col gap-3 rounded-[--radius-md] border p-4",
+            "flex flex-col gap-3 rounded-(--radius-md) border p-4",
             allTicked ? "border-border" : "border-dashed border-border-strong opacity-70",
           )}
         >

@@ -60,7 +60,7 @@ export default async function AdminAuditLogsPage({
               href={`/admin/audit-logs${group.key ? `?action=${group.key}` : ""}`}
               aria-current={action === group.key ? "true" : undefined}
               className={cn(
-                "inline-flex min-h-9 items-center rounded-[--radius-full] border px-3 text-[0.8125rem] transition-colors",
+                "inline-flex min-h-9 items-center rounded-(--radius-full) border px-3 text-[0.8125rem] transition-colors",
                 action === group.key
                   ? "border-primary bg-primary font-semibold text-primary-foreground"
                   : "border-border bg-surface text-foreground-muted hover:border-border-interactive hover:text-foreground",

@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/ui/navigation";
 import {
   Badge,
   Card,
   CardBody,
   MetaList,
   ProseText,
-  SectionHeading,
   SmartLink,
 } from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/states";
+import { PageHeader } from "@/components/layout/page-header";
 import { getDictionary } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
@@ -72,21 +71,19 @@ export default async function EducationPage({
     <>
       <JsonLd data={structuredData} />
 
-      <div className="container-content flex flex-col gap-8 py-10 sm:py-14">
-        <Breadcrumbs
-          items={[
-            { label: t.nav.home, href: localePath(locale) },
-            { label: t.nav.education },
-          ]}
-          label={t.a11y.breadcrumb}
-        />
+      <PageHeader
+        title={t.education.title}
+        description={t.education.description}
+        eyebrow={t.nav.education}
+        breadcrumbs={[
+          { label: t.nav.home, href: localePath(locale) },
+          { label: t.nav.education },
+        ]}
+        breadcrumbLabel={t.a11y.breadcrumb}
+        watermark="∑"
+      />
 
-        <SectionHeading
-          headingLevel={1}
-          title={t.education.title}
-          description={t.education.description}
-        />
-
+      <div className="container-content flex flex-col gap-8 py-14 sm:py-16">
         {education.length === 0 ? (
           <EmptyState icon="graduation" title={t.education.emptyState} />
         ) : (
