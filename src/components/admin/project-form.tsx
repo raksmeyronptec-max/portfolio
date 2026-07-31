@@ -11,8 +11,10 @@ import { Notice } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { saveProject } from "@/lib/actions/projects";
 import {
+  formatList,
   projectSchema,
   publishBlockerLabels,
+  publishBlockerShortLabels,
   publishBlockers,
   slugify,
   type ProjectInput,
@@ -166,10 +168,31 @@ export function ProjectForm({
         if (!collected[path]) collected[path] = issue.message;
       }
       setErrors(collected);
+
+      const paths = Object.keys(collected);
+      const named = paths.map((path) => describeFieldPath(path, values.translations));
+
+      /*
+       * Switch to the tab holding the first error. Without this, a Khmer SEO
+       * description that is twelve characters too long reports an error on a
+       * panel the editor is not looking at, and the form appears to fail for no
+       * reason at all.
+       */
+      const firstLocale = paths
+        .map((path) => localeForPath(path, values.translations))
+        .find((locale): locale is Locale => locale !== null);
+      if (firstLocale && firstLocale !== activeLocale) setActiveLocale(firstLocale);
+
       toast.show({
         tone: "error",
-        title: "Some fields need attention",
-        description: "The highlighted fields could not be saved.",
+        title:
+          named.length === 1
+            ? "One field needs attention"
+            : `${named.length} fields need attention`,
+        // Capped so a form-wide failure does not produce a wall of text; the
+        // fields themselves are highlighted either way.
+        description: `${formatList(named.slice(0, 5))}${named.length > 5 ? `, and ${named.length - 5} more` : ""}.`,
+        duration: 0,
       });
       return;
     }
@@ -196,10 +219,29 @@ export function ProjectForm({
       }
 
       if (result.code === "publish_blocked") {
+        /*
+         * The server returns the blocker codes in `result.fields`; this used to
+         * discard them and show only "This project is not ready to publish yet",
+         * which told the editor nothing they did not already know. The publish
+         * checklist in the sidebar has always listed them, but it scrolls out of
+         * view on a form this long.
+         *
+         * "Nothing was saved" is stated first and is not a hedge: saveProject
+         * runs the publish gate *before* it writes, so a blocked publish leaves
+         * the database untouched. An editor who assumed otherwise and navigated
+         * away would lose the whole form.
+         */
+        const missing = Object.keys(result.fields ?? {}).map(
+          (code) => publishBlockerShortLabels[code] ?? code,
+        );
+
         toast.show({
           tone: "warning",
           title: "Not ready to publish",
-          description: result.detail ?? "Complete the publish checklist first.",
+          description:
+            missing.length > 0
+              ? `Nothing was saved. Still to do: ${formatList(missing)}. To keep your edits now, set the status back to Draft and save.`
+              : (result.detail ?? "Complete the publish checklist first."),
           duration: 0,
         });
         return;
@@ -1058,6 +1100,106 @@ export function ProjectForm({
       </div>
     </form>
   );
+}
+
+// ── Naming what went wrong ──────────────────────────────────────────────────
+
+/**
+ * Human labels for every field a validation error can land on.
+ *
+ * "The highlighted fields could not be saved" is only useful if you can see the
+ * highlight. In this form you routinely cannot: the offending input may be on
+ * the other language tab, inside a collapsed feature row, or simply below the
+ * fold of a very long page. Naming the fields — and their language — turns a
+ * dead end into an instruction.
+ */
+const PROJECT_FIELD_LABELS: Record<string, string> = {
+  slug: "URL slug",
+  status: "Publication status",
+  project_status: "Project status",
+  sort_order: "Sort order",
+  role_en: "Role (English)",
+  role_km: "Role (Khmer)",
+  organization_en: "Organisation (English)",
+  organization_km: "Organisation (Khmer)",
+  team_size: "Team size",
+  duration_label_en: "Duration (English)",
+  duration_label_km: "Duration (Khmer)",
+  period_label_en: "Period (English)",
+  period_label_km: "Period (Khmer)",
+  year_label: "Year label",
+  live_url: "Live URL",
+  repository_url: "Repository URL",
+  demo_video_url: "Demo video URL",
+  started_at: "Started on",
+  completed_at: "Completed on",
+  review_note: "Review note",
+  cover_media_id: "Cover image",
+  og_image_media_id: "Social preview image",
+};
+
+const TRANSLATION_FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  summary: "Short summary",
+  seo_title: "SEO title",
+  seo_description: "SEO description",
+};
+
+const FEATURE_FIELD_LABELS: Record<string, string> = {
+  title_en: "Title (English)",
+  title_km: "Title (Khmer)",
+  description_en: "Description (English)",
+  description_km: "Description (Khmer)",
+  icon: "Icon",
+};
+
+const METRIC_FIELD_LABELS: Record<string, string> = {
+  label_en: "Label (English)",
+  label_km: "Label (Khmer)",
+  value: "Value",
+  unit: "Unit",
+  metric_type: "Type",
+  source_note: "Source",
+  measured_at: "Measured on",
+};
+
+/** Turns a dotted error path into something an editor can act on. */
+function describeFieldPath(
+  path: string,
+  translations: ProjectFormValues["translations"],
+): string {
+  const [head, second, third] = path.split(".");
+
+  if (head === "translations") {
+    const locale = translations[Number(second)]?.locale;
+    const language = locale ? localeMeta[locale].englishName : "Translation";
+    const field =
+      TRANSLATION_FIELD_LABELS[third ?? ""] ??
+      CASE_STUDY_FIELDS.find((entry) => entry.key === third)?.label ??
+      third ??
+      "field";
+    return `${language} · ${field}`;
+  }
+
+  if (head === "features") {
+    return `Feature ${Number(second) + 1} · ${FEATURE_FIELD_LABELS[third ?? ""] ?? third}`;
+  }
+
+  if (head === "metrics") {
+    return `Result ${Number(second) + 1} · ${METRIC_FIELD_LABELS[third ?? ""] ?? third}`;
+  }
+
+  return PROJECT_FIELD_LABELS[head ?? ""] ?? head ?? "field";
+}
+
+/** The locale tab an error belongs to, so the form can switch to it. */
+function localeForPath(
+  path: string,
+  translations: ProjectFormValues["translations"],
+): Locale | null {
+  const [head, second] = path.split(".");
+  if (head !== "translations") return null;
+  return translations[Number(second)]?.locale ?? null;
 }
 
 // ── Repeatable list row ─────────────────────────────────────────────────────

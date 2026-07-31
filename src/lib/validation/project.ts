@@ -271,6 +271,38 @@ export const publishBlockerLabels: Record<string, string> = {
 };
 
 /**
+ * The same blockers as noun phrases, for listing several at once.
+ *
+ * The sentences above read well one per line in the sidebar checklist, but
+ * joining four of them into a toast produces a paragraph nobody finishes.
+ *
+ * Written as verb phrases so they compose into "Still to do: …" no matter which
+ * combination applies — including `needsReview`, which is not a missing field at
+ * all and reads as nonsense after "Still missing:".
+ */
+export const publishBlockerShortLabels: Record<string, string> = {
+  noTranslation: "add at least one language version",
+  summaryMissing: "add a short summary",
+  overviewMissing: "write the Overview section",
+  problemMissing: "write the Problem section",
+  solutionMissing: "write the Solution section",
+  seoDescriptionMissing: "add an SEO description of 50–160 characters",
+  coverMissing: "choose a cover image",
+  needsReview: "clear the “needs review” flag",
+  featureTitleRequired: "give every feature an English title",
+  metricLabelRequired: "give every result an English label",
+  metricValueRequired: "give every result a value",
+  metricSourceRequired: "give every verified result a source",
+};
+
+/** "a, b and c" — an English list that reads as a sentence. */
+export function formatList(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0]!;
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/**
  * Generate a URL slug from a title.
  *
  * Mirrors the `public.slugify` SQL function, including the Khmer fallback: Khmer

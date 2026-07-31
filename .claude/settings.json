@@ -70,7 +70,10 @@
       "Bash(sed 's|const acc = process.env.R2_ACCOUNT_ID, pub = process.env.R2_BUCKET_NAME, priv = pub + \"-private\";|const acc = process.env.R2_ACCOUNT_ID, pub = process.env.R2_BUCKET_NAME, priv = process.env.R2_PRIVATE_BUCKET_NAME;|; s|m\\\\[2\\\\].replace|m[2].trim\\(\\).replace|' /tmp/r2check.mjs)",
       "Bash(node --check scripts/import-project-media.mjs)",
       "Bash(curl -sSI --max-time 40 \"https://portfolio-beige-rho-51.vercel.app/en/projects\")",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(node qa-toast.mjs)",
+      "Bash(node qa-cert.mjs)",
+      "Bash(node qa-translate.mjs)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

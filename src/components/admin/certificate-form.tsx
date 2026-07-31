@@ -29,6 +29,54 @@ export type CertificateFormValues = CertificateInput & {
   privacyReviewedAt: string | null;
 };
 
+// ── Naming what went wrong ──────────────────────────────────────────────────
+
+const CERTIFICATE_FIELD_LABELS: Record<string, string> = {
+  slug: "URL slug",
+  internal_ref: "Internal reference",
+  category_id: "Category",
+  status: "Publication status",
+  credential_status: "Credential status",
+  sort_order: "Sort order",
+  issuer_en: "Issuer (English)",
+  issuer_km: "Issuer (Khmer)",
+  issuer_url: "Issuer URL",
+  issued_on: "Issued on",
+  expires_on: "Expires on",
+  credential_id: "Credential ID",
+  verification_url: "Verification URL",
+  preview_media_id: "Preview image",
+  original_media_id: "Original document",
+  og_image_media_id: "Social preview image",
+  privacy_review_note: "Privacy review note",
+  review_note: "Review note",
+  skills: "Skills",
+};
+
+const CERTIFICATE_TRANSLATION_LABELS: Record<string, string> = {
+  title: "Title",
+  description: "Description",
+  image_summary: "Image summary",
+  seo_title: "SEO title",
+  seo_description: "SEO description",
+};
+
+/** Turns a dotted error path into something an editor can act on. */
+function describeCertificateField(
+  path: string,
+  translations: CertificateFormValues["translations"],
+): string {
+  const [head, second, third] = path.split(".");
+
+  if (head === "translations") {
+    const locale = translations[Number(second)]?.locale;
+    const language = locale ? localeMeta[locale].englishName : "Translation";
+    return `${language} · ${CERTIFICATE_TRANSLATION_LABELS[third ?? ""] ?? third}`;
+  }
+
+  return CERTIFICATE_FIELD_LABELS[head ?? ""] ?? head ?? "field";
+}
+
 export function CertificateForm({
   initial,
   categories,
@@ -119,10 +167,37 @@ export function CertificateForm({
         if (!collected[path]) collected[path] = issue.message;
       }
       setErrors(collected);
+
+      const paths = Object.keys(collected);
+      /*
+       * The message alone ("Must be 50–160 characters.") does not say which
+       * field or which language it belongs to, and this form has two language
+       * tabs. Naming the field is the difference between a hint and an
+       * instruction.
+       */
+      const named = paths.map(
+        (path) =>
+          `${describeCertificateField(path, values.translations)} — ${friendlyError(collected[path])}`,
+      );
+
+      // Switch to the tab holding the first error, so the highlight is visible.
+      const firstLocale = paths
+        .map((path) => {
+          const [head, index] = path.split(".");
+          if (head !== "translations") return null;
+          return values.translations[Number(index)]?.locale ?? null;
+        })
+        .find((locale): locale is Locale => locale !== null);
+      if (firstLocale && firstLocale !== activeLocale) setActiveLocale(firstLocale);
+
       toast.show({
         tone: "error",
-        title: "Some fields need attention",
-        description: Object.values(collected).map(friendlyError).join(" "),
+        title:
+          named.length === 1
+            ? "One field needs attention"
+            : `${named.length} fields need attention`,
+        description: `${named.slice(0, 4).join(" ")}${named.length > 4 ? ` (and ${named.length - 4} more)` : ""}`,
+        duration: 0,
       });
       return;
     }
