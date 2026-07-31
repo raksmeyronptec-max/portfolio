@@ -110,10 +110,13 @@ export default async function CertificateDetailPage({
       expiresOn: certificate.expiresOn,
       credentialId: certificate.credentialId,
       imageUrl:
-        publicStorageUrl(
-          certificate.preview?.bucket_id ?? "",
-          certificate.preview?.preview_path ?? certificate.preview?.storage_path,
-        ) ?? undefined,
+        (certificate.preview
+          ? publicStorageUrl(
+              certificate.preview.bucket_id,
+              certificate.preview.preview_path ?? certificate.preview.storage_path,
+              certificate.preview.storage_provider,
+            )
+          : null) ?? undefined,
       categoryName: certificate.category?.name,
     }),
     breadcrumbSchema([

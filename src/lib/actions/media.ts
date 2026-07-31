@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { deleteStorageObject } from "@/lib/storage";
+import type { StorageBucket, StorageProvider } from "@/lib/storage/buckets";
 import { checkPermission } from "@/lib/auth/guards";
 import { writeAuditLog } from "@/lib/audit/log";
 import {
@@ -103,8 +105,8 @@ export async function deleteMediaAsset(
     const { data: asset } = await supabase
       .from("media_assets")
       .select(
-        `id, bucket_id, storage_path, thumbnail_path, card_path, preview_path,
-         original_filename, visibility, kind,
+        `id, bucket_id, storage_path, storage_provider, thumbnail_path,
+         card_path, preview_path, original_filename, visibility, kind,
          project_cover:projects!projects_cover_media_id_fkey(id, slug),
          project_og:projects!projects_og_image_media_id_fkey(id, slug),
          project_media(id),
@@ -122,6 +124,7 @@ export async function deleteMediaAsset(
     const row = asset as unknown as {
       bucket_id: string;
       storage_path: string;
+      storage_provider: StorageProvider;
       thumbnail_path: string | null;
       card_path: string | null;
       preview_path: string | null;
@@ -175,7 +178,23 @@ export async function deleteMediaAsset(
     ].filter((path): path is string => Boolean(path));
 
     const admin = createSupabaseAdminClient();
-    await admin.storage.from(row.bucket_id).remove(paths);
+
+    // Deleted one object at a time because R2's S3 API has no batch remove that
+    // is worth the extra code path here. A failure to delete the bytes must not
+    // block deleting the row: an orphaned object costs storage, whereas a row
+    // pointing at nothing renders as a broken image.
+    for (const path of paths) {
+      try {
+        await deleteStorageObject({
+          provider: row.storage_provider,
+          bucket: row.bucket_id as StorageBucket,
+          storagePath: path,
+          admin,
+        });
+      } catch {
+        // Deliberately ignored — see above.
+      }
+    }
 
     const { error } = await supabase.from("media_assets").delete().eq("id", mediaId);
     if (error) return fromPostgresError(error);

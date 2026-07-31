@@ -1,4 +1,5 @@
 import { publicSupabaseEnv } from "@/lib/supabase/env";
+import { isPublicBucket, type StorageProvider } from "@/lib/storage/buckets";
 import { pickLocalized } from "./translation";
 import type { Locale } from "@/i18n/config";
 
@@ -10,6 +11,12 @@ export type MediaAsset = {
   id: string;
   bucket_id: string;
   storage_path: string;
+  /**
+   * Which backend holds the bytes. Carried on the row rather than inferred,
+   * because the logical bucket name is identical in both backends — see
+   * migration 0018.
+   */
+  storage_provider: StorageProvider;
   visibility: "public" | "private";
   mime_type: string;
   file_size_bytes: number;
@@ -34,8 +41,6 @@ export type ResolvedImage = {
   caption: string | null;
 };
 
-const PUBLIC_BUCKETS = new Set(["public-media", "certificate-previews"]);
-
 /**
  * Public URL for a stored object.
  *
@@ -43,18 +48,36 @@ const PUBLIC_BUCKETS = new Set(["public-media", "certificate-previews"]);
  * certificate original has no permanent public URL, and this function refuses to
  * invent one. Private files are reached only through a signed URL minted
  * server-side after an owner-role check.
+ *
+ * `provider` says which backend to build the URL for. It is a required argument
+ * rather than a defaulted one: an asset whose URL is built for the wrong backend
+ * renders as a broken image with nothing in any log to explain it, so the call
+ * site is made to state which one it means.
+ *
+ * Safe on the client — both branches read only public configuration.
  */
 export function publicStorageUrl(
   bucketId: string,
   storagePath: string | null | undefined,
+  provider: StorageProvider,
 ): string | null {
   if (!storagePath) return null;
-  if (!PUBLIC_BUCKETS.has(bucketId)) return null;
+  if (!isPublicBucket(bucketId)) return null;
+
+  const encoded = storagePath.split("/").map(encodeURIComponent).join("/");
+
+  if (provider === "r2") {
+    // Referenced literally so Next inlines it into the client bundle.
+    const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+    if (!base) return null;
+    // The logical bucket is the first key segment inside the R2 bucket, which
+    // is what keeps `storage_path` meaning the same thing in both backends.
+    return `${base.replace(/\/+$/, "")}/${bucketId}/${encoded}`;
+  }
 
   const env = publicSupabaseEnv();
   if (!env) return null;
 
-  const encoded = storagePath.split("/").map(encodeURIComponent).join("/");
   return `${env.url}/storage/v1/object/public/${bucketId}/${encoded}`;
 }
 
@@ -85,7 +108,11 @@ export function resolveImage(
           ? asset.preview_path
           : null;
 
-  const src = publicStorageUrl(asset.bucket_id, derivative ?? asset.storage_path);
+  const src = publicStorageUrl(
+    asset.bucket_id,
+    derivative ?? asset.storage_path,
+    asset.storage_provider,
+  );
   if (!src) return null;
 
   return {
@@ -118,9 +145,9 @@ export function isMissingAltText(asset: MediaAsset | null | undefined): boolean 
 
 /** Columns to select for a media asset. Keeps every query consistent. */
 export const MEDIA_COLUMNS = `
-  id, bucket_id, storage_path, visibility, mime_type, file_size_bytes,
-  width, height, blur_data_url, thumbnail_path, card_path, preview_path,
-  alt_text_en, alt_text_km, caption_en, caption_km
+  id, bucket_id, storage_path, storage_provider, visibility, mime_type,
+  file_size_bytes, width, height, blur_data_url, thumbnail_path, card_path,
+  preview_path, alt_text_en, alt_text_km, caption_en, caption_km
 ` as const;
 
 /** Human-readable MIME label for download links. */

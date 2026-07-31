@@ -119,10 +119,13 @@ export default async function ProjectDetailPage({
       title: project.title,
       description: project.summary,
       imageUrl:
-        publicStorageUrl(
-          project.cover?.bucket_id ?? "",
-          project.cover?.preview_path ?? project.cover?.storage_path,
-        ) ?? undefined,
+        (project.cover
+          ? publicStorageUrl(
+              project.cover.bucket_id,
+              project.cover.preview_path ?? project.cover.storage_path,
+              project.cover.storage_provider,
+            )
+          : null) ?? undefined,
       liveUrl: project.liveUrl,
       repositoryUrl: project.repositoryUrl,
       datePublished: project.publishedAt,

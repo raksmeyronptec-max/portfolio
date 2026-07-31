@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  isPublicBucket,
+  isStorageBucket,
+  isStorageProvider,
+  r2BucketFor,
+  r2KeyFor,
+  storageBuckets,
+  type StorageBucket,
+} from "@/lib/storage/buckets";
+
+/**
+ * The public/private split is the whole safety property of the R2 move.
+ *
+ * Supabase gave every object a per-object policy. R2 does not: public access is
+ * a property of the *bucket*, so the only thing standing between a certificate
+ * scan and the open internet is which bucket it was written to. These tests pin
+ * that mapping, because a one-line change to it would be a silent data leak
+ * with no other symptom.
+ */
+
+const BUCKETS = { publicBucket: "site-media", privateBucket: "site-private" };
+
+describe("logical buckets", () => {
+  it("recognises exactly the four known buckets", () => {
+    expect([...storageBuckets]).toEqual([
+      "public-media",
+      "certificate-previews",
+      "certificate-originals",
+      "resumes",
+    ]);
+    expect(isStorageBucket("public-media")).toBe(true);
+    expect(isStorageBucket("admin-uploads")).toBe(false);
+    expect(isStorageBucket("")).toBe(false);
+  });
+
+  it("treats only the two display buckets as public", () => {
+    expect(isPublicBucket("public-media")).toBe(true);
+    expect(isPublicBucket("certificate-previews")).toBe(true);
+    expect(isPublicBucket("certificate-originals")).toBe(false);
+    expect(isPublicBucket("resumes")).toBe(false);
+  });
+
+  it("fails closed for an unknown bucket name", () => {
+    // A typo must not accidentally publish. Anything unrecognised is private.
+    expect(isPublicBucket("public-medai")).toBe(false);
+    expect(isPublicBucket("")).toBe(false);
+  });
+});
+
+describe("r2BucketFor", () => {
+  it("routes certificate originals and resumes to the private bucket", () => {
+    expect(r2BucketFor("certificate-originals", BUCKETS)).toBe("site-private");
+    expect(r2BucketFor("resumes", BUCKETS)).toBe("site-private");
+  });
+
+  it("routes display media to the public bucket", () => {
+    expect(r2BucketFor("public-media", BUCKETS)).toBe("site-media");
+    expect(r2BucketFor("certificate-previews", BUCKETS)).toBe("site-media");
+  });
+
+  it("never puts a private logical bucket in the public physical bucket", () => {
+    for (const bucket of storageBuckets) {
+      if (isPublicBucket(bucket)) continue;
+      expect(r2BucketFor(bucket as StorageBucket, BUCKETS)).not.toBe(
+        BUCKETS.publicBucket,
+      );
+    }
+  });
+});
+
+describe("r2KeyFor", () => {
+  it("prefixes the key with the logical bucket", () => {
+    // This is what lets `media_assets.storage_path` keep meaning "path within
+    // its logical bucket" in both backends, so no existing row had to change.
+    expect(r2KeyFor("public-media", "projects/a/cover.webp")).toBe(
+      "public-media/projects/a/cover.webp",
+    );
+    expect(r2KeyFor("certificate-originals", "2026/01/scan.pdf")).toBe(
+      "certificate-originals/2026/01/scan.pdf",
+    );
+  });
+});
+
+describe("isStorageProvider", () => {
+  it("accepts only the two known backends", () => {
+    expect(isStorageProvider("supabase")).toBe(true);
+    expect(isStorageProvider("r2")).toBe(true);
+    expect(isStorageProvider("s3")).toBe(false);
+    expect(isStorageProvider("")).toBe(false);
+  });
+});

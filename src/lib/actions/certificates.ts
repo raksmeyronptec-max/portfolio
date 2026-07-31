@@ -2,6 +2,8 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { signStorageUrl } from "@/lib/storage";
+import type { StorageBucket, StorageProvider } from "@/lib/storage/buckets";
 import type { Database } from "@/lib/supabase/database.types";
 import { checkPermission } from "@/lib/auth/guards";
 import { diffRecords, writeAuditLog } from "@/lib/audit/log";
@@ -423,7 +425,10 @@ export async function restoreCertificate(
  *  4. Every access is written to the audit log before the URL is returned.
  *
  * The service-role client is required because the `certificate-originals` bucket
- * has no anonymous policy at all, and signing needs privileged access.
+ * has no anonymous policy at all, and signing needs privileged access. On
+ * Cloudflare R2 the equivalent is a bucket with no public URL at all, signed
+ * per-request with SigV4 — see lib/storage/buckets.ts for why that is a separate
+ * bucket rather than a prefix.
  */
 export async function createOriginalSignedUrl(
   certificateId: string,
@@ -439,7 +444,8 @@ export async function createOriginalSignedUrl(
       .select(
         `slug, original_media_id,
          original:media_assets!certificates_original_media_id_fkey(
-           bucket_id, storage_path, visibility, original_filename, mime_type
+           bucket_id, storage_path, storage_provider, visibility,
+           original_filename, mime_type
          )`,
       )
       .eq("id", certificateId)
@@ -450,6 +456,7 @@ export async function createOriginalSignedUrl(
     const original = certificate.original as unknown as {
       bucket_id: string;
       storage_path: string;
+      storage_provider: StorageProvider;
       visibility: string;
       original_filename: string;
       mime_type: string;
@@ -468,11 +475,17 @@ export async function createOriginalSignedUrl(
     const EXPIRY_SECONDS = 60;
     const admin = createSupabaseAdminClient();
 
-    const { data: signed, error } = await admin.storage
-      .from(original.bucket_id)
-      .createSignedUrl(original.storage_path, EXPIRY_SECONDS, { download: false });
+    // Signed against whichever backend actually holds the scan. Both produce a
+    // URL that expires on its own; neither leaves a permanently reachable link.
+    const signedUrl = await signStorageUrl({
+      provider: original.storage_provider,
+      bucket: original.bucket_id as StorageBucket,
+      storagePath: original.storage_path,
+      expiresInSeconds: EXPIRY_SECONDS,
+      admin,
+    });
 
-    if (error || !signed?.signedUrl) return fail("server_error");
+    if (!signedUrl) return fail("server_error");
 
     // Logged before returning, so an access is recorded even if the caller never
     // follows the URL.
@@ -487,7 +500,7 @@ export async function createOriginalSignedUrl(
     });
 
     return ok({
-      url: signed.signedUrl,
+      url: signedUrl,
       expiresInSeconds: EXPIRY_SECONDS,
       filename: original.original_filename,
     });

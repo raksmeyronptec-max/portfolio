@@ -61,7 +61,14 @@
       "Bash(git checkout *)",
       "Bash(git merge *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const {AwsClient}=require\\('aws4fetch'\\); console.log\\('aws4fetch ok', typeof AwsClient\\)\")",
+      "Bash(cp /tmp/r2check.mjs ./r2check.mjs)",
+      "Bash(node r2check.mjs)",
+      "Bash(sed 's|m\\\\[2\\\\].replace\\(/\\\\^\\\\[\"'\"'\"']\\\\|\\\\[\"'\"'\"']\\\\$/g,\"\"\\)|m[2].trim\\(\\).replace\\(/^[\"'\"'\"']\\\\|[\"'\"'\"']$/g,\"\"\\)|' /tmp/r2check.mjs)",
+      "Bash(sed 's|const acc = process.env.R2_ACCOUNT_ID, pub = process.env.R2_BUCKET_NAME, priv = pub + \"-private\";|const acc = process.env.R2_ACCOUNT_ID, pub = process.env.R2_BUCKET_NAME, priv = process.env.R2_PRIVATE_BUCKET_NAME;|; s|m\\\\[2\\\\].replace|m[2].trim\\(\\).replace|' /tmp/r2check.mjs)",
+      "Bash(node --check scripts/import-project-media.mjs)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

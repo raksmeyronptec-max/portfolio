@@ -320,6 +320,7 @@ function makeAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
     id: "asset-1",
     bucket_id: "public-media",
     storage_path: "project_cover/2026/01/abc-file.webp",
+    storage_provider: "supabase",
     visibility: "public",
     mime_type: "image/webp",
     file_size_bytes: 1000,
@@ -339,32 +340,68 @@ function makeAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
 
 describe("publicStorageUrl", () => {
   it("builds a URL for a public bucket", () => {
-    const url = publicStorageUrl("public-media", "a/b.webp");
+    const url = publicStorageUrl("public-media", "a/b.webp", "supabase");
     expect(url).toContain("/storage/v1/object/public/public-media/");
   });
 
   it("builds a URL for the certificate-previews bucket", () => {
-    expect(publicStorageUrl("certificate-previews", "a/b.webp")).toContain(
-      "certificate-previews",
-    );
-  });
-
-  it("refuses to build a URL for a private bucket", () => {
-    // This is the load-bearing assertion: there is no code path that produces a
-    // public link to a raw certificate scan or a resume file.
-    expect(publicStorageUrl("certificate-originals", "a/scan.pdf")).toBeNull();
-    expect(publicStorageUrl("resumes", "a/cv.pdf")).toBeNull();
-    expect(publicStorageUrl("admin-uploads", "a/temp.png")).toBeNull();
+    expect(
+      publicStorageUrl("certificate-previews", "a/b.webp", "supabase"),
+    ).toContain("certificate-previews");
   });
 
   it("returns null for a missing path", () => {
-    expect(publicStorageUrl("public-media", null)).toBeNull();
-    expect(publicStorageUrl("public-media", undefined)).toBeNull();
+    expect(publicStorageUrl("public-media", null, "supabase")).toBeNull();
+    expect(publicStorageUrl("public-media", undefined, "supabase")).toBeNull();
   });
 
   it("encodes each path segment", () => {
-    const url = publicStorageUrl("public-media", "folder name/file name.webp");
+    const url = publicStorageUrl(
+      "public-media",
+      "folder name/file name.webp",
+      "supabase",
+    );
     expect(url).toContain("folder%20name/file%20name.webp");
+  });
+
+  /*
+   * The load-bearing assertion, and the reason it is parameterised over both
+   * backends: there must be no code path that produces a public link to a raw
+   * certificate scan or a resume file, whichever storage holds it.
+   *
+   * On Cloudflare R2 this matters more than it did on Supabase, not less. R2 has
+   * no per-object access control — public access is a property of the whole
+   * bucket — so the private files live in a physically separate bucket that has
+   * no public URL at all, and this function must refuse to address them through
+   * the public one.
+   */
+  for (const provider of ["supabase", "r2"] as const) {
+    describe(`on ${provider}`, () => {
+      it("refuses to build a URL for a private bucket", () => {
+        expect(
+          publicStorageUrl("certificate-originals", "a/scan.pdf", provider),
+        ).toBeNull();
+        expect(publicStorageUrl("resumes", "a/cv.pdf", provider)).toBeNull();
+        expect(publicStorageUrl("admin-uploads", "a/temp.png", provider)).toBeNull();
+      });
+    });
+  }
+
+  it("addresses R2 objects under their logical bucket prefix", () => {
+    // The logical bucket is the first key segment, which is what lets
+    // `storage_path` keep meaning the same thing in both backends.
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL = "https://cdn.example.test";
+    expect(publicStorageUrl("public-media", "a/b.webp", "r2")).toBe(
+      "https://cdn.example.test/public-media/a/b.webp",
+    );
+    delete process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  });
+
+  it("returns null for an R2 asset when no public URL is configured", () => {
+    const saved = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+    delete process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+    expect(publicStorageUrl("public-media", "a/b.webp", "r2")).toBeNull();
+    if (saved !== undefined) process.env.NEXT_PUBLIC_R2_PUBLIC_URL = saved;
   });
 });
 

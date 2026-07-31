@@ -1,6 +1,7 @@
 import "server-only";
 
 import { publicStorageUrl } from "@/lib/content/media";
+import { isStorageProvider } from "@/lib/storage/buckets";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -68,8 +69,8 @@ export async function listPortraitOptions(): Promise<PortraitOption[]> {
     const { data, error } = await supabase
       .from("media_assets")
       .select(
-        `id, bucket_id, storage_path, card_path, original_filename,
-         alt_text_en, width, height`,
+        `id, bucket_id, storage_path, storage_provider, card_path,
+         original_filename, alt_text_en, width, height`,
       )
       .eq("visibility", "public")
       .in("kind", ["profile_image", "open_graph_image", "other"])
@@ -87,7 +88,14 @@ export async function listPortraitOptions(): Promise<PortraitOption[]> {
       return {
         id: row.id,
         label: `${row.alt_text_en ?? row.original_filename}${dimensions}`,
-        url: publicStorageUrl(row.bucket_id, row.card_path ?? row.storage_path),
+        // The column is `text` in the generated types, so the value is
+        // narrowed rather than asserted; an unrecognised backend falls back to
+        // the original one instead of producing an unusable URL.
+        url: publicStorageUrl(
+          row.bucket_id,
+          row.card_path ?? row.storage_path,
+          isStorageProvider(row.storage_provider) ? row.storage_provider : "supabase",
+        ),
       };
     });
   } catch {

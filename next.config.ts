@@ -63,6 +63,29 @@ const supabaseSocket = supabaseHost
   ? `${supabaseScheme === "http" ? "ws" : "wss"}://${supabaseHost}`
   : null;
 
+/**
+ * Cloudflare R2 public origin, when media is served from there.
+ *
+ * Only the *public* bucket has an origin at all. The private bucket is
+ * deliberately unreachable from the browser — its objects are read server-side
+ * or through a short-lived signed URL — so nothing about it belongs in a CSP or
+ * an image allowlist.
+ */
+let r2PublicOrigin: string | null = null;
+let r2PublicHostname: string | null = null;
+
+try {
+  const raw = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.trim().replace(/^["']|["']$/g, "");
+  if (raw) {
+    const parsed = new URL(raw);
+    r2PublicOrigin = parsed.origin;
+    r2PublicHostname = parsed.hostname;
+  }
+} catch {
+  r2PublicOrigin = null;
+  r2PublicHostname = null;
+}
+
 const isDev = process.env.NODE_ENV === "development";
 
 /**
@@ -92,9 +115,11 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
   `font-src 'self' data: https://fonts.gstatic.com`,
-  `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""}`,
-  `media-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""}`,
-  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin} ${supabaseSocket}` : ""}`,
+  // R2 is added alongside Supabase rather than replacing it: media uploaded
+  // before the move still lives in Supabase storage, and both must load.
+  `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
+  `media-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
+  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin} ${supabaseSocket}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
   // The legacy Ask-Ron chat widget is served from our own origin as a static
   // document and is only framed by us.
   `frame-src 'self'`,
@@ -130,20 +155,35 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: supabaseHostname
-      ? [
-          {
-            // Same reasoning as the CSP: local storage is served over http, and a
-            // hard-coded https here made every local media thumbnail a 400 from
-            // the image optimiser.
-            protocol: supabaseScheme,
-            // Hostname only — the port is its own field. See the note above.
-            hostname: supabaseHostname,
-            ...(supabasePort ? { port: supabasePort } : {}),
-            pathname: "/storage/v1/object/public/**",
-          },
-        ]
-      : [],
+    remotePatterns: [
+      ...(supabaseHostname
+        ? [
+            {
+              // Same reasoning as the CSP: local storage is served over http, and
+              // a hard-coded https here made every local media thumbnail a 400
+              // from the image optimiser.
+              protocol: supabaseScheme,
+              // Hostname only — the port is its own field. See the note above.
+              hostname: supabaseHostname,
+              ...(supabasePort ? { port: supabasePort } : {}),
+              pathname: "/storage/v1/object/public/**",
+            } as const,
+          ]
+        : []),
+      ...(r2PublicHostname
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: r2PublicHostname,
+              // Scoped to the two public logical buckets rather than left open.
+              // The private bucket has no public origin at all, but pinning the
+              // prefixes here means a mistake elsewhere cannot turn the image
+              // optimiser into a proxy for arbitrary keys.
+              pathname: "/{public-media,certificate-previews}/**",
+            } as const,
+          ]
+        : []),
+    ],
     /*
      * Next 16 refuses to optimise an upstream image that resolves to a private
      * IP — sensible SSRF protection, and it must stay on in production.

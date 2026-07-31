@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { readStorageObject } from "@/lib/storage";
+import type { StorageBucket, StorageProvider } from "@/lib/storage/buckets";
 import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { visitorHash } from "@/lib/analytics/visitor";
@@ -13,9 +15,11 @@ import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
  *  1. The active version can change; this URL never does.
  *  2. Downloads are counted server-side, so the dashboard figure is real rather
  *     than an estimate from client events that ad blockers drop.
- *  3. The `resumes` bucket is private. Access is granted by a storage policy that
- *     only matches the object behind the ACTIVE, non-archived version — so
- *     archiving a resume revokes access to the file itself, not just the link.
+ *  3. The `resumes` bucket is private. On Supabase a storage policy grants access
+ *     only to the object behind the ACTIVE, non-archived version. On Cloudflare
+ *     R2 there is no such policy layer, so the equivalent guarantee comes from
+ *     the query above: the row is read through the RLS-constrained client, and
+ *     the bytes are fetched only for the asset that query returned.
  *
  * The file is streamed through this handler rather than redirected to a signed
  * URL, which keeps the private storage path out of the browser entirely.
@@ -42,7 +46,8 @@ export async function GET(request: NextRequest) {
       .select(
         `id, version_label, locale,
          asset:media_assets!resume_versions_media_id_fkey(
-           bucket_id, storage_path, mime_type, file_size_bytes, original_filename
+           bucket_id, storage_path, storage_provider, mime_type, file_size_bytes,
+           original_filename
          )`,
       )
       .eq("is_active", true)
@@ -59,6 +64,7 @@ export async function GET(request: NextRequest) {
       asset: {
         bucket_id: string;
         storage_path: string;
+        storage_provider: StorageProvider;
         mime_type: string;
         file_size_bytes: number;
         original_filename: string;
@@ -78,11 +84,14 @@ export async function GET(request: NextRequest) {
     // Downloading requires reading a private object, which the anon key cannot do.
     const admin = createSupabaseAdminClient();
 
-    const { data: file, error: downloadError } = await admin.storage
-      .from(chosen.asset.bucket_id)
-      .download(chosen.asset.storage_path);
+    const file = await readStorageObject({
+      provider: chosen.asset.storage_provider,
+      bucket: chosen.asset.bucket_id as StorageBucket,
+      storagePath: chosen.asset.storage_path,
+      admin,
+    });
 
-    if (downloadError || !file) {
+    if (!file) {
       return NextResponse.json({ error: "File unavailable." }, { status: 404 });
     }
 
@@ -103,11 +112,13 @@ export async function GET(request: NextRequest) {
       chosen.asset.original_filename || `resume-${chosen.locale}.pdf`,
     );
 
-    return new NextResponse(file.stream(), {
+    return new NextResponse(file, {
       status: 200,
       headers: {
         "Content-Type": chosen.asset.mime_type,
-        "Content-Length": String(chosen.asset.file_size_bytes),
+        // Taken from the bytes actually read, not from the row: a stale
+        // `file_size_bytes` would truncate the response or hang the client.
+        "Content-Length": String(file.byteLength),
         // `attachment` with a quoted, sanitised filename. RFC 5987 form is added
         // so non-ASCII names survive.
         "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,

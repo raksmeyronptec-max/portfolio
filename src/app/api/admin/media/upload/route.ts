@@ -11,6 +11,8 @@ import {
   validateUpload,
 } from "@/lib/media/validate";
 import { checksumOf, processImage, readDimensions } from "@/lib/media/process";
+import { activeStorageProvider, putStorageObject } from "@/lib/storage";
+import type { StorageBucket } from "@/lib/storage/buckets";
 
 /**
  * Media upload.
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
   const isResume = kind === "resume_file";
   const isCertificatePreview = kind === "certificate_preview";
 
-  const bucketId = isPrivateOriginal
+  const bucketId: StorageBucket = isPrivateOriginal
     ? "certificate-originals"
     : isResume
       ? "resumes"
@@ -171,6 +173,13 @@ export async function POST(request: NextRequest) {
     let storedMime = file.type;
     let uploadBody: Uint8Array | Buffer = bytes;
     let finalPath = storagePath;
+    /*
+     * Recorded from the upload that actually happened rather than from the
+     * configuration, so a row can never claim to be somewhere its bytes are
+     * not. The initial value is only a placeholder; every path below overwrites
+     * it before the row is inserted.
+     */
+    let storageProvider = activeStorageProvider();
 
     if (isPdf || isPrivateOriginal) {
       /*
@@ -199,30 +208,31 @@ export async function POST(request: NextRequest) {
       // The stored key gains a .webp extension since the bytes are now WebP.
       finalPath = `${storagePath.replace(/\.[^./]+$/, "")}.webp`;
 
-      const { error: mainError } = await admin.storage
-        .from(bucketId)
-        .upload(finalPath, processed.main.buffer, {
-          contentType: "image/webp",
-          upsert: false,
-          cacheControl: "31536000",
-        });
+      const mainUpload = await putStorageObject({
+        bucket: bucketId,
+        storagePath: finalPath,
+        body: processed.main.buffer,
+        contentType: "image/webp",
+        admin,
+      });
 
-      if (mainError) {
-        return json({ ok: false, error: "storage_failed", message: mainError.message }, 500);
+      if (mainUpload.error) {
+        return json({ ok: false, error: "storage_failed", message: mainUpload.error }, 500);
       }
+      storageProvider = mainUpload.provider;
 
       for (const derivative of processed.derivatives) {
         const derivativePath = `${finalPath.replace(/\.webp$/, "")}-${derivative.suffix}.webp`;
 
-        const { error: derivativeError } = await admin.storage
-          .from(bucketId)
-          .upload(derivativePath, derivative.buffer, {
-            contentType: "image/webp",
-            upsert: false,
-            cacheControl: "31536000",
-          });
+        const derivativeUpload = await putStorageObject({
+          bucket: bucketId,
+          storagePath: derivativePath,
+          body: derivative.buffer,
+          contentType: "image/webp",
+          admin,
+        });
 
-        if (derivativeError) continue; // A missing derivative degrades gracefully.
+        if (derivativeUpload.error) continue; // A missing derivative degrades gracefully.
 
         if (derivative.suffix === "thumb") thumbnailPath = derivativePath;
         if (derivative.suffix === "card") cardPath = derivativePath;
@@ -232,19 +242,24 @@ export async function POST(request: NextRequest) {
 
     // Non-image and private-original paths still need the main object uploaded.
     if (isPdf || isPrivateOriginal) {
-      const { error: uploadError } = await admin.storage
-        .from(bucketId)
-        .upload(finalPath, uploadBody, {
-          contentType: file.type,
-          upsert: false,
-          // Private objects are served through signed URLs, so a long cache would
-          // be pointless and slightly risky.
-          cacheControl: visibility === "private" ? "0" : "31536000",
-        });
+      const upload = await putStorageObject({
+        bucket: bucketId,
+        storagePath: finalPath,
+        body: new Uint8Array(uploadBody),
+        contentType: file.type,
+        // Private objects are read through the server or a short-lived signed
+        // URL, so a long cache would be pointless and slightly risky.
+        cacheControl:
+          visibility === "private"
+            ? "private, max-age=0, no-store"
+            : "public, max-age=31536000, immutable",
+        admin,
+      });
 
-      if (uploadError) {
-        return json({ ok: false, error: "storage_failed", message: uploadError.message }, 500);
+      if (upload.error) {
+        return json({ ok: false, error: "storage_failed", message: upload.error }, 500);
       }
+      storageProvider = upload.provider;
     }
 
     // ── Register the asset ──────────────────────────────────────────────────
@@ -253,6 +268,7 @@ export async function POST(request: NextRequest) {
       .insert({
         bucket_id: bucketId,
         storage_path: finalPath,
+        storage_provider: storageProvider,
         kind,
         visibility,
         original_filename: safeName,

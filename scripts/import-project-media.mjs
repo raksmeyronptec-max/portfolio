@@ -45,8 +45,14 @@ import process from "node:process";
 import sharp from "sharp";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "@playwright/test";
+import { AwsClient } from "aws4fetch";
 
 const DRY_RUN = process.argv.includes("--dry-run");
+
+/**
+ * Logical bucket. Physically this is a prefix inside the R2 public bucket, or a
+ * Supabase storage bucket of the same name — see src/lib/storage/buckets.ts.
+ */
 const BUCKET = "public-media";
 
 /*
@@ -187,7 +193,14 @@ function loadEnvFile(file) {
   }
 }
 
+/*
+ * Same precedence Next.js uses: `.env.local` wins, `.env` fills the gaps.
+ * `loadEnvFile` never overwrites an already-set key, so the order is the rule.
+ * This matters because the R2 credentials and the Supabase ones are routinely
+ * kept in different files.
+ */
 loadEnvFile(path.resolve(process.cwd(), ".env.local"));
+loadEnvFile(path.resolve(process.cwd(), ".env"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -203,6 +216,47 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false },
 });
+
+/*
+ * Storage backend.
+ *
+ * Mirrors `activeStorageProvider()` in src/lib/storage: R2 when it is
+ * configured, Supabase otherwise. The captures have to land wherever the
+ * application will later look for them, and the `storage_provider` column on
+ * each row is what records the answer.
+ */
+const r2 = (() => {
+  const accountId = env("R2_ACCOUNT_ID");
+  const accessKeyId = env("R2_ACCESS_KEY_ID");
+  const secretAccessKey = env("R2_SECRET_ACCESS_KEY");
+  const bucket = env("R2_BUCKET_NAME");
+  const publicUrl = env("NEXT_PUBLIC_R2_PUBLIC_URL");
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket || !publicUrl) {
+    return null;
+  }
+
+  return {
+    bucket,
+    publicUrl: publicUrl.replace(/\/+$/, ""),
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    client: new AwsClient({
+      accessKeyId,
+      secretAccessKey,
+      region: "auto",
+      service: "s3",
+    }),
+  };
+})();
+
+const STORAGE_PROVIDER = r2 ? "r2" : "supabase";
+
+function env(name) {
+  const raw = process.env[name];
+  if (!raw) return null;
+  const value = raw.trim().replace(/^["']|["']$/g, "");
+  return value === "" ? null : value;
+}
 
 // ── Image processing ────────────────────────────────────────────────────────
 
@@ -249,6 +303,30 @@ async function processCapture(input) {
 
 async function upload(storagePath, buffer) {
   if (DRY_RUN) return;
+
+  if (r2) {
+    // The logical bucket becomes the first key segment, so `storage_path` keeps
+    // meaning "path within its logical bucket" in both backends.
+    const key = `${BUCKET}/${storagePath}`
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
+
+    const response = await r2.client.fetch(`${r2.endpoint}/${r2.bucket}/${key}`, {
+      method: "PUT",
+      body: new Uint8Array(buffer),
+      headers: {
+        "Content-Type": "image/webp",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`R2 upload ${storagePath}: ${response.status}`);
+    }
+    return;
+  }
+
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(storagePath, buffer, {
@@ -260,6 +338,8 @@ async function upload(storagePath, buffer) {
 }
 
 async function run() {
+  console.log(`Storage backend: ${STORAGE_PROVIDER}${r2 ? ` (bucket "${r2.bucket}")` : ""}`);
+
   const browser = await chromium.launch();
   const summary = [];
 
@@ -329,6 +409,7 @@ async function run() {
         const row = {
           bucket_id: BUCKET,
           storage_path: `${base}.webp`,
+          storage_provider: STORAGE_PROVIDER,
           kind: shot.cover ? "project_cover" : "project_screenshot",
           visibility: "public",
           original_filename: `${target.slug}-${shot.key}.webp`,

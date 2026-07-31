@@ -126,7 +126,11 @@ export function buildPageMetadata({
 /** Absolute URL for a media asset used as a social image, or null. */
 function resolveOgImageUrl(asset: MediaAsset | null | undefined): string | null {
   if (!asset || asset.visibility !== "public") return null;
-  return publicStorageUrl(asset.bucket_id, asset.preview_path ?? asset.storage_path);
+  return publicStorageUrl(
+    asset.bucket_id,
+    asset.preview_path ?? asset.storage_path,
+    asset.storage_provider,
+  );
 }
 
 /**
