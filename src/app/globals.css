@@ -201,25 +201,43 @@
     --space-section: clamp(4.5rem, 9vw, 8.5rem);
     --space-block: clamp(1.75rem, 3.5vw, 3rem);
 
-    /* ── Typography ─────────────────────────────────────────────────────── */
-    /* --font-display / --font-latin / --font-khmer are injected by next/font.
-       Khmer is listed after the Latin face so Latin glyphs keep their intended
-       shapes, but before any system fallback so Khmer marks are never clipped
-       by a font that lacks them. */
+    /* ── Typography ───────────────────────────────────────────────────────
+       `--font-latin` (DM Sans), `--font-display` (Syne), `--font-khmer`
+       (Hanuman) and `--font-mono-family` (JetBrains Mono) are the raw families
+       injected by next/font. The stacks below are what components consume.
+
+       Ordering is the whole mechanism for mixed-language text, and it is not
+       incidental. Khmer sits *after* the Latin face in every Latin-first stack:
+       DM Sans and Syne have no Khmer glyphs, so a Khmer character falls through
+       to Hanuman automatically, while Latin characters keep their intended
+       shapes. That is why "Student Teacher (គរុនិស្សិត)" renders correctly on
+       an English page with no wrapper, no class and no JavaScript character
+       detection. `:lang(km)` below simply reverses the priority. */
     --font-sans: var(--font-latin), var(--font-khmer), ui-sans-serif, system-ui,
       "Segoe UI", sans-serif;
     --font-display-stack: var(--font-display), var(--font-latin),
       var(--font-khmer), ui-sans-serif, system-ui, sans-serif;
-    --font-khmer-stack: var(--font-khmer), "Noto Sans Khmer", "Khmer OS Battambang",
-      "Khmer OS", sans-serif;
-    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+    --font-khmer-stack: var(--font-khmer), var(--font-latin), "Noto Sans Khmer",
+      "Khmer OS Battambang", "Khmer OS", system-ui, sans-serif;
+    --font-mono: var(--font-mono-family), ui-monospace, "SF Mono",
+      "Cascadia Mono", "Roboto Mono", monospace;
 
-    /* Khmer needs materially more leading than Latin: its glyphs stack
-       diacritics above and subscripts below the baseline, and 1.5 clips them. */
-    --leading-latin: 1.6;
-    --leading-khmer: 1.95;
+    /* ── Leading ──────────────────────────────────────────────────────────
+       Measured from the references rather than chosen:
+
+         Latin body      old portfolio  16px / 27.2px  = 1.70
+         Khmer body      PTEC library   15px / 28.5px  = 1.90
+         Latin display   old portfolio  54.4px / 58.75px = 1.08
+         Khmer heading   PTEC library   nav & h3 at 1.50, h2 at 1.25
+
+       Hanuman stacks vowel marks high and drops subscripts (ជើង) well below the
+       baseline, so Khmer cannot borrow Latin's leading. 1.45 for headings is
+       the tightest value that still clears the marks on a wrapped two-line
+       heading; PTEC's 1.25 only holds because its headings rarely wrap. */
+    --leading-latin: 1.7;
+    --leading-khmer: 1.9;
     --leading-heading-latin: 1.05;
-    --leading-heading-khmer: 1.5;
+    --leading-heading-khmer: 1.45;
   }
 
   /* ── Semantic tokens — DARK ────────────────────────────────────────────── */
@@ -539,7 +557,16 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display-stack);
-    font-weight: 640;
+    /*
+      700, not 640.
+
+      640 is not a weight Syne ships — the variable range is served here as 600,
+      700 and 800, so 640 resolved to whichever the browser considered nearest
+      and the result varied. The reference renders h3 at 700 and its display
+      headings heavier still, so 700 is both the honest value and the matching
+      one. Syne carries most of the reference's character at this weight.
+    */
+    font-weight: 700;
     text-wrap: balance;
     /*
       No `color` here, deliberately.

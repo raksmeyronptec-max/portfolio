@@ -135,7 +135,9 @@ export function Hero({
                 {t.home.hero.greeting}
               </p>
 
-              <h1 className="text-hero font-bold">{displayName}</h1>
+              {/* extrabold, matching the reference's h1: it asks for Syne 900,
+                  which clamps to the family's 800 ceiling. */}
+              <h1 className="text-hero font-extrabold">{displayName}</h1>
             </Reveal>
 
             <Reveal delay={80} className="flex flex-col gap-4">

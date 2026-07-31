@@ -1,22 +1,49 @@
-import { Inter, Noto_Sans_Khmer, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans, Hanuman, JetBrains_Mono, Syne } from "next/font/google";
 
 /**
- * Fonts, shared by the public and admin root layouts.
+ * Typography.
  *
- * Both are self-hosted by next/font: the files are fetched at build time and
- * served from our own origin. Three wins over v1, which pulled four families and
- * eleven weights from Google's CDN in a single blocking request:
- *   • no third-party connection on the critical path
- *   • `font-src 'self'` suffices, so the CSP stays tight
- *   • `display: swap` means text paints immediately instead of going invisible
+ * Every face here was chosen by inspecting the two reference sites with
+ * DevTools and reading the *rendered* computed styles — not by guessing from
+ * the CSS declaration, because a declared family says nothing about what
+ * actually drew the glyphs when the first font in the stack lacks them.
  *
- * Weight selection is deliberately narrow. Inter is variable, so it costs one
- * file for the whole range. Noto Sans Khmer is loaded in only the three weights
- * the design uses — Khmer fonts are large, and loading seven weights of one would
- * dwarf every other asset on the page.
+ * ── English: portfolio-ron-raksmey.netlify.app ───────────────────────────────
+ *   Its Google Fonts request is
+ *     family=Battambang:wght@400;700&family=Syne:wght@700;800;900&family=DM+Sans…
+ *   and the rendered result is:
+ *     body / p / nav   DM Sans 400        16px / lh 27.2px (1.70)
+ *     h1               Syne 900*          54.4px / lh 1.08 / ls -0.04em
+ *     h2               Syne 900*          46.4px / ls -0.03em
+ *     h3               Syne 700
+ *     buttons, links   JetBrains Mono 700 12.8–13.6px
+ *
+ *   * The old site asks for 900, but Syne's variable range stops at 800, so the
+ *     browser clamps. 800 is requested here — the same pixels, honestly named.
+ *
+ * ── Khmer: library.ptec.edu.kh ───────────────────────────────────────────────
+ *   Khmer text renders in Hanuman, self-hosted through next/font, and only two
+ *   weights are declared (@font-face w:400 and w:700):
+ *     Khmer <p>        Hanuman 700  15px / lh 28.5px (1.90)
+ *     Khmer <span>     Hanuman 400  12px / lh 21.6px (1.80)
+ *     Khmer nav / h3   Hanuman 600/700 / lh 1.50
+ *
+ *   Hanuman is a tall face: its subscripts (ជើង) sit well below the baseline and
+ *   its vowel marks stack high. The generous leading above is not decoration —
+ *   it is what stops the marks colliding. Those numbers are mirrored in
+ *   globals.css.
+ *
+ * ── Licensing ────────────────────────────────────────────────────────────────
+ * All four are Google Fonts under the SIL Open Font License, fetched at build
+ * time by next/font and served from our own origin. Nothing is copied from
+ * either reference site, and no font binary is committed.
  */
 
-export const inter = Inter({
+/**
+ * Body / UI face. Variable, so the whole 400–700 range the app uses costs one
+ * file rather than four.
+ */
+export const dmSans = DM_Sans({
   subsets: ["latin", "latin-ext"],
   display: "swap",
   variable: "--font-latin",
@@ -24,28 +51,64 @@ export const inter = Inter({
 });
 
 /**
- * Display face, used for headings and the hero.
+ * Display face for headings.
  *
- * Inter is an excellent UI face but a deliberately neutral one; at hero size it
- * reads as a system font rather than as somebody's portfolio. Plus Jakarta Sans
- * is geometric and slightly humanist, so it carries personality at 6rem while
- * still pairing cleanly with Inter for body copy. Variable, so the whole weight
- * range costs one file.
+ * Syne is what gives the reference its personality — the tight, heavy headline
+ * look. Weights limited to those actually used: 600 for small headings, 700 and
+ * 800 for display sizes.
  */
-export const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin", "latin-ext"],
+export const syne = Syne({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
   variable: "--font-display",
   preload: true,
 });
 
-export const notoSansKhmer = Noto_Sans_Khmer({
+/**
+ * Khmer face, matching PTEC.
+ *
+ * Only 400 and 700 exist in the design and only those are requested, so no
+ * weight is ever synthesised. The app's 500 and 600 utilities resolve to the
+ * nearest real weight by normal CSS font matching, which is exactly what the
+ * reference does.
+ */
+export const hanuman = Hanuman({
   subsets: ["khmer"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
   display: "swap",
   variable: "--font-khmer",
-  // Khmer is a large subset; only preload it where it is the primary script.
   preload: true,
 });
 
-export const fontVariables = `${inter.variable} ${plusJakarta.variable} ${notoSansKhmer.variable}`;
+/**
+ * Monospace, for the timeline periods, project numerals and code blocks.
+ *
+ * The reference also uses JetBrains Mono on buttons and inline links. That is
+ * deliberately *not* reproduced: restyling every button would be a visual
+ * redesign, and this phase is typography-only. It is noted in the report.
+ */
+export const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+  /*
+   * `--font-mono-family`, not `--font-mono`.
+   *
+   * globals.css already owns `--font-mono` as the composed stack, and Tailwind
+   * bridges a theme key of the same name. Letting next/font write `--font-mono`
+   * too would put three declarations on the same custom property, resolved by
+   * cascade-layer order rather than intent — and the unlayered next/font class
+   * would silently win over the layered token. Distinct names keep "the family"
+   * and "the stack" separable, matching --font-latin/--font-sans above.
+   */
+  variable: "--font-mono-family",
+  preload: false,
+});
+
+export const fontVariables = [
+  dmSans.variable,
+  syne.variable,
+  hanuman.variable,
+  jetbrainsMono.variable,
+].join(" ");
