@@ -8,7 +8,8 @@ import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import { Card, CardBody, CardHeader, Divider } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
-import { profileErrorLabels, saveOwnerProfile } from "@/lib/actions/profile";
+import { saveOwnerProfile } from "@/lib/actions/profile";
+import { profileErrorLabels } from "@/lib/validation/profile";
 
 export type ProfileFormValues = {
   display_name: string;

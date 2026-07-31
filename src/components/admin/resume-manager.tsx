@@ -15,7 +15,7 @@ import {
   createResumeVersion,
   unarchiveResumeVersion,
 } from "@/lib/actions/resume";
-import { seoErrorLabels } from "@/lib/actions/settings";
+import { seoErrorLabels } from "@/lib/validation/settings";
 import { locales, localeMeta, type Locale } from "@/i18n/config";
 import type { AdminResumeVersion } from "@/lib/data/admin-cv";
 import type { ActionResult } from "@/lib/actions/result";

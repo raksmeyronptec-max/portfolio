@@ -1,10 +1,10 @@
 "use server";
 
-import { z } from "zod";
-
 import { diffRecords, writeAuditLog } from "@/lib/audit/log";
 import { checkPermission } from "@/lib/auth/guards";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+import { ownerProfileSchema } from "@/lib/validation/profile";
 
 import {
   fail,
@@ -27,63 +27,6 @@ import {
  * and `is_site_owner` is not in the schema below and therefore cannot be
  * self-granted through this action.
  */
-
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => (value === "" ? null : value))
-    .nullable()
-    .optional();
-
-export const ownerProfileSchema = z.object({
-  display_name: z.string().trim().min(1, { message: "nameRequired" }).max(120),
-  public_headline_en: optionalText(300),
-  public_headline_km: optionalText(300),
-  public_bio_en: optionalText(2000),
-  public_bio_km: optionalText(2000),
-  public_location: optionalText(200),
-  /**
-   * Either a media asset chosen from the library or an empty string. Stored
-   * alongside the resolved URL so "which upload is this?" stays answerable.
-   */
-  avatar_media_id: z
-    .string()
-    .trim()
-    .transform((value) => (value === "" ? null : value))
-    .nullable()
-    .optional()
-    .refine(
-      (value) =>
-        value === null ||
-        value === undefined ||
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value),
-      { message: "invalidMediaId" },
-    ),
-  /**
-   * A root-relative path (`/image/portrait.jpg`) or an absolute https URL.
-   * Root-relative is allowed because the migrated portrait still lives in
-   * `public/`; refusing it would mean pretending the file is not there.
-   */
-  public_avatar_url: z
-    .string()
-    .trim()
-    .transform((value) => (value === "" ? null : value))
-    .nullable()
-    .optional()
-    .refine(
-      (value) =>
-        value === null ||
-        value === undefined ||
-        value.startsWith("/") ||
-        /^https:\/\//i.test(value),
-      { message: "avatarUrlFormat" },
-    )
-    .refine((value) => value === null || value === undefined || !value.startsWith("//"), {
-      message: "avatarUrlFormat",
-    }),
-});
 
 export async function saveOwnerProfile(input: unknown): Promise<ActionResult<void>> {
   // Owner-only: these fields are the public identity of the site.
@@ -155,10 +98,3 @@ export async function saveOwnerProfile(input: unknown): Promise<ActionResult<voi
     return fail("server_error");
   }
 }
-
-export const profileErrorLabels: Record<string, string> = {
-  nameRequired: "A display name is required.",
-  invalidMediaId: "Choose a portrait from the media library, or leave it unset.",
-  avatarUrlFormat:
-    "Use a path that starts with / (a file in public/) or a full https:// URL.",
-};

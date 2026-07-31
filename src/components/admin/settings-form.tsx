@@ -8,7 +8,8 @@ import { Checkbox, Field, TextArea, TextInput } from "@/components/ui/field";
 import { Card, CardBody, CardHeader, Divider } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
-import { saveSiteSettings, seoErrorLabels } from "@/lib/actions/settings";
+import { saveSiteSettings } from "@/lib/actions/settings";
+import { seoErrorLabels } from "@/lib/validation/settings";
 
 type SettingsValues = Record<string, unknown>;
 

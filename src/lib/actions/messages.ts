@@ -7,6 +7,11 @@ import { checkPermission } from "@/lib/auth/guards";
 import { writeAuditLog } from "@/lib/audit/log";
 import { fail, fromPostgresError, ok, type ActionResult } from "./result";
 
+import {
+  messageStates,
+  type MessageState,
+} from "@/lib/validation/message";
+
 /**
  * Contact-message triage.
  *
@@ -19,9 +24,6 @@ import { fail, fromPostgresError, ok, type ActionResult } from "./result";
  * further than they consented to.
  */
 
-export const messageStates = ["unread", "read", "archived", "spam"] as const;
-
-export type MessageState = (typeof messageStates)[number];
 
 export async function setMessageState(
   messageId: string,
