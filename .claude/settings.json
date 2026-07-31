@@ -73,7 +73,14 @@
       "Bash(git fetch *)",
       "Bash(node qa-toast.mjs)",
       "Bash(node qa-cert.mjs)",
-      "Bash(node qa-translate.mjs)"
+      "Bash(node qa-translate.mjs)",
+      "Bash(node qa-profile.mjs)",
+      "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3200/admin/login)",
+      "Bash(node qa-prod.mjs)",
+      "Bash(env -u SUPABASE_SERVICE_ROLE_KEY npm run start -- --port 3300)",
+      "Bash(curl -s -o /dev/null --max-time 5 http://localhost:3300/en)",
+      "Bash(curl -s -o /dev/null -w \"GET /admin/profile -> %{http_code}\\\\n\" --max-time 60 http://localhost:3300/admin/profile)",
+      "Bash(node qa-nokey.mjs)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"
