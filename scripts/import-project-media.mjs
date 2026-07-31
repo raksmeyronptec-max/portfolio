@@ -312,12 +312,18 @@ async function upload(storagePath, buffer) {
       .map(encodeURIComponent)
       .join("/");
 
+    const body = new Uint8Array(buffer);
+
     const response = await r2.client.fetch(`${r2.endpoint}/${r2.bucket}/${key}`, {
       method: "PUT",
-      body: new Uint8Array(buffer),
+      body,
       headers: {
         "Content-Type": "image/webp",
         "Cache-Control": "public, max-age=31536000, immutable",
+        // Required: R2 answers 411 to a PUT with no Content-Length, and whether
+        // one is added automatically depends on the runtime. See the same note
+        // in src/lib/storage/r2.ts.
+        "Content-Length": String(body.byteLength),
       },
     });
 

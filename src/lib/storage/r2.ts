@@ -154,24 +154,57 @@ export async function r2PutObject(input: PutObjectInput): Promise<void> {
   const config = r2Config();
   if (!config) throw new Error("R2 is not configured.");
 
+  // A fresh copy: aws4fetch hashes the body, and a Uint8Array view over a larger
+  // ArrayBuffer would otherwise be signed over the wrong bytes.
+  const body = new Uint8Array(input.body);
+
   const response = await r2Client(config).fetch(
     endpointFor(config, input.bucket, input.storagePath),
     {
       method: "PUT",
-      // A fresh copy: aws4fetch hashes the body, and a Uint8Array view over a
-      // larger ArrayBuffer would otherwise be signed over the wrong bytes.
-      body: new Uint8Array(input.body),
+      body,
       headers: {
         "Content-Type": input.contentType,
         "Cache-Control": input.cacheControl ?? "public, max-age=31536000, immutable",
+        /*
+         * Set explicitly, and this is load-bearing.
+         *
+         * R2's S3 API rejects a PUT with no Content-Length — it answers 411 and
+         * stores nothing. A `Request` built from a Uint8Array carries no such
+         * header, so whether one arrives depends entirely on the runtime: Node's
+         * undici measures the body and adds it, while Vercel's serverless
+         * runtime streams the body chunked and does not. The result was an
+         * upload that worked on a developer machine and failed in production
+         * with a bare "411", which is the worst way to find this out.
+         *
+         * Stating the length removes the runtime from the decision.
+         */
+        "Content-Length": String(body.byteLength),
       },
     },
   );
 
   if (!response.ok) {
+    // R2 explains itself in an XML error body. Surfacing the code turns an
+    // opaque status into something actionable — this whole comment block exists
+    // because "411" on its own was not.
+    const detail = await r2ErrorDetail(response);
     throw new Error(
-      `R2 upload failed for ${input.bucket}/${input.storagePath}: ${response.status}`,
+      `R2 upload failed for ${input.bucket}/${input.storagePath}: ${response.status}${detail}`,
     );
+  }
+}
+
+/** `<Code>` and `<Message>` from an S3-style error body, when there is one. */
+async function r2ErrorDetail(response: Response): Promise<string> {
+  try {
+    const text = await response.text();
+    const code = /<Code>([^<]*)<\/Code>/.exec(text)?.[1];
+    const message = /<Message>([^<]*)<\/Message>/.exec(text)?.[1];
+    if (!code && !message) return "";
+    return ` (${[code, message].filter(Boolean).join(": ")})`;
+  } catch {
+    return "";
   }
 }
 
