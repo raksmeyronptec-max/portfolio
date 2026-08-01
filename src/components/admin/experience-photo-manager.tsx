@@ -777,6 +777,37 @@ function toEditorValues(photo: AdminExperiencePhoto): EditorValues {
   };
 }
 
+/**
+ * The state the dialog holds while no photograph is open.
+ *
+ * A real object, not `{} as EditorValues`: the reset below runs *during* render,
+ * and React finishes the current render pass before re-running the component
+ * with the new state. So the frame in which a photograph is first selected still
+ * reads these fields — and a cast that lied about them crashed the whole admin
+ * page on `values.altTextEn.trim()` the moment anyone clicked Edit.
+ */
+function blankEditorValues(): EditorValues {
+  return {
+    mediaId: "",
+    role: "gallery",
+    sortOrder: 0,
+    captionEn: "",
+    captionKm: "",
+    altTextEn: "",
+    altTextKm: "",
+    photoDate: "",
+    locationEn: "",
+    locationKm: "",
+    credit: "",
+    privacyStatus: "pending_review",
+    consentStatus: "pending",
+    visibility: "hidden",
+    focalX: "",
+    focalY: "",
+    reviewNote: "",
+  };
+}
+
 function PhotoEditorDialog({
   photo,
   canReview,
@@ -791,7 +822,7 @@ function PhotoEditorDialog({
   onSave: (values: EditorValues) => void;
 }) {
   const [values, setValues] = useState<EditorValues>(() =>
-    photo ? toEditorValues(photo) : ({} as EditorValues),
+    photo ? toEditorValues(photo) : blankEditorValues(),
   );
   const [ticked, setTicked] = useState<Set<string>>(new Set());
 
