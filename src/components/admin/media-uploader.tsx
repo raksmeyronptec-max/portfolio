@@ -68,6 +68,18 @@ type QueueItem = {
   previewUrl: string | null;
 };
 
+/**
+ * True for an iPhone HEIC/HEIF file.
+ *
+ * Checked by extension as well as MIME type, because several platforms report no
+ * type at all for HEIC — the same reason the server infers the type from the
+ * extension.
+ */
+function isHeicFile(file: File): boolean {
+  if (file.type === "image/heic" || file.type === "image/heif") return true;
+  return /\.(heic|heif)$/i.test(file.name);
+}
+
 type UploadResponse = {
   ok?: boolean;
   error?: string;
@@ -156,9 +168,18 @@ export function MediaUploader() {
           altKm: "",
           status: "pending",
           message: null,
-          previewUrl: file.type.startsWith("image/")
-            ? URL.createObjectURL(file)
-            : null,
+          /*
+           * No object URL for HEIC.
+           *
+           * Only Safari can render one, so everywhere else `<img src=blob:…>`
+           * draws the browser's broken-image glyph — which reads as "this file
+           * was rejected" when in fact it is queued and will upload fine. A
+           * labelled tile says what will actually happen to it instead.
+           */
+          previewUrl:
+            file.type.startsWith("image/") && !isHeicFile(file)
+              ? URL.createObjectURL(file)
+              : null,
         });
       }
 
@@ -525,6 +546,7 @@ function QueueRow({
 }) {
   const done = item.status === "done";
   const failed = item.status === "error";
+  const isHeic = isHeicFile(item.file);
 
   return (
     <div
@@ -545,6 +567,21 @@ function QueueRow({
           height={56}
           className="size-14 shrink-0 rounded-(--radius-sm) border border-border object-cover"
         />
+      ) : isHeic ? (
+        /*
+         * HEIC has no local preview — see the note where previewUrl is set. The
+         * tile names the format rather than showing a generic file icon, so it
+         * is obvious the file was recognised and not rejected.
+         */
+        <span
+          className={cn(
+            "flex size-14 shrink-0 flex-col items-center justify-center gap-0.5",
+            "rounded-(--radius-sm) border border-border bg-surface-muted text-foreground-muted",
+          )}
+        >
+          <Icon name="image" size={16} />
+          <span className="text-[0.5625rem] font-semibold tracking-wide">HEIC</span>
+        </span>
       ) : (
         <span className="flex size-14 shrink-0 items-center justify-center rounded-(--radius-sm) border border-border text-foreground-subtle">
           <Icon name="file" size={18} />
@@ -577,6 +614,18 @@ function QueueRow({
             </Badge>
           ) : null}
         </div>
+
+        {/*
+          Said explicitly while the file is queued, because the absent preview
+          would otherwise read as a problem. Dropped once the row reports its
+          real outcome.
+        */}
+        {isHeic && !done && !failed ? (
+          <p className="text-[0.75rem] text-foreground-subtle">
+            iPhone HEIC — no preview here, because only Safari can display one.
+            It converts to WebP on upload.
+          </p>
+        ) : null}
 
         {item.message ? (
           <p
