@@ -31,11 +31,45 @@ export default async function AdminMediaPage({
       ? visibilityParam
       : undefined;
   const search = single(query.q) ?? "";
+  const flag = single(query.flag) ?? "";
 
-  const [assets, allAssets] = await Promise.all([
+  const [rawAssets, allAssets] = await Promise.all([
     listAdminMedia({ kind: kind || undefined, visibility, search }),
     listAdminMedia({}),
   ]);
+
+  /*
+   * Content-health filters, applied here rather than in the query.
+   *
+   * "Missing Khmer caption" and "attached to an experience" are not columns —
+   * the first is a NULL test across two fields and the second is a join
+   * predicate. `listAdminMedia` already caps the result at 300 rows and has
+   * loaded them, so filtering in memory costs nothing and avoids five more
+   * bespoke query branches that would each need their own index.
+   */
+  const assets = rawAssets.filter((asset) => {
+    switch (flag) {
+      case "unused":
+        return asset.usageCount === 0;
+      case "in_experience":
+        return asset.usedByExperiences.length > 0;
+      case "in_journey":
+        return asset.usedByJourney.length > 0;
+      case "missing_alt":
+        return (
+          asset.mime_type !== "application/pdf" &&
+          (!asset.alt_text_en?.trim() || !asset.alt_text_km?.trim())
+        );
+      case "missing_caption_en":
+        return asset.mime_type !== "application/pdf" && !asset.caption_en?.trim();
+      case "missing_caption_km":
+        return asset.mime_type !== "application/pdf" && !asset.caption_km?.trim();
+      case "privacy_review":
+        return asset.requires_privacy_review;
+      default:
+        return true;
+    }
+  });
 
   const canEdit = permissions.uploadMedia(session.role);
   const canDelete = permissions.hardDelete(session.role);
@@ -52,10 +86,17 @@ export default async function AdminMediaPage({
 
   function href(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams();
-    const merged = { kind, visibility: visibilityParam, q: search, ...overrides };
+    const merged = {
+      kind,
+      visibility: visibilityParam,
+      q: search,
+      flag,
+      ...overrides,
+    };
     if (merged.kind) params.set("kind", merged.kind);
     if (merged.visibility) params.set("visibility", merged.visibility);
     if (merged.q) params.set("q", merged.q);
+    if (merged.flag) params.set("flag", merged.flag);
     const qs = params.toString();
     return `/admin/media${qs ? `?${qs}` : ""}`;
   }
@@ -65,6 +106,17 @@ export default async function AdminMediaPage({
       <AdminPageHeader
         title="Media library"
         description="Every uploaded file. Public images are re-encoded to WebP, stripped of EXIF metadata and resized into thumbnail, card and preview versions. Private files have no public URL at all."
+        actions={
+          canEdit ? (
+            <Link
+              href="/admin/media/import"
+              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
+            >
+              <Icon name="folder" size={16} />
+              Import from a folder
+            </Link>
+          ) : null
+        }
       />
 
       <AdminPageBody className="flex flex-col gap-6">
@@ -114,7 +166,10 @@ export default async function AdminMediaPage({
         {/* ── Filters ──────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
           <nav aria-label="Filter media" className="flex flex-wrap gap-2">
-            <FilterChip href={href({ kind: undefined, visibility: undefined })} active={!kind && !visibility}>
+            <FilterChip
+              href={href({ kind: undefined, visibility: undefined, flag: undefined })}
+              active={!kind && !visibility && !flag}
+            >
               All files
             </FilterChip>
             <FilterChip href={href({ visibility: "public", kind: undefined })} active={visibility === "public"}>
@@ -131,6 +186,31 @@ export default async function AdminMediaPage({
                 active={kind === option}
               >
                 {option.replace(/_/g, " ")}
+              </FilterChip>
+            ))}
+          </nav>
+
+          {/* Content-health filters. Separated from the kind chips above because
+              they ask a different question: not "what is this file for?" but
+              "what is wrong with it?" */}
+          <nav aria-label="Filter by content health" className="flex flex-wrap gap-2">
+            {(
+              [
+                ["in_experience", "Attached to an experience"],
+                ["in_journey", "Attached to a journey story"],
+                ["unused", "Unused"],
+                ["privacy_review", "Pending privacy review"],
+                ["missing_alt", "Missing alt text"],
+                ["missing_caption_en", "Missing English caption"],
+                ["missing_caption_km", "Missing Khmer caption"],
+              ] as const
+            ).map(([value, label]) => (
+              <FilterChip
+                key={value}
+                href={href({ flag: flag === value ? undefined : value })}
+                active={flag === value}
+              >
+                {label}
               </FilterChip>
             ))}
           </nav>
@@ -169,12 +249,12 @@ export default async function AdminMediaPage({
           <EmptyState
             icon="image"
             title={
-              search || kind || visibility
+              search || kind || visibility || flag
                 ? "No files match these filters"
                 : "No files uploaded yet"
             }
             description={
-              search || kind || visibility
+              search || kind || visibility || flag
                 ? "Try clearing a filter."
                 : "Upload project covers, screenshots, certificate previews and resume PDFs here."
             }

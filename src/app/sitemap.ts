@@ -4,6 +4,7 @@ import { absoluteUrl } from "@/lib/supabase/env";
 import { localeMeta, localePath, locales } from "@/i18n/config";
 import { getPublishedProjectSlugs } from "@/lib/data/projects";
 import { getPublishedCertificateSlugs } from "@/lib/data/certificates";
+import { getPublishedJourneySlugs } from "@/lib/data/journey";
 import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -36,6 +37,7 @@ const STATIC_ROUTES: StaticRoute[] = [
   { key: "certificates", path: "certificates", priority: 0.8, changeFrequency: "monthly" },
   { key: "about", path: "about", priority: 0.7, changeFrequency: "monthly" },
   { key: "experience", path: "experience", priority: 0.7, changeFrequency: "monthly" },
+  { key: "journey", path: "journey", priority: 0.8, changeFrequency: "weekly" },
   { key: "education", path: "education", priority: 0.7, changeFrequency: "monthly" },
   { key: "resume", path: "resume", priority: 0.6, changeFrequency: "monthly" },
   { key: "contact", path: "contact", priority: 0.6, changeFrequency: "yearly" },
@@ -62,9 +64,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // ── Content routes ────────────────────────────────────────────────────────
-  const [projects, certificates] = await Promise.all([
+  const [projects, certificates, journeyStories] = await Promise.all([
     getPublishedProjectSlugs(),
     getPublishedCertificateSlugs(),
+    getPublishedJourneySlugs(),
   ]);
 
   for (const project of projects) {
@@ -88,6 +91,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(certificate.updatedAt),
         changeFrequency: "yearly",
         priority: 0.7,
+        alternates: { languages: languageMap(path) },
+      });
+    }
+  }
+
+  /*
+   * Journey stories.
+   *
+   * Priority sits between a project and a certificate: these are original
+   * content with photographs, updated more often than a credential and less
+   * often than a case study. Slugs come from an RLS-constrained query, so a
+   * draft cannot appear here even though this file does not filter on status.
+   */
+  for (const story of journeyStories) {
+    const path = `journey/${story.slug}`;
+    for (const locale of locales) {
+      entries.push({
+        url: absoluteUrl(localePath(locale, path)),
+        lastModified: new Date(story.updatedAt),
+        changeFrequency: "monthly",
+        priority: 0.75,
         alternates: { languages: languageMap(path) },
       });
     }

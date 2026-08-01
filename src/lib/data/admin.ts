@@ -27,15 +27,20 @@ export type PublicationStatus = "draft" | "in_review" | "published" | "archived"
 export async function getAdminBadgeCounts(): Promise<{
   unreadMessages: number;
   pendingPrivacyReviews: number;
+  pendingJourneyReviews: number;
 }> {
-  if (!isSupabaseConfigured()) {
-    return { unreadMessages: 0, pendingPrivacyReviews: 0 };
-  }
+  const empty = {
+    unreadMessages: 0,
+    pendingPrivacyReviews: 0,
+    pendingJourneyReviews: 0,
+  };
+
+  if (!isSupabaseConfigured()) return empty;
 
   try {
     const supabase = await createSupabaseServerClient();
 
-    const [messages, certificates] = await Promise.all([
+    const [messages, certificates, journeyMedia] = await Promise.all([
       supabase
         .from("contact_messages")
         .select("id", { count: "exact", head: true })
@@ -46,14 +51,22 @@ export async function getAdminBadgeCounts(): Promise<{
         .select("id", { count: "exact", head: true })
         .is("privacy_reviewed_at", null)
         .is("deleted_at", null),
+      // Journey photographs and video still awaiting a privacy decision. This is
+      // the queue that blocks publication, so it is the one worth a badge.
+      supabase
+        .from("journey_media")
+        .select("id", { count: "exact", head: true })
+        .eq("privacy_status", "pending_review")
+        .is("deleted_at", null),
     ]);
 
     return {
       unreadMessages: messages.count ?? 0,
       pendingPrivacyReviews: certificates.count ?? 0,
+      pendingJourneyReviews: journeyMedia.count ?? 0,
     };
   } catch {
-    return { unreadMessages: 0, pendingPrivacyReviews: 0 };
+    return empty;
   }
 }
 
@@ -660,6 +673,16 @@ export type AdminMediaRow = MediaAsset & {
   requires_privacy_review: boolean;
   /** Number of content rows referencing this asset. */
   usageCount: number;
+  /**
+   * English role titles of the experience entries displaying this asset.
+   *
+   * Named rather than counted: "used by 2 things" is not actionable, and the
+   * question an admin actually has before deleting a photograph is *which*
+   * entry would lose it.
+   */
+  usedByExperiences: string[];
+  /** English titles of the journey stories currently using this asset. */
+  usedByJourney: string[];
 };
 
 export async function listAdminMedia(options: {
@@ -680,7 +703,9 @@ export async function listAdminMedia(options: {
          project_media(id),
          certificate_preview:certificates!certificates_preview_media_id_fkey(id),
          certificate_original:certificates!certificates_original_media_id_fkey(id),
-         resume_versions(id)`,
+         resume_versions(id),
+         experience_media(id, deleted_at, experiences(slug, experience_translations(locale, role_title))),
+         journey_media(id, deleted_at, journey_entries(slug, journey_entry_translations(locale, title)))`,
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
@@ -707,18 +732,69 @@ export async function listAdminMedia(options: {
         certificate_preview: Array<{ id: string }> | null;
         certificate_original: Array<{ id: string }> | null;
         resume_versions: Array<{ id: string }> | null;
+        experience_media: Array<{
+          id: string;
+          deleted_at: string | null;
+          experiences: {
+            slug: string;
+            experience_translations: Array<{ locale: string; role_title: string }>;
+          } | null;
+        }> | null;
+        journey_media: Array<{
+          id: string;
+          deleted_at: string | null;
+          journey_entries: {
+            slug: string;
+            journey_entry_translations: Array<{ locale: string; title: string }>;
+          } | null;
+        }> | null;
       }
     >).map((row) => {
+      // Detached attachments are history, not usage — they must not make an
+      // asset look in use, and they do not block deleting it.
+      const liveExperienceUses = (row.experience_media ?? []).filter(
+        (item) => item.deleted_at === null,
+      );
+      const liveJourneyUses = (row.journey_media ?? []).filter(
+        (item) => item.deleted_at === null,
+      );
+
       const usageCount =
         (row.project_cover?.length ?? 0) +
         (row.project_media?.length ?? 0) +
         (row.certificate_preview?.length ?? 0) +
         (row.certificate_original?.length ?? 0) +
-        (row.resume_versions?.length ?? 0);
+        (row.resume_versions?.length ?? 0) +
+        liveExperienceUses.length +
+        liveJourneyUses.length;
 
       return {
         ...row,
         usageCount,
+        usedByExperiences: [
+          ...new Set(
+            liveExperienceUses.map(
+              (item) =>
+                item.experiences?.experience_translations.find(
+                  (translation) => translation.locale === "en",
+                )?.role_title ??
+                item.experiences?.slug ??
+                "an experience entry",
+            ),
+          ),
+        ],
+        usedByJourney: [
+          ...new Set(
+            liveJourneyUses.map(
+              (item) =>
+                item.journey_entries?.journey_entry_translations.find(
+                  (translation) => translation.locale === "en",
+                )?.title ??
+                item.journey_entries?.slug ??
+                "a journey story",
+            ),
+          ),
+        ],
       } as AdminMediaRow;
     });
 

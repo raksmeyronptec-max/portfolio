@@ -43,6 +43,7 @@ export const en = {
     projects: "Projects",
     certificates: "Certificates",
     experience: "Experience",
+    journey: "Journey",
     education: "Education",
     about: "About",
     resume: "Resume",
@@ -150,6 +151,19 @@ export const en = {
       present: "Present",
       expected: "expected",
       viewAll: "View full experience",
+    },
+    /*
+     * The homepage's curated strip of journey stories. Distinct from
+     * `home.journey` above, which is the education/experience timeline — that
+     * one answers "what has he done", this one answers "what did it look like".
+     */
+    moments: {
+      eyebrow: "Journey",
+      heading: "Selected moments from my journey",
+      description:
+        "Fieldwork, teaching practice, exchanges and the events along the way.",
+      viewStory: "View story",
+      viewAll: "View the full journey",
     },
     testimonials: {
       eyebrow: "References",
@@ -354,6 +368,24 @@ export const en = {
       other: "Other",
     },
     achievements: "Highlights",
+    /*
+     * Photograph gallery.
+     *
+     * `openPhoto` and `position` are the two that matter for assistive
+     * technology: the first names each thumbnail by what it shows rather than
+     * "image", and the second is announced on every navigation, since moving
+     * between photos does not move focus.
+     */
+    photos: {
+      view: "View photos",
+      viewAll: "View all photos",
+      galleryTitle: "Photo gallery — {entry}",
+      previous: "Previous photo",
+      next: "Next photo",
+      close: "Close gallery",
+      position: "Photo {current} of {total}",
+      openPhoto: "Open photo: {caption}",
+    },
   },
 
   education: {
@@ -373,6 +405,121 @@ export const en = {
       professional_development: "Professional development",
       certification: "Certification",
       other: "Other",
+    },
+  },
+
+  /*
+   * Journey.
+   *
+   * Two groups matter for assistive technology and are worth reading before
+   * editing:
+   *
+   *  · `gallery.*` — `openItem` names each thumbnail by what it shows rather
+   *    than "image", and `position` is announced on every navigation, because
+   *    moving between photographs does not move focus and a screen-reader user
+   *    would otherwise hear nothing at all when they press Next.
+   *
+   *  · `video.*` — `play` is the accessible name of the button that replaces the
+   *    poster with the player. It interpolates the video's own title, so the
+   *    control says what will start rather than just "Play".
+   */
+  journey: {
+    title: "Journey",
+    description:
+      "Fieldwork, teaching practice, exchanges, awards and the events that shaped how I teach and build.",
+    eyebrow: "My journey",
+    emptyState: "Journey stories will appear here once they are published.",
+    emptyHeading: "Stories are being prepared",
+    emptyBody:
+      "Photographs and video are reviewed for privacy before anything is published here.",
+
+    featuredHeading: "Featured stories",
+    timelineHeading: "The full journey",
+    undatedHeading: "Date to be confirmed",
+    viewStory: "View story",
+    readStory: "Read the full story",
+    backToJourney: "Back to the journey",
+
+    // Filters. Shown progressively — see the note in journey-filters.tsx.
+    searchLabel: "Search stories",
+    searchPlaceholder: "Search by title, place or organisation",
+    filterCategory: "Category",
+    filterYear: "Year",
+    allCategories: "All categories",
+    allYears: "All years",
+    resultCount: "{count} story",
+    resultCountPlural: "{count} stories",
+    noResults: "No stories match these filters",
+    noResultsHint: "Try removing a filter or clearing your search.",
+    showFilters: "Filter stories",
+    hideFilters: "Hide filters",
+    loadMore: "Show more stories",
+
+    // Entry metadata
+    organisation: "Organisation",
+    location: "Location",
+    category: "Category",
+    period: "When",
+    highlights: "Highlights",
+    externalLink: "Related link",
+    photoCount: "{count} photo",
+    photoCountPlural: "{count} photos",
+    videoCount: "{count} video",
+    videoCountPlural: "{count} videos",
+
+    // Relations
+    relatedHeading: "What this connects to",
+    relatedExperience: "Experience",
+    relatedEducation: "Education",
+    relatedCertificate: "Certificate",
+    relatedProject: "Project",
+
+    // Prev / next
+    previousStory: "Previous story",
+    nextStory: "Next story",
+    storyNavigation: "Journey story navigation",
+
+    // Cross-links from the other pages
+    viewRelatedStory: "View the related story",
+    viewRelatedStories: "View related stories",
+    viewAllPhotos: "View all photos",
+    fromJourney: "From my journey",
+
+    gallery: {
+      view: "View gallery",
+      viewAll: "View all photos",
+      title: "Gallery — {entry}",
+      previous: "Previous photo",
+      next: "Next photo",
+      close: "Close gallery",
+      position: "Photo {current} of {total}",
+      openItem: "Open: {caption}",
+      thumbnails: "Gallery thumbnails",
+    },
+
+    video: {
+      play: "Play video: {title}",
+      playShort: "Play video",
+      loading: "Loading the video player",
+      duration: "Length",
+      transcript: "Transcript",
+      showTranscript: "Read the transcript",
+      hideTranscript: "Hide the transcript",
+      /*
+       * Shown on the facade before the player is loaded. The point is consent:
+       * nothing is requested from the video platform until the visitor asks for
+       * it, and they are told that is what pressing Play does.
+       */
+      privacyNote:
+        "Playing this loads the video from {provider}, which may set cookies.",
+      watchOn: "Watch on {provider}",
+      /*
+       * Used when the video is hosted somewhere this site will not put in an
+       * iframe. Framing an arbitrary origin is how a page ends up framing
+       * something hostile, so it links out instead.
+       */
+      externalOnly: "This video opens on the site that hosts it.",
+      posterAlt: "Poster frame for the video “{title}”",
     },
   },
 
@@ -496,7 +643,7 @@ export const en = {
     navHeading: "Pages",
     connectHeading: "Connect",
     legalHeading: "About this site",
-    builtWith: "Built with Next.js and Supabase.",
+    builtWith: "Built with Next.js Supabase & cloudflare.",
     sourceNote: "Content is managed through a private admin dashboard.",
     copyright: "© {year} Ron Raksmey",
     backToTop: "Back to top",

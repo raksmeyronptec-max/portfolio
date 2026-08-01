@@ -16,6 +16,8 @@ import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
 import { getSeoOverride, getSpokenLanguages } from "@/lib/data/site";
 import { getEducation } from "@/lib/data/cv";
+import { getJourneyStoriesByRelation } from "@/lib/data/journey";
+import { JourneyStoryLinks } from "@/components/public/journey-story-links";
 import { langAttribute } from "@/lib/content/translation";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { JsonLd, breadcrumbSchema, graph } from "@/lib/seo/jsonld";
@@ -55,9 +57,15 @@ export default async function EducationPage({
   const locale: Locale = raw;
 
   const t = getDictionary(locale);
-  const [education, languages] = await Promise.all([
+  const [education, languages, journeyByEducation] = await Promise.all([
     getEducation(locale),
     getSpokenLanguages(locale),
+    /*
+      One query for the whole page rather than one per entry. Section 17 of the
+      brief: an Education entry links to its related journey collection —
+      "View my RUPP journey" — rather than absorbing the photographs itself.
+    */
+    getJourneyStoriesByRelation("education", locale),
   ]);
 
   const structuredData = graph([
@@ -95,7 +103,7 @@ export default async function EducationPage({
                 entry.kind;
 
               return (
-                <li key={entry.id}>
+                <li key={entry.id} id={`education-${entry.slug}`} className="scroll-mt-24">
                   <Card as="article">
                     <CardBody className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -166,6 +174,12 @@ export default async function EducationPage({
                       {entry.achievements ? (
                         <ProseText text={entry.achievements} className="text-small" />
                       ) : null}
+
+                      <JourneyStoryLinks
+                        locale={locale}
+                        t={t}
+                        stories={journeyByEducation[entry.id]}
+                      />
                     </CardBody>
                   </Card>
                 </li>

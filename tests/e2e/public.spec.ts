@@ -149,8 +149,24 @@ test.describe("responsive layout", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/en");
 
-      // The audit called out Khmer text breaking layouts; check both languages.
-      for (const path of ["/en", "/km", "/en/projects", "/km/certificates"]) {
+      /*
+       * The audit called out Khmer text breaking layouts; check both languages.
+       *
+       * The journey pages are included because they are the most layout-dense
+       * surfaces on the site — an alternating two-column timeline, a scrolling
+       * chip row and a media grid — and Khmer runs 20–40% longer than the
+       * English they are set against.
+       */
+      for (const path of [
+        "/en",
+        "/km",
+        "/en/projects",
+        "/km/certificates",
+        "/en/journey",
+        "/km/journey",
+        "/en/experience",
+        "/km/education",
+      ]) {
         await page.goto(path);
 
         const overflow = await page.evaluate(

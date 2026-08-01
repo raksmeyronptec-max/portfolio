@@ -20,11 +20,13 @@ export function AdminShell({
   session,
   unreadMessages,
   pendingPrivacyReviews,
+  pendingJourneyReviews = 0,
   children,
 }: {
   session: AdminSession;
   unreadMessages: number;
   pendingPrivacyReviews: number;
+  pendingJourneyReviews?: number;
   children: ReactNode;
 }) {
   return (
@@ -58,6 +60,7 @@ export function AdminShell({
           role={session.role}
           unreadMessages={unreadMessages}
           pendingPrivacyReviews={pendingPrivacyReviews}
+          pendingJourneyReviews={pendingJourneyReviews}
         />
       </div>
 

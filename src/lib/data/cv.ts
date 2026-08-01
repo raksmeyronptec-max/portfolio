@@ -4,6 +4,13 @@ import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { MEDIA_COLUMNS, type MediaAsset } from "@/lib/content/media";
 import {
+  EXPERIENCE_MEDIA_COLUMNS,
+  resolveExperiencePhoto,
+  splitExperiencePhotos,
+  type ExperiencePhoto,
+  type ExperiencePhotoRow,
+} from "@/lib/content/experience-media";
+import {
   pickLocalized,
   resolveTranslation,
   type TranslationRow,
@@ -131,6 +138,14 @@ export type ExperienceEntry = {
   isCurrent: boolean;
   tags: Array<{ id: string; label: string }>;
   contentLocale: Locale | null;
+  /**
+   * Photographs cleared for publication.
+   *
+   * Always present, frequently empty — an entry with no photos is normal, not a
+   * degraded state, and the page renders it identically minus the figure.
+   */
+  cover: ExperiencePhoto | null;
+  gallery: ExperiencePhoto[];
 };
 
 export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]> {
@@ -144,7 +159,8 @@ export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]>
         `id, slug, kind, organization_url, location_en, location_km,
          started_on, ended_on, is_current, period_label_en, period_label_km, sort_order,
          experience_translations(locale, role_title, organization, summary, description, achievements),
-         experience_tags(id, label_en, label_km, sort_order)`,
+         experience_tags(id, label_en, label_km, sort_order),
+         experience_media(${EXPERIENCE_MEDIA_COLUMNS}, media_assets(${MEDIA_COLUMNS}))`,
       )
       .order("sort_order", { ascending: true })
       .order("started_on", { ascending: false, nullsFirst: false });
@@ -180,6 +196,29 @@ export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]>
           label: pickLocalized(locale, tag.label_en, tag.label_km) ?? tag.label_en,
         }));
 
+      /*
+       * No `status`/`privacy` filtering here, matching every other public query
+       * in this file: RLS already restricts the join to attachments that are
+       * public, privacy-approved, consent-settled and pointing at a live public
+       * asset. Re-filtering in the query would suggest the database were not the
+       * gate, and a forgotten clause would then become a leak.
+       *
+       * Cover first, then gallery order — `sort_order` alone would let a cover
+       * added last sort to the end of its own entry.
+       */
+      const photos = (
+        (row.experience_media ?? []) as unknown as ExperiencePhotoRow[]
+      )
+        .slice()
+        .sort((a, b) => {
+          if (a.role !== b.role) return a.role === "cover" ? -1 : 1;
+          return a.sort_order - b.sort_order;
+        })
+        .map((photo) => resolveExperiencePhoto(photo, locale))
+        .filter((photo): photo is ExperiencePhoto => photo !== null);
+
+      const { cover, gallery } = splitExperiencePhotos(photos);
+
       return {
         id: row.id,
         slug: row.slug,
@@ -197,6 +236,8 @@ export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]>
         isCurrent: row.is_current,
         tags,
         contentLocale: actualLocale,
+        cover,
+        gallery,
       };
     });
   } catch {

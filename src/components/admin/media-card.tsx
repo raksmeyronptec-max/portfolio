@@ -172,6 +172,15 @@ export function MediaCard({
               : `Used in ${asset.usageCount} place${asset.usageCount === 1 ? "" : "s"}`}
           </p>
 
+          {/* Naming the entries turns "in use" into something the admin can act
+              on without hunting through every experience. */}
+          {asset.usedByExperiences.length > 0 || asset.usedByJourney.length > 0 ? (
+            <p className="text-[0.75rem] text-foreground-muted">
+              Used by:{" "}
+              {[...asset.usedByExperiences, ...asset.usedByJourney].join(", ")}
+            </p>
+          ) : null}
+
           <div className="mt-auto flex justify-end gap-1 pt-1">
             {canEdit ? (
               <IconButton

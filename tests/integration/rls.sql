@@ -786,6 +786,625 @@ begin
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+--  9b. Experience photographs
+--
+--  The claim under test: an anonymous reader sees a photograph ONLY when every
+--  one of six conditions holds. Each is falsified independently below, because a
+--  policy that checks five of the six passes any test that only checks the happy
+--  path.
+--
+--  These are photographs that may contain children. "Probably filtered" is not
+--  an acceptable standard, so the assertions are per-condition.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+do $$
+declare
+  v_owner_id      uuid := '00000000-0000-4000-8000-000000000001';
+  v_pub_exp       uuid;
+  v_draft_exp     uuid;
+  v_public_media  uuid;
+  v_private_media uuid;
+  v_ok_attach     uuid;
+  n               integer;
+  ok              boolean;
+begin
+  raise notice '';
+  raise notice '── 9b. Experience photographs ──────────────────────────';
+
+  perform pg_temp.become_postgres();
+
+  -- ── Fixtures ─────────────────────────────────────────────────────────────
+  insert into public.experiences (slug, status, kind, needs_review)
+  values ('rls-photo-published', 'published', 'practicum', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  update public.experiences set published_at = now() - interval '1 day'
+   where slug = 'rls-photo-published';
+  select id into v_pub_exp from public.experiences where slug = 'rls-photo-published';
+
+  insert into public.experiences (slug, status, kind, needs_review)
+  values ('rls-photo-draft', 'draft', 'practicum', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  select id into v_draft_exp from public.experiences where slug = 'rls-photo-draft';
+
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename,
+     mime_type, file_size_bytes, alt_text_en, alt_text_km)
+  values ('public-media', 'rls-photo/classroom.webp', 'experience_photo', 'public',
+          'rls-photo-classroom.webp', 'image/webp', 90000,
+          'A primary mathematics lesson in progress.', 'មេរៀនគណិតវិទ្យា។')
+  on conflict (bucket_id, storage_path) do nothing;
+  select id into v_public_media from public.media_assets
+   where storage_path = 'rls-photo/classroom.webp';
+
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename,
+     mime_type, file_size_bytes)
+  values ('certificate-originals', 'rls-photo/private-scan.pdf', 'certificate_original',
+          'private', 'rls-photo-private.pdf', 'application/pdf', 50000)
+  on conflict (bucket_id, storage_path) do nothing;
+  select id into v_private_media from public.media_assets
+   where storage_path = 'rls-photo/private-scan.pdf';
+
+  -- The one attachment that satisfies every condition.
+  insert into public.experience_media
+    (experience_id, media_id, role, privacy_status, consent_status, visibility,
+     reviewed_at, caption_en, alt_text_en)
+  values (v_pub_exp, v_public_media, 'cover', 'approved', 'confirmed', 'public',
+          now(), 'Delivering a mathematics lesson during my practicum.',
+          'Ron Raksmey beside a classroom whiteboard.')
+  on conflict do nothing;
+  select id into v_ok_attach from public.experience_media
+   where experience_id = v_pub_exp and media_id = v_public_media;
+
+  -- ── The publication invariant is a CHECK, not a convention ───────────────
+  begin
+    ok := false;
+    insert into public.experience_media
+      (experience_id, media_id, privacy_status, consent_status, visibility)
+    values (v_draft_exp, v_public_media, 'pending_review', 'confirmed', 'public');
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'a photograph CANNOT be public without an approved privacy review');
+
+  begin
+    ok := false;
+    insert into public.experience_media
+      (experience_id, media_id, privacy_status, consent_status, visibility, reviewed_at)
+    values (v_draft_exp, v_public_media, 'approved', 'denied', 'public', now());
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a photograph CANNOT be public when consent was denied');
+
+  begin
+    ok := false;
+    insert into public.experience_media
+      (experience_id, media_id, privacy_status, consent_status, visibility, reviewed_at)
+    values (v_draft_exp, v_public_media, 'approved', 'pending', 'public', now());
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a photograph CANNOT be public while consent is pending');
+
+  begin
+    ok := false;
+    insert into public.experience_media
+      (experience_id, media_id, privacy_status, consent_status, visibility)
+    values (v_draft_exp, v_public_media, 'approved', 'confirmed', 'private');
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'an approval CANNOT be recorded without a review timestamp');
+
+  -- At most one cover per experience.
+  begin
+    ok := false;
+    insert into public.experience_media (experience_id, media_id, role)
+    values (v_pub_exp, v_private_media, 'cover');
+  exception when unique_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'an experience CANNOT have two cover photographs');
+
+  -- ── Anonymous reads ──────────────────────────────────────────────────────
+  perform pg_temp.become_anon();
+
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 1,
+    'anon CAN read a fully approved photograph on a published experience');
+
+  perform pg_temp.become_postgres();
+  update public.experience_media set visibility = 'hidden' where id = v_ok_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a hidden photograph');
+
+  perform pg_temp.become_postgres();
+  update public.experience_media set visibility = 'private' where id = v_ok_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a private photograph');
+
+  -- Restore, then falsify the privacy review while leaving visibility public.
+  -- Done in one statement because the CHECK forbids the intermediate state.
+  perform pg_temp.become_postgres();
+  update public.experience_media
+     set visibility = 'public', privacy_status = 'approved', consent_status = 'confirmed'
+   where id = v_ok_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 1, 'the fixture is public again');
+
+  -- Soft delete.
+  perform pg_temp.become_postgres();
+  update public.experience_media set deleted_at = now() where id = v_ok_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a detached (soft-deleted) photograph');
+
+  perform pg_temp.become_postgres();
+  update public.experience_media set deleted_at = null where id = v_ok_attach;
+
+  -- Unpublishing the parent must take its photographs with it.
+  update public.experiences set status = 'draft' where id = v_pub_exp;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read photographs of an unpublished experience');
+
+  perform pg_temp.become_postgres();
+  update public.experiences
+     set status = 'published', published_at = now() - interval '1 day'
+   where id = v_pub_exp;
+
+  -- Soft-deleting the underlying asset must withdraw the photograph too, even
+  -- though the attachment row itself is untouched and still marked public.
+  update public.media_assets set deleted_at = now() where id = v_public_media;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read a photograph whose media asset was deleted');
+
+  perform pg_temp.become_postgres();
+  update public.media_assets set deleted_at = null where id = v_public_media;
+
+  -- ── Anonymous writes ─────────────────────────────────────────────────────
+  perform pg_temp.become_anon();
+
+  begin
+    ok := false;
+    insert into public.experience_media (experience_id, media_id)
+    values (v_pub_exp, v_public_media);
+  exception when insufficient_privilege or check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT attach a photograph');
+
+  begin
+    ok := false;
+    update public.experience_media set visibility = 'public' where id = v_ok_attach;
+    get diagnostics n = row_count;
+    ok := n = 0;
+  exception when insufficient_privilege then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT publish a photograph');
+
+  -- ── A logged-in non-admin is not an editor ───────────────────────────────
+  perform pg_temp.become_user('00000000-0000-4000-8000-0000000000ff');
+
+  begin
+    ok := false;
+    insert into public.experience_media (experience_id, media_id)
+    values (v_draft_exp, v_public_media);
+  exception when insufficient_privilege or check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a logged-in non-admin CANNOT attach a photograph');
+
+  -- ── A viewer may look but not touch ──────────────────────────────────────
+  perform pg_temp.become_user('00000000-0000-4000-8000-0000000000fe');
+
+  select count(*) into n from public.experience_media where id = v_ok_attach;
+  perform pg_temp.assert(n = 1, 'viewer CAN read attachments');
+
+  begin
+    ok := false;
+    update public.experience_media set caption_en = 'edited' where id = v_ok_attach;
+    get diagnostics n = row_count;
+    ok := n = 0;
+  exception when insufficient_privilege then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'viewer CANNOT edit an attachment');
+
+  -- ── Owner ────────────────────────────────────────────────────────────────
+  perform pg_temp.become_user(v_owner_id);
+
+  update public.experience_media set caption_en = 'Edited by the owner.'
+   where id = v_ok_attach;
+  get diagnostics n = row_count;
+  perform pg_temp.assert(n = 1, 'owner CAN edit an attachment');
+
+  -- ── Deleting a media asset that is still attached is refused ─────────────
+  perform pg_temp.become_postgres();
+
+  begin
+    ok := false;
+    delete from public.media_assets where id = v_public_media;
+  exception when foreign_key_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'a media asset CANNOT be deleted while an experience still displays it');
+
+  -- ── Detaching does not delete the shared asset ───────────────────────────
+  update public.experience_media set deleted_at = now() where id = v_ok_attach;
+
+  select count(*) into n from public.media_assets where id = v_public_media
+     and deleted_at is null;
+  perform pg_temp.assert(n = 1,
+    'detaching a photograph leaves the shared media asset intact');
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+--  9c. Journey stories, their media and their relations
+--
+--  The public predicate on `journey_media` is the strictest in the schema, so
+--  every clause of it is exercised separately below: parent published, the
+--  attachment public, privacy approved, consent settled, not soft-deleted, and
+--  the underlying asset public and live. Each is turned off in isolation, which
+--  is what proves the clause is load-bearing rather than incidentally satisfied.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+do $$
+declare
+  v_owner_id      uuid := '00000000-0000-4000-8000-000000000001';
+  v_pub_story     uuid;
+  v_draft_story   uuid;
+  v_public_media  uuid;
+  v_private_media uuid;
+  v_pub_exp       uuid;
+  v_draft_exp     uuid;
+  v_attach        uuid;
+  v_video         uuid;
+  v_relation      uuid;
+  n               integer;
+  ok              boolean;
+begin
+  raise notice '';
+  raise notice '── 9c. Journey stories ─────────────────────────────────';
+
+  perform pg_temp.become_postgres();
+
+  -- ── Fixtures ─────────────────────────────────────────────────────────────
+  insert into public.journey_entries (slug, status, needs_review)
+  values ('rls-journey-published', 'draft', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  select id into v_pub_story from public.journey_entries
+   where slug = 'rls-journey-published';
+
+  -- The publish gate demands an English title, so this also proves the gate is
+  -- satisfiable rather than merely obstructive.
+  insert into public.journey_entry_translations (journey_entry_id, locale, title)
+  values (v_pub_story, 'en', 'RLS published story')
+  on conflict (journey_entry_id, locale) do nothing;
+
+  update public.journey_entries
+     set status = 'published', published_at = now() - interval '1 day'
+   where id = v_pub_story;
+
+  insert into public.journey_entries (slug, status, needs_review)
+  values ('rls-journey-draft', 'draft', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  select id into v_draft_story from public.journey_entries
+   where slug = 'rls-journey-draft';
+  insert into public.journey_entry_translations (journey_entry_id, locale, title)
+  values (v_draft_story, 'en', 'RLS draft story')
+  on conflict (journey_entry_id, locale) do nothing;
+
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename,
+     mime_type, file_size_bytes, card_path)
+  values ('public-media', 'rls-journey/fieldwork.webp', 'journey_photo', 'public',
+          'rls-journey-fieldwork.webp', 'image/webp', 90000,
+          'rls-journey/fieldwork-card.webp')
+  on conflict (bucket_id, storage_path) do nothing;
+  select id into v_public_media from public.media_assets
+   where storage_path = 'rls-journey/fieldwork.webp';
+
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename,
+     mime_type, file_size_bytes)
+  values ('certificate-originals', 'rls-journey/private.pdf', 'certificate_original',
+          'private', 'rls-journey-private.pdf', 'application/pdf', 50000)
+  on conflict (bucket_id, storage_path) do nothing;
+  select id into v_private_media from public.media_assets
+   where storage_path = 'rls-journey/private.pdf';
+
+  -- ── Publish gate ─────────────────────────────────────────────────────────
+  begin
+    ok := false;
+    update public.journey_entries set needs_review = true, status = 'published'
+     where id = v_draft_story;
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'a story flagged needs_review CANNOT be published, even as postgres');
+
+  perform pg_temp.become_postgres();
+  update public.journey_entries set needs_review = false where id = v_draft_story;
+
+  -- ── CHECK constraints on journey_media ───────────────────────────────────
+  begin
+    ok := false;
+    insert into public.journey_media
+      (journey_entry_id, media_id, kind, visibility, privacy_status, consent_status)
+    values (v_pub_story, v_public_media, 'photo', 'public', 'pending_review', 'confirmed');
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'an unreviewed photograph CANNOT be marked public');
+
+  begin
+    ok := false;
+    insert into public.journey_media
+      (journey_entry_id, media_id, kind, visibility, privacy_status,
+       consent_status, reviewed_at)
+    values (v_pub_story, v_public_media, 'photo', 'public', 'approved', 'denied', now());
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'a photograph with denied consent CANNOT be marked public');
+
+  begin
+    ok := false;
+    insert into public.journey_media (journey_entry_id, media_id, kind, privacy_status)
+    values (v_pub_story, v_public_media, 'photo', 'approved');
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'an approval with no reviewed_at is refused');
+
+  begin
+    ok := false;
+    insert into public.journey_media (journey_entry_id, kind, video_url)
+    values (v_pub_story, 'video', 'javascript:alert(1)');
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a non-https video URL is refused at the database');
+
+  begin
+    ok := false;
+    insert into public.journey_media
+      (journey_entry_id, kind, video_url, media_id, visibility,
+       privacy_status, consent_status, reviewed_at)
+    values (v_pub_story, 'video', 'https://youtu.be/dQw4w9WgXcQ', null, 'public',
+            'approved', 'confirmed', now());
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a public video with no poster frame is refused');
+
+  begin
+    ok := false;
+    insert into public.journey_media (journey_entry_id, kind, media_id)
+    values (v_pub_story, 'photo', null);
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a photograph with no media asset is refused');
+
+  -- ── A fully approved, public attachment ──────────────────────────────────
+  insert into public.journey_media
+    (journey_entry_id, media_id, kind, role, visibility, privacy_status,
+     consent_status, reviewed_at, alt_text_en)
+  values (v_pub_story, v_public_media, 'photo', 'cover', 'public', 'approved',
+          'confirmed', now(), 'A classroom during fieldwork.')
+  returning id into v_attach;
+
+  insert into public.journey_media
+    (journey_entry_id, media_id, kind, video_url, visibility, privacy_status,
+     consent_status, reviewed_at, alt_text_en, video_title_en)
+  values (v_pub_story, v_public_media, 'video', 'https://youtu.be/dQw4w9WgXcQ',
+          'public', 'approved', 'confirmed', now(), 'Poster frame.', 'Science fair')
+  returning id into v_video;
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 1, 'anon CAN read a fully approved public photograph');
+
+  select count(*) into n from public.journey_media where id = v_video;
+  perform pg_temp.assert(n = 1, 'anon CAN read an approved public video with a poster');
+
+  -- ── Each clause of the public predicate, turned off in isolation ──────────
+  perform pg_temp.become_postgres();
+  update public.journey_media set visibility = 'hidden' where id = v_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a hidden attachment');
+
+  perform pg_temp.become_postgres();
+  update public.journey_media set visibility = 'private' where id = v_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a private attachment');
+
+  perform pg_temp.become_postgres();
+  update public.journey_media set visibility = 'public' where id = v_attach;
+  update public.journey_media set deleted_at = now() where id = v_attach;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a soft-deleted attachment');
+
+  perform pg_temp.become_postgres();
+  update public.journey_media set deleted_at = null where id = v_attach;
+
+  -- Parent unpublished: the attachment is untouched and still fully approved.
+  update public.journey_entries set status = 'draft' where id = v_pub_story;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read a photograph whose story is unpublished');
+
+  select count(*) into n from public.journey_entry_translations
+   where journey_entry_id = v_pub_story;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read the translations of an unpublished story');
+
+  perform pg_temp.become_postgres();
+  update public.journey_entries
+     set status = 'published', published_at = now() - interval '1 day'
+   where id = v_pub_story;
+
+  -- Asset soft-deleted: again the attachment row is untouched.
+  update public.media_assets set deleted_at = now() where id = v_public_media;
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_media where id = v_attach;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read a photograph whose media asset was deleted');
+
+  perform pg_temp.become_postgres();
+  update public.media_assets set deleted_at = null where id = v_public_media;
+
+  -- ── Drafts stay invisible ────────────────────────────────────────────────
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_entries where id = v_draft_story;
+  perform pg_temp.assert(n = 0, 'anon CANNOT read a draft story');
+
+  select count(*) into n from public.journey_entries where id = v_pub_story;
+  perform pg_temp.assert(n = 1, 'anon CAN read a published story');
+
+  -- ── Relations need BOTH ends published ───────────────────────────────────
+  perform pg_temp.become_postgres();
+
+  insert into public.experiences (slug, status, kind, needs_review)
+  values ('rls-journey-exp-published', 'published', 'practicum', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  update public.experiences set published_at = now() - interval '1 day'
+   where slug = 'rls-journey-exp-published';
+  select id into v_pub_exp from public.experiences
+   where slug = 'rls-journey-exp-published';
+
+  insert into public.experiences (slug, status, kind, needs_review)
+  values ('rls-journey-exp-draft', 'draft', 'practicum', false)
+  on conflict (slug) where deleted_at is null do nothing;
+  select id into v_draft_exp from public.experiences where slug = 'rls-journey-exp-draft';
+
+  begin
+    ok := false;
+    insert into public.journey_relations (journey_entry_id, experience_id, education_id)
+    values (v_pub_story, v_pub_exp, v_pub_exp);
+  exception when check_violation or foreign_key_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a relation with two targets is refused');
+
+  begin
+    ok := false;
+    insert into public.journey_relations (journey_entry_id) values (v_pub_story);
+  exception when check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a relation with no target is refused');
+
+  insert into public.journey_relations (journey_entry_id, experience_id)
+  values (v_pub_story, v_pub_exp)
+  returning id into v_relation;
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_relations where id = v_relation;
+  perform pg_temp.assert(n = 1,
+    'anon CAN read a relation when both ends are published');
+
+  perform pg_temp.become_postgres();
+  insert into public.journey_relations (journey_entry_id, education_id)
+  select v_pub_story, id from public.education limit 1
+  on conflict do nothing;
+
+  -- A relation pointing at a DRAFT experience must not be returned at all —
+  -- not even as a row with an empty embedded join, which would disclose that an
+  -- unpublished record exists and that this story is about it.
+  insert into public.journey_relations (journey_entry_id, experience_id)
+  values (v_pub_story, v_draft_exp);
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.journey_relations
+   where journey_entry_id = v_pub_story and experience_id = v_draft_exp;
+  perform pg_temp.assert(n = 0,
+    'anon CANNOT read a relation pointing at a draft experience');
+
+  -- ── Anonymous and non-admin writes ───────────────────────────────────────
+  perform pg_temp.become_anon();
+
+  begin
+    ok := false;
+    insert into public.journey_entries (slug, status) values ('rls-journey-anon', 'draft');
+  exception when insufficient_privilege or check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT create a story');
+
+  begin
+    ok := false;
+    update public.journey_media set visibility = 'public' where id = v_attach;
+    get diagnostics n = row_count;
+    ok := n = 0;
+  exception when insufficient_privilege then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT publish an attachment');
+
+  begin
+    ok := false;
+    insert into public.journey_relations (journey_entry_id, experience_id)
+    values (v_pub_story, v_pub_exp);
+  exception when insufficient_privilege or check_violation or unique_violation
+    then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT link a story to another record');
+
+  perform pg_temp.become_user('00000000-0000-4000-8000-0000000000ff');
+
+  begin
+    ok := false;
+    insert into public.journey_media (journey_entry_id, media_id, kind)
+    values (v_draft_story, v_public_media, 'photo');
+  exception when insufficient_privilege or check_violation then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'a logged-in non-admin CANNOT attach media to a story');
+
+  -- ── A viewer may look but not touch ──────────────────────────────────────
+  perform pg_temp.become_user('00000000-0000-4000-8000-0000000000fe');
+
+  select count(*) into n from public.journey_entries where id = v_draft_story;
+  perform pg_temp.assert(n = 1, 'a viewer CAN read a draft story');
+
+  begin
+    ok := false;
+    update public.journey_entries set featured = true where id = v_draft_story;
+    get diagnostics n = row_count;
+    ok := n = 0;
+  exception when insufficient_privilege then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a viewer CANNOT edit a story');
+
+  -- ── Detaching leaves the shared asset alone ──────────────────────────────
+  perform pg_temp.become_postgres();
+  update public.journey_media set deleted_at = now() where id = v_attach;
+
+  select count(*) into n from public.media_assets
+   where id = v_public_media and deleted_at is null;
+  perform pg_temp.assert(n = 1,
+    'detaching journey media leaves the shared asset intact');
+
+  -- ── A private asset can never back a public attachment ───────────────────
+  begin
+    ok := false;
+    insert into public.journey_media
+      (journey_entry_id, media_id, kind, visibility, privacy_status,
+       consent_status, reviewed_at, alt_text_en)
+    values (v_draft_story, v_private_media, 'photo', 'public', 'approved',
+            'confirmed', now(), 'Private');
+    -- The CHECK permits this row, so RLS is what must hide it. Confirm that.
+    perform pg_temp.become_anon();
+    select count(*) into n from public.journey_media
+     where media_id = v_private_media;
+    ok := n = 0;
+    perform pg_temp.become_postgres();
+  exception when others then ok := true;
+  end;
+  perform pg_temp.assert(ok,
+    'an attachment backed by a private asset is never readable by anon');
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 --  10. RLS is enabled everywhere it must be
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -829,6 +1448,26 @@ begin
    using public.media_assets m
    where rv.media_id = m.id and m.original_filename like 'rls-fixture-%-cv.pdf';
   delete from public.media_assets where original_filename like 'rls-fixture-%-cv.pdf';
+
+  -- Attachments first: `media_id` is ON DELETE RESTRICT, so the assets below
+  -- cannot go until nothing points at them.
+  delete from public.experience_media em
+   using public.experiences e
+   where em.experience_id = e.id and e.slug like 'rls-photo-%';
+  delete from public.experiences where slug like 'rls-photo-%';
+  delete from public.media_assets where storage_path like 'rls-photo/%';
+
+  -- Journey: relations and attachments before the stories, and the stories
+  -- before the assets, because media_id is ON DELETE RESTRICT.
+  delete from public.journey_relations jr
+   using public.journey_entries je
+   where jr.journey_entry_id = je.id and je.slug like 'rls-journey-%';
+  delete from public.journey_media jm
+   using public.journey_entries je
+   where jm.journey_entry_id = je.id and je.slug like 'rls-journey-%';
+  delete from public.journey_entries where slug like 'rls-journey-%';
+  delete from public.experiences where slug like 'rls-journey-exp-%';
+  delete from public.media_assets where storage_path like 'rls-journey/%';
 
   delete from public.project_metrics
    where label_en in ('Verified metric', 'Unverified metric', 'No source');

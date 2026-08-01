@@ -782,6 +782,102 @@ export type Database = {
           },
         ]
       }
+      experience_media: {
+        Row: {
+          alt_text_en: string | null
+          alt_text_km: string | null
+          caption_en: string | null
+          caption_km: string | null
+          consent_status: string
+          created_at: string
+          credit: string | null
+          deleted_at: string | null
+          experience_id: string
+          focal_x: number | null
+          focal_y: number | null
+          id: string
+          location_en: string | null
+          location_km: string | null
+          media_id: string
+          photo_date: string | null
+          privacy_status: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role: string
+          sort_order: number
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          consent_status?: string
+          created_at?: string
+          credit?: string | null
+          deleted_at?: string | null
+          experience_id: string
+          focal_x?: number | null
+          focal_y?: number | null
+          id?: string
+          location_en?: string | null
+          location_km?: string | null
+          media_id: string
+          photo_date?: string | null
+          privacy_status?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          consent_status?: string
+          created_at?: string
+          credit?: string | null
+          deleted_at?: string | null
+          experience_id?: string
+          focal_x?: number | null
+          focal_y?: number | null
+          id?: string
+          location_en?: string | null
+          location_km?: string | null
+          media_id?: string
+          photo_date?: string | null
+          privacy_status?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_media_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experience_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experience_tags: {
         Row: {
           experience_id: string
@@ -932,6 +1028,399 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      journey_categories: {
+        Row: {
+          created_at: string
+          description_en: string | null
+          description_km: string | null
+          icon: string | null
+          id: string
+          name_en: string
+          name_km: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          icon?: string | null
+          id?: string
+          name_en: string
+          name_km?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          icon?: string | null
+          id?: string
+          name_en?: string
+          name_km?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journey_entries: {
+        Row: {
+          category_id: string | null
+          cover_media_id: string | null
+          created_at: string
+          created_by: string | null
+          date_precision: string
+          deleted_at: string | null
+          event_date: string | null
+          external_url: string | null
+          featured: boolean
+          id: string
+          location_en: string | null
+          location_km: string | null
+          needs_review: boolean
+          organisation_en: string | null
+          organisation_km: string | null
+          period_end: string | null
+          period_label_en: string | null
+          period_label_km: string | null
+          period_start: string | null
+          published_at: string | null
+          review_note: string | null
+          slug: string
+          sort_order: number
+          status: Database["public"]["Enums"]["publication_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_precision?: string
+          deleted_at?: string | null
+          event_date?: string | null
+          external_url?: string | null
+          featured?: boolean
+          id?: string
+          location_en?: string | null
+          location_km?: string | null
+          needs_review?: boolean
+          organisation_en?: string | null
+          organisation_km?: string | null
+          period_end?: string | null
+          period_label_en?: string | null
+          period_label_km?: string | null
+          period_start?: string | null
+          published_at?: string | null
+          review_note?: string | null
+          slug: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["publication_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_precision?: string
+          deleted_at?: string | null
+          event_date?: string | null
+          external_url?: string | null
+          featured?: boolean
+          id?: string
+          location_en?: string | null
+          location_km?: string | null
+          needs_review?: boolean
+          organisation_en?: string | null
+          organisation_km?: string | null
+          period_end?: string | null
+          period_label_en?: string | null
+          period_label_km?: string | null
+          period_start?: string | null
+          published_at?: string | null
+          review_note?: string | null
+          slug?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["publication_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "journey_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_entries_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_entry_translations: {
+        Row: {
+          created_at: string
+          eyebrow: string | null
+          highlights: string | null
+          id: string
+          journey_entry_id: string
+          locale: Database["public"]["Enums"]["content_locale"]
+          seo_description: string | null
+          seo_title: string | null
+          story: string | null
+          summary: string | null
+          title: string
+          translation_state: Database["public"]["Enums"]["translation_state"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          eyebrow?: string | null
+          highlights?: string | null
+          id?: string
+          journey_entry_id: string
+          locale: Database["public"]["Enums"]["content_locale"]
+          seo_description?: string | null
+          seo_title?: string | null
+          story?: string | null
+          summary?: string | null
+          title: string
+          translation_state?: Database["public"]["Enums"]["translation_state"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          eyebrow?: string | null
+          highlights?: string | null
+          id?: string
+          journey_entry_id?: string
+          locale?: Database["public"]["Enums"]["content_locale"]
+          seo_description?: string | null
+          seo_title?: string | null
+          story?: string | null
+          summary?: string | null
+          title?: string
+          translation_state?: Database["public"]["Enums"]["translation_state"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_entry_translations_journey_entry_id_fkey"
+            columns: ["journey_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journey_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_media: {
+        Row: {
+          alt_text_en: string | null
+          alt_text_km: string | null
+          caption_en: string | null
+          caption_km: string | null
+          consent_status: string
+          created_at: string
+          credit: string | null
+          deleted_at: string | null
+          duration_seconds: number | null
+          focal_x: number | null
+          focal_y: number | null
+          id: string
+          journey_entry_id: string
+          kind: string
+          location_en: string | null
+          location_km: string | null
+          media_id: string | null
+          photo_date: string | null
+          privacy_status: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role: string
+          sort_order: number
+          transcript_en: string | null
+          transcript_km: string | null
+          updated_at: string
+          video_provider: string | null
+          video_title_en: string | null
+          video_title_km: string | null
+          video_url: string | null
+          visibility: string
+        }
+        Insert: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          consent_status?: string
+          created_at?: string
+          credit?: string | null
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          focal_x?: number | null
+          focal_y?: number | null
+          id?: string
+          journey_entry_id: string
+          kind?: string
+          location_en?: string | null
+          location_km?: string | null
+          media_id?: string | null
+          photo_date?: string | null
+          privacy_status?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          sort_order?: number
+          transcript_en?: string | null
+          transcript_km?: string | null
+          updated_at?: string
+          video_provider?: string | null
+          video_title_en?: string | null
+          video_title_km?: string | null
+          video_url?: string | null
+          visibility?: string
+        }
+        Update: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          consent_status?: string
+          created_at?: string
+          credit?: string | null
+          deleted_at?: string | null
+          duration_seconds?: number | null
+          focal_x?: number | null
+          focal_y?: number | null
+          id?: string
+          journey_entry_id?: string
+          kind?: string
+          location_en?: string | null
+          location_km?: string | null
+          media_id?: string | null
+          photo_date?: string | null
+          privacy_status?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          sort_order?: number
+          transcript_en?: string | null
+          transcript_km?: string | null
+          updated_at?: string
+          video_provider?: string | null
+          video_title_en?: string | null
+          video_title_km?: string | null
+          video_url?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_media_journey_entry_id_fkey"
+            columns: ["journey_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journey_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_relations: {
+        Row: {
+          certificate_id: string | null
+          created_at: string
+          display_order: number
+          education_id: string | null
+          experience_id: string | null
+          id: string
+          journey_entry_id: string
+          project_id: string | null
+        }
+        Insert: {
+          certificate_id?: string | null
+          created_at?: string
+          display_order?: number
+          education_id?: string | null
+          experience_id?: string | null
+          id?: string
+          journey_entry_id: string
+          project_id?: string | null
+        }
+        Update: {
+          certificate_id?: string | null
+          created_at?: string
+          display_order?: number
+          education_id?: string | null
+          experience_id?: string | null
+          id?: string
+          journey_entry_id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_relations_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_relations_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "public_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_relations_education_id_fkey"
+            columns: ["education_id"]
+            isOneToOne: false
+            referencedRelation: "education"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_relations_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_relations_journey_entry_id_fkey"
+            columns: ["journey_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journey_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_relations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       languages: {
         Row: {
@@ -2462,6 +2951,9 @@ export type Database = {
         | "open_graph_image"
         | "diagram"
         | "other"
+        | "experience_photo"
+        | "journey_photo"
+        | "video_poster"
       message_state: "unread" | "read" | "archived" | "spam"
       project_status:
         | "live"
@@ -3161,6 +3653,9 @@ export const Constants = {
         "open_graph_image",
         "diagram",
         "other",
+        "experience_photo",
+        "journey_photo",
+        "video_poster",
       ],
       message_state: ["unread", "read", "archived", "spam"],
       project_status: [

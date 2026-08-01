@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/ui/states";
 import { PageHeader } from "@/components/layout/page-header";
 import { Timeline } from "@/components/public/home-sections";
+import { ExperiencePhotos } from "@/components/public/experience-photos";
 import { getDictionary } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
 import { getSeoOverride } from "@/lib/data/site";
 import { getExperiences } from "@/lib/data/cv";
+import { getJourneyStoriesByRelation } from "@/lib/data/journey";
+import { JourneyStoryLinks } from "@/components/public/journey-story-links";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { JsonLd, breadcrumbSchema, graph } from "@/lib/seo/jsonld";
 
@@ -47,7 +50,16 @@ export default async function ExperiencePage({
   const locale: Locale = raw;
 
   const t = getDictionary(locale);
-  const experiences = await getExperiences(locale);
+  /*
+    One query for the whole page rather than one per role. Section 16 of the
+    brief: Experience keeps its curated cover and up to three preview thumbnails,
+    and the *full* collection lives on the journey story — so this adds a link,
+    not a second gallery.
+  */
+  const [experiences, journeyByExperience] = await Promise.all([
+    getExperiences(locale),
+    getJourneyStoriesByRelation("experience", locale),
+  ]);
 
   const structuredData = graph([
     breadcrumbSchema([
@@ -88,6 +100,7 @@ export default async function ExperiencePage({
             t={t}
             items={experiences.map((entry) => ({
               id: entry.id,
+              anchorId: `experience-${entry.slug}`,
               kind: "experience" as const,
               title: entry.roleTitle,
               organization: entry.location
@@ -99,11 +112,33 @@ export default async function ExperiencePage({
               detail: entry.achievements,
               isCurrent: entry.isCurrent,
               contentLocale: entry.contentLocale,
+              /*
+                Omitted entirely when there is no cover, rather than passed as an
+                empty component. An entry without photographs must render exactly
+                as it did before this feature existed — no placeholder box, no
+                "no photos" line, no reserved space.
+              */
+              media: entry.cover ? (
+                <ExperiencePhotos
+                  locale={locale}
+                  t={t}
+                  cover={entry.cover}
+                  gallery={entry.gallery}
+                  entryLabel={entry.roleTitle}
+                />
+              ) : undefined,
               tags: [
                 t.experience.kind[entry.kind as keyof typeof t.experience.kind] ??
                   entry.kind,
                 ...entry.tags.map((tag) => tag.label),
               ],
+              footer: (
+                <JourneyStoryLinks
+                  locale={locale}
+                  t={t}
+                  stories={journeyByExperience[entry.id]}
+                />
+              ),
             }))}
           />
         )}

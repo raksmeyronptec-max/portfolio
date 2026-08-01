@@ -122,6 +122,7 @@ export function revalidatePublicContent(
       revalidatePath(`/${locale}/experience`);
       revalidatePath(`/${locale}/education`);
       revalidatePath(`/${locale}/resume`);
+      revalidatePath(`/${locale}/journey`);
     }
 
     if (projectSlug) revalidatePath(`/${locale}/projects/${projectSlug}`);
@@ -129,5 +130,38 @@ export function revalidatePublicContent(
   }
 
   // The sitemap's entry list and its lastModified values both change.
+  revalidatePath("/sitemap.xml");
+}
+
+/**
+ * Revalidate the surfaces a journey change can appear on.
+ *
+ * Narrower than `revalidatePublicContent` on purpose. A journey story appears on
+ * the timeline, its own page, the homepage's selected moments, and — through
+ * `journey_relations` — on the Experience, Education and Certificate pages. It
+ * does not appear on the projects listing or the resume, and busting those on
+ * every caption edit would discard warm caches for nothing.
+ *
+ * `previousSlug` covers a rename: without it the old URL keeps serving the story
+ * from cache under a path that no longer resolves.
+ */
+export function revalidateJourney(
+  options: { slug?: string; previousSlug?: string } = {},
+) {
+  const { slug, previousSlug } = options;
+
+  for (const locale of locales) {
+    revalidatePath(`/${locale}`);
+    revalidatePath(`/${locale}/journey`);
+    revalidatePath(`/${locale}/experience`);
+    revalidatePath(`/${locale}/education`);
+    revalidatePath(`/${locale}/certificates`);
+
+    if (slug) revalidatePath(`/${locale}/journey/${slug}`);
+    if (previousSlug && previousSlug !== slug) {
+      revalidatePath(`/${locale}/journey/${previousSlug}`);
+    }
+  }
+
   revalidatePath("/sitemap.xml");
 }

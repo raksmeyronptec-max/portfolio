@@ -10,6 +10,7 @@ import {
   FeaturedProjects,
   Hero,
   Journey,
+  SelectedMoments,
   Testimonials,
 } from "@/components/public/home-sections";
 import { getDictionary } from "@/i18n/dictionary";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/data/site";
 import { getFeaturedProjects } from "@/lib/data/projects";
 import { getFeaturedCertificates } from "@/lib/data/certificates";
+import { getFeaturedJourneyEntries } from "@/lib/data/journey";
 import {
   getCapabilityGroups,
   getEducation,
@@ -107,6 +109,7 @@ export default async function HomePage({
     education,
     experiences,
     testimonials,
+    featuredMoments,
   ] = await Promise.all([
     getSiteSettings(locale),
     getOwnerProfile(locale),
@@ -119,6 +122,9 @@ export default async function HomePage({
     getEducation(locale),
     getExperiences(locale),
     getTestimonials(locale),
+    // Four to six, per section 15 of the brief. The homepage is a summary, not
+    // the collection — the Journey page holds the rest.
+    getFeaturedJourneyEntries(locale, 6),
   ]);
 
   const displayName = profile?.displayName ?? settings.siteName;
@@ -185,6 +191,13 @@ export default async function HomePage({
       <CertificatesPreview locale={locale} t={t} certificates={featuredCertificates} />
 
       <Journey locale={locale} t={t} education={education} experiences={experiences} />
+
+      {/*
+        After the education/experience timeline rather than before it: the
+        timeline establishes what the roles were, and these show what they looked
+        like. Renders nothing when no story is featured.
+      */}
+      <SelectedMoments locale={locale} t={t} entries={featuredMoments} />
 
       <Testimonials locale={locale} t={t} testimonials={testimonials} />
 

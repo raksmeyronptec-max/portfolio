@@ -33,6 +33,18 @@ export function primaryNav(locale: Locale, t: Dictionary): NavItem[] {
       label: t.nav.experience,
       icon: "briefcase",
     },
+    /*
+     * Journey sits next to Experience rather than in the secondary nav, because
+     * it is the visual counterpart to it — Experience states what the roles were,
+     * Journey shows what they looked like — and a visitor who wants one usually
+     * wants the other.
+     */
+    {
+      key: "journey",
+      href: localePath(locale, "journey"),
+      label: t.nav.journey,
+      icon: "mapPin",
+    },
     { key: "about", href: localePath(locale, "about"), label: t.nav.about, icon: "user" },
     { key: "contact", href: localePath(locale, "contact"), label: t.nav.contact, icon: "mail" },
   ];

@@ -120,6 +120,7 @@ export default async function AdminExperiencePage() {
           canEdit={permissions.editContent(session.role)}
           canPublish={permissions.publishContent(session.role)}
           canDelete={permissions.deleteContent(session.role)}
+          mediaHrefBase="/admin/experience"
         />
       </AdminPageBody>
     </>

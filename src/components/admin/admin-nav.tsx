@@ -32,10 +32,13 @@ export function AdminNav({
   role,
   unreadMessages,
   pendingPrivacyReviews,
+  pendingJourneyReviews = 0,
 }: {
   role: AdminRole;
   unreadMessages: number;
   pendingPrivacyReviews: number;
+  /** Journey media still awaiting a privacy decision. */
+  pendingJourneyReviews?: number;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -57,6 +60,15 @@ export function AdminNav({
         },
         { href: "/admin/education", label: "Education", icon: "graduation" },
         { href: "/admin/experience", label: "Experience", icon: "briefcase" },
+        {
+          href: "/admin/journey",
+          label: "Journey",
+          icon: "mapPin",
+          // The badge counts media still waiting on a privacy decision, which is
+          // the only journey work that blocks publication and the only queue
+          // worth interrupting the owner about.
+          badge: pendingJourneyReviews,
+        },
         { href: "/admin/skills", label: "Capabilities", icon: "target" },
         { href: "/admin/testimonials", label: "References", icon: "users" },
       ],

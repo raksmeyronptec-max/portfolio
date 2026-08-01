@@ -114,7 +114,10 @@ export async function deleteMediaAsset(
          certificate_original:certificates!certificates_original_media_id_fkey(id, slug),
          certificate_og:certificates!certificates_og_image_media_id_fkey(id, slug),
          testimonial_avatar:testimonials!testimonials_avatar_media_id_fkey(id, slug),
-         resume_versions(id, version_label)`,
+         resume_versions(id, version_label),
+         experience_media(id, deleted_at, experiences(slug)),
+         journey_media(id, deleted_at, kind, journey_entries(slug)),
+         journey_cover:journey_entries!journey_entries_cover_media_id_fkey(id, slug)`,
       )
       .eq("id", mediaId)
       .maybeSingle();
@@ -139,7 +142,39 @@ export async function deleteMediaAsset(
       certificate_og: Array<{ slug: string }> | null;
       testimonial_avatar: Array<{ slug: string }> | null;
       resume_versions: Array<{ version_label: string }> | null;
+      experience_media: Array<{
+        deleted_at: string | null;
+        experiences: { slug: string } | null;
+      }> | null;
+      journey_media: Array<{
+        deleted_at: string | null;
+        kind: string;
+        journey_entries: { slug: string } | null;
+      }> | null;
+      journey_cover: Array<{ slug: string }> | null;
     };
+
+    /*
+     * Only live attachments block a delete. A detached photograph leaves a
+     * soft-deleted row behind as a record of what was once published, and that
+     * record must not make the image undeletable forever.
+     *
+     * The database says the same thing independently: `experience_media.media_id`
+     * is ON DELETE RESTRICT, so even a soft-deleted attachment would refuse the
+     * delete at the FK level. Which is why the row is hard-deleted below when the
+     * asset is genuinely going.
+     */
+    const liveExperienceAttachments = (row.experience_media ?? []).filter(
+      (item) => item.deleted_at === null,
+    );
+
+    // Same rule for journey stories. `journey_media.media_id` is likewise ON
+    // DELETE RESTRICT, so a live attachment could not be orphaned even if this
+    // guard were removed — but the guard is what turns a foreign-key violation
+    // into a sentence naming the story to detach it from.
+    const liveJourneyAttachments = (row.journey_media ?? []).filter(
+      (item) => item.deleted_at === null,
+    );
 
     // Name the actual referencing records: "in use" without saying where is not
     // actionable.
@@ -160,6 +195,16 @@ export async function deleteMediaAsset(
       ),
       ...(row.testimonial_avatar ?? []).map((item) => `reference avatar: ${item.slug}`),
       ...(row.resume_versions ?? []).map((item) => `resume version: ${item.version_label}`),
+      ...liveExperienceAttachments.map(
+        (item) => `experience photo: ${item.experiences?.slug ?? "unknown entry"}`,
+      ),
+      ...liveJourneyAttachments.map(
+        (item) =>
+          `journey ${item.kind === "video" ? "video poster" : "photo"}: ${
+            item.journey_entries?.slug ?? "unknown story"
+          }`,
+      ),
+      ...(row.journey_cover ?? []).map((item) => `journey cover: ${item.slug}`),
     ];
 
     if (references.length > 0) {
@@ -195,6 +240,29 @@ export async function deleteMediaAsset(
         // Deliberately ignored — see above.
       }
     }
+
+    /*
+     * Purge soft-deleted experience attachments first.
+     *
+     * `experience_media.media_id` is ON DELETE RESTRICT — deliberately, so that a
+     * *live* attachment can never be orphaned by a media delete. The guard above
+     * already refused that case, so anything remaining here is a detached row
+     * kept only as history, and history must not make an asset permanently
+     * undeletable. Without this, the delete below fails with a foreign-key
+     * violation the admin has no way to act on.
+     */
+    await supabase
+      .from("experience_media")
+      .delete()
+      .eq("media_id", mediaId)
+      .not("deleted_at", "is", null);
+
+    // And the journey equivalent, for the same reason.
+    await supabase
+      .from("journey_media")
+      .delete()
+      .eq("media_id", mediaId)
+      .not("deleted_at", "is", null);
 
     const { error } = await supabase.from("media_assets").delete().eq("id", mediaId);
     if (error) return fromPostgresError(error);

@@ -51,11 +51,56 @@ export type AuditAction =
   | "media.uploaded"
   | "media.replaced"
   | "media.deleted"
+  | "media.imported"
   | "resume.uploaded"
   | "resume.activated"
   | "resume.archived"
   | "education.updated"
   | "experience.updated"
+  /*
+   * Experience photographs get their own verbs rather than folding into
+   * `experience.updated`. These are decisions about photographs of other
+   * people — who was in them, who approved publication, and when — and
+   * "someone edited an experience entry" is not an answer to any of the
+   * questions that would be asked a year later.
+   */
+  | "experience.photo_attached"
+  | "experience.photo_removed"
+  | "experience.photo_updated"
+  | "experience.cover_changed"
+  | "experience.gallery_reordered"
+  | "experience.photo_privacy_changed"
+  | "experience.photo_consent_changed"
+  | "experience.photo_published"
+  | "experience.photo_hidden"
+  /*
+   * Journey stories get the same treatment, and for the same reason. These are
+   * decisions about photographs and video of other people — who was in them, who
+   * approved publication, and when. "Someone edited a story" answers none of the
+   * questions that would actually be asked a year later.
+   */
+  | "journey.created"
+  | "journey.updated"
+  | "journey.published"
+  | "journey.unpublished"
+  | "journey.archived"
+  | "journey.restored"
+  | "journey.deleted"
+  | "journey.duplicated"
+  | "journey.featured_changed"
+  | "journey.media_attached"
+  | "journey.media_removed"
+  | "journey.media_updated"
+  | "journey.cover_changed"
+  | "journey.gallery_reordered"
+  | "journey.media_privacy_changed"
+  | "journey.media_consent_changed"
+  | "journey.media_published"
+  | "journey.media_hidden"
+  | "journey.video_added"
+  | "journey.video_removed"
+  | "journey.relation_added"
+  | "journey.relation_removed"
   | "skill.updated"
   | "testimonial.updated"
   | "message.updated"

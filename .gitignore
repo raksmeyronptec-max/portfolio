@@ -51,3 +51,17 @@ yarn-error.log*
 
 # Redesign review screenshots — kept on disk for review, too heavy for git.
 /docs/redesign-screenshots/
+
+# Local media import staging.
+#
+# The owner drops folders of photographs here to import them. They are
+# classroom, fieldwork and family photographs of real people — many of them
+# children — and committing them would publish to the repository exactly the
+# files the privacy review exists to gate. The folder itself is tracked (via
+# the README below) so the path is discoverable; nothing inside it ever is.
+/imports/portfolio-media/*
+!/imports/portfolio-media/README.md
+
+# Feature review screenshots — kept on disk for review, too heavy for git.
+/docs/experience-photos-screenshots/
+/docs/journey-screenshots/

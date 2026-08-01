@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { Button, IconButton } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Badge, Card, CardBody } from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/states";
@@ -56,6 +58,7 @@ export function CvManager({
   canEdit,
   canPublish,
   canDelete,
+  mediaHrefBase,
 }: {
   table: "education" | "experiences" | "testimonials";
   singular: string;
@@ -69,6 +72,21 @@ export function CvManager({
   canEdit: boolean;
   canPublish: boolean;
   canDelete: boolean;
+  /**
+   * When set, each row gains a "Manage photos" action linking to
+   * `${mediaHrefBase}/${item.id}/photos`.
+   *
+   * A string rather than a `(item) => string` builder, which is what this
+   * originally was. `CvManager` is a Client Component and the callers are Server
+   * Components, so a function prop crosses the serialization boundary and Next
+   * rejects it at *render* time with "Functions cannot be passed directly to
+   * Client Components" — a 500 on /admin/experience that types, lint and the
+   * build all pass cleanly.
+   *
+   * Optional because only experience entries carry photographs; education and
+   * references get no control rather than a dead one.
+   */
+  mediaHrefBase?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -167,6 +185,16 @@ export function CvManager({
                   </div>
 
                   <div className="flex shrink-0 gap-1">
+                    {mediaHrefBase ? (
+                      <Link
+                        href={`${mediaHrefBase}/${item.id}/photos`}
+                        aria-label={`Manage photos for ${item.primaryLabel}`}
+                        className="inline-flex size-9 items-center justify-center rounded-(--radius-md) text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+                      >
+                        <Icon name="image" size={16} />
+                      </Link>
+                    ) : null}
+
                     <IconButton
                       icon="edit"
                       label={`Edit ${item.primaryLabel}`}

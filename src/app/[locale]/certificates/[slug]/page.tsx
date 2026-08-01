@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
 import { OutboundLink } from "@/components/public/outbound-link";
+import { JourneyStoryLinks } from "@/components/public/journey-story-links";
+import { getJourneyStoriesByRelation } from "@/lib/data/journey";
 import { formatDate, getDictionary } from "@/i18n/dictionary";
 import { isLocale, localePath, locales, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
@@ -83,6 +85,19 @@ export default async function CertificateDetailPage({
   const t = getDictionary(locale);
   const certificate = await getCertificateBySlug(slug, locale);
   if (!certificate) notFound();
+
+  /*
+   * Related journey stories.
+   *
+   * Section 18 of the brief, and the whole reason these are a *link* rather than
+   * an embedded gallery: the credential document and the award-ceremony
+   * photograph are different artefacts. The redacted scan above is the
+   * credential; the ceremony photographs live on the story and must never stand
+   * in for the document itself.
+   */
+  const journeyStories = (await getJourneyStoriesByRelation("certificate", locale))[
+    certificate.id
+  ];
 
   // Only ever the redacted preview: `resolveImage` returns null for any private
   // asset, and the original's id is not even selected by the query.
@@ -332,6 +347,13 @@ export default async function CertificateDetailPage({
               <Notice tone="info" icon="lock">
                 <p>{t.certificates.downloadUnavailable}</p>
               </Notice>
+            ) : null}
+
+            {journeyStories && journeyStories.length > 0 ? (
+              <div className="flex flex-col gap-2 border-t border-border pt-6">
+                <h2 className="text-h4 font-semibold">{t.journey.fromJourney}</h2>
+                <JourneyStoryLinks locale={locale} t={t} stories={journeyStories} />
+              </div>
             ) : null}
 
             {certificate.relatedProjects.length > 0 ? (

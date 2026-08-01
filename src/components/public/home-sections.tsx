@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ButtonLink } from "@/components/ui/button";
 import { Icon, toIconName } from "@/components/ui/icon";
@@ -13,6 +14,7 @@ import { interpolate, type Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
 import { langAttribute } from "@/lib/content/translation";
 import type { CapabilityGroup, EducationEntry, ExperienceEntry, Testimonial } from "@/lib/data/cv";
+import type { JourneyEntrySummary } from "@/lib/content/journey";
 import type { CertificateCardData } from "@/lib/data/certificates";
 import type { ProjectCardData } from "@/lib/data/projects";
 import { livePlatforms } from "@/lib/data/live-platforms";
@@ -893,6 +895,191 @@ export function CertificatesPreview({
   );
 }
 
+// ── Selected moments ────────────────────────────────────────────────────────
+
+/**
+ * The homepage's curated strip of journey stories.
+ *
+ * Distinct from `Journey` below, which is the education/experience timeline —
+ * that one answers "what has he done", this one answers "what did it look like".
+ *
+ * Four to six entries, never the whole collection. The homepage is a summary and
+ * the point of the Journey page is that it holds the rest; putting a wall of
+ * photographs here would make the homepage a feed, which is the outcome the whole
+ * information architecture is arranged to avoid.
+ *
+ * Renders nothing at all when no story is featured. An empty state here would be
+ * a box announcing an absence on the most important page of the site.
+ */
+export function SelectedMoments({
+  locale,
+  t,
+  entries,
+}: {
+  locale: Locale;
+  t: Dictionary;
+  entries: JourneyEntrySummary[];
+}) {
+  if (entries.length === 0) return null;
+
+  return (
+    <section aria-labelledby="moments-heading" className="section-y">
+      <div className="container-content flex flex-col gap-10">
+        <Reveal>
+          <SectionHead
+            id="moments-heading"
+            eyebrow={t.home.moments.eyebrow}
+            title={t.home.moments.heading}
+            description={t.home.moments.description}
+            watermark="04"
+            action={
+              <ButtonLink
+                href={localePath(locale, "journey")}
+                variant="outline"
+                iconEnd="arrowRight"
+                className="group rounded-(--radius-full) px-5"
+              >
+                {t.home.moments.viewAll}
+              </ButtonLink>
+            }
+          />
+        </Reveal>
+
+        {/*
+          Three across on desktop, two on a tablet, one on a phone. Six featured
+          entries therefore fill exactly two rows, which is why the data layer
+          caps at six.
+        */}
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {entries.map((entry, index) => (
+            <li key={entry.id} className="flex">
+              <Reveal delay={index * 60} className="flex flex-1">
+                <MomentCard locale={locale} t={t} entry={entry} />
+              </Reveal>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function MomentCard({
+  locale,
+  t,
+  entry,
+}: {
+  locale: Locale;
+  t: Dictionary;
+  entry: JourneyEntrySummary;
+}) {
+  const href = localePath(locale, `journey/${entry.slug}`);
+  const lang = langAttribute(locale, entry.isFallback ? entry.contentLocale : null);
+
+  return (
+    <article className="group flex flex-1 flex-col gap-3">
+      {entry.cover ? (
+        <Link
+          href={href}
+          tabIndex={-1}
+          // Excluded from the tab order: the heading below links to the same
+          // place, and two adjacent tab stops to one destination is noise.
+          aria-hidden="true"
+          className={cn(
+            "relative block aspect-[4/3] overflow-hidden rounded-(--radius-lg)",
+            "border border-border bg-surface-muted",
+          )}
+        >
+          <Image
+            src={entry.cover.src}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 360px, (min-width: 640px) 45vw, 100vw"
+            loading="lazy"
+            placeholder={entry.cover.blurDataURL ? "blur" : undefined}
+            blurDataURL={entry.cover.blurDataURL ?? undefined}
+            style={
+              entry.cover.objectPosition
+                ? { objectPosition: entry.cover.objectPosition }
+                : undefined
+            }
+            className={cn(
+              "object-cover transition-transform duration-500 group-hover:scale-[1.02]",
+              "motion-reduce:transition-none motion-reduce:group-hover:scale-100",
+            )}
+          />
+
+          {entry.videoCount > 0 ? (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/40 to-transparent"
+            >
+              <span className="flex size-11 items-center justify-center rounded-(--radius-full) bg-white/90 text-black">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5.5v13l11-6.5z" />
+                </svg>
+              </span>
+            </span>
+          ) : null}
+        </Link>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem]">
+        {entry.year ? (
+          <span className="font-mono text-foreground-subtle tabular-nums">
+            {entry.year}
+          </span>
+        ) : null}
+        {entry.category ? (
+          <>
+            {entry.year ? (
+              <span aria-hidden="true" className="text-foreground-subtle">
+                ·
+              </span>
+            ) : null}
+            <span className="text-foreground-muted">{entry.category.name}</span>
+          </>
+        ) : null}
+      </div>
+
+      <h3 className="text-[1.0625rem] font-semibold leading-snug text-balance">
+        <Link
+          href={href}
+          lang={lang}
+          className={cn(
+            "underline decoration-transparent underline-offset-4 transition-colors",
+            "hover:decoration-current",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--ring)",
+          )}
+        >
+          {entry.title}
+        </Link>
+      </h3>
+
+      {entry.summary ? (
+        <p
+          lang={lang}
+          className="line-clamp-3 text-small leading-relaxed text-foreground-muted"
+        >
+          {entry.summary}
+        </p>
+      ) : null}
+
+      <p className="mt-auto pt-1">
+        <Link
+          href={href}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-foreground-muted transition-colors group-hover:text-foreground"
+        >
+          {t.home.moments.viewStory}
+          <Icon name="arrowRight" size={14} />
+        </Link>
+      </p>
+    </article>
+  );
+}
+
 // ── Journey timeline ────────────────════════════════════════════════════════
 
 /**
@@ -1007,6 +1194,11 @@ export function Journey({
  * Desktop lays out as `year | rule | content` via a subgrid-free three-column
  * grid; mobile collapses to the rule and content only, with the period moving
  * above the title.
+ *
+ * `media` is an optional slot rather than a photo prop. The timeline is shared
+ * with the homepage, which renders no photographs at all, and a `photos` prop
+ * would drag the gallery's client bundle into a page that never uses it. Passing
+ * a node keeps the homepage exactly as it was.
  */
 export function Timeline({
   locale,
@@ -1027,12 +1219,23 @@ export function Timeline({
     isCurrent: boolean;
     contentLocale: Locale | null;
     tags: string[];
+    /** Rendered after the prose and before the tags. Omitted when absent. */
+    media?: ReactNode;
+    /**
+     * DOM id for deep-linking. A journey story links back to the specific role
+     * or institution it evidences, and Experience/Education have no per-entry
+     * page — the anchor is what makes "View the related experience" land on the
+     * right entry rather than the top of the listing.
+     */
+    anchorId?: string;
+    /** Rendered after the tags. Used for the journey cross-links. */
+    footer?: ReactNode;
   }>;
 }) {
   return (
     <ol className="flex flex-col">
       {items.map((item, index) => (
-        <li key={item.id}>
+        <li key={item.id} id={item.anchorId} className={item.anchorId ? "scroll-mt-24" : undefined}>
           <Reveal
             delay={Math.min(index, 6) * 50}
             className="grid gap-x-8 sm:grid-cols-[8rem_1fr]"
@@ -1133,15 +1336,36 @@ export function Timeline({
                 </p>
               ) : null}
 
+              {/*
+                Photographs sit after the prose deliberately. The role, the
+                organisation and what was done are the professional evidence;
+                the image corroborates it and must not be read first.
+              */}
+              {item.media ?? null}
+
               {item.tags.length > 0 ? (
                 <ul className="flex flex-wrap gap-1.5 pt-1">
-                  {item.tags.map((tag) => (
+                  {/*
+                    Deduplicated, because the tag list is the entry's kind label
+                    followed by its own tags — and an entry of kind "Practicum"
+                    that is also tagged "Practicum" produced two children with
+                    the same key. React warns about it, and the duplicate chip
+                    was visible on the page.
+                  */}
+                  {[...new Set(item.tags)].map((tag) => (
                     <li key={tag}>
                       <Tag>{tag}</Tag>
                     </li>
                   ))}
                 </ul>
               ) : null}
+
+              {/*
+                After the tags: the journey cross-link is a way *out* of this
+                entry, so it comes last. Putting it above the tags would interrupt
+                the entry's own description with a link to a different page.
+              */}
+              {item.footer ?? null}
             </div>
           </Reveal>
         </li>

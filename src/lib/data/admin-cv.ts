@@ -3,6 +3,10 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { translationStatus } from "@/lib/content/translation";
+import {
+  getExperienceMediaSummaries,
+  type ExperienceMediaSummary,
+} from "@/lib/data/admin-experience-media";
 import { locales } from "@/i18n/config";
 import type { CvItem } from "@/components/admin/cv-manager";
 import type { EntityValues } from "@/components/admin/entity-editor";
@@ -83,17 +87,56 @@ export async function listAdminEducation(): Promise<CvItem[]> {
   }
 }
 
+/**
+ * Compact photo status for one experience row.
+ *
+ * Kept to at most three badges. The list already carries status, translation and
+ * review badges, and a row that reports six things reports none — so this states
+ * the count, whichever single problem is most urgent, and nothing else. The full
+ * picture is one click away on the photos page.
+ */
+function mediaBadges(
+  summary: ExperienceMediaSummary | undefined,
+): CvItem["badges"] {
+  if (!summary || summary.total === 0) return undefined;
+
+  const badges: NonNullable<CvItem["badges"]> = [
+    {
+      label: `${summary.total} ${summary.total === 1 ? "photo" : "photos"}`,
+      tone: "neutral",
+    },
+  ];
+
+  if (summary.pendingReview > 0) {
+    badges.push({
+      label: `${summary.pendingReview} awaiting privacy review`,
+      tone: "warning",
+    });
+  } else if (!summary.hasCover) {
+    badges.push({ label: "No cover", tone: "warning" });
+  } else if (summary.missingAltText > 0) {
+    badges.push({ label: "Alt text missing", tone: "warning" });
+  } else if (summary.live > 0) {
+    badges.push({ label: `${summary.live} public`, tone: "success" });
+  }
+
+  return badges;
+}
+
 export async function listAdminExperience(): Promise<CvItem[]> {
   if (!isSupabaseConfigured()) return [];
 
   try {
     const supabase = await createSupabaseServerClient();
 
-    const { data, error } = await supabase
-      .from("experiences")
-      .select("*, experience_translations(*), experience_tags(label_en, sort_order)")
-      .order("sort_order", { ascending: true })
-      .order("started_on", { ascending: false, nullsFirst: false });
+    const [{ data, error }, mediaSummaries] = await Promise.all([
+      supabase
+        .from("experiences")
+        .select("*, experience_translations(*), experience_tags(label_en, sort_order)")
+        .order("sort_order", { ascending: true })
+        .order("started_on", { ascending: false, nullsFirst: false }),
+      getExperienceMediaSummaries(),
+    ]);
 
     if (error || !data) return [];
 
@@ -110,6 +153,7 @@ export async function listAdminExperience(): Promise<CvItem[]> {
 
       return {
         id: row.id as string,
+        badges: mediaBadges(mediaSummaries[row.id as string]),
         slug: row.slug as string,
         status: row.status as CvItem["status"],
         deletedAt: (row.deleted_at as string | null) ?? null,
@@ -442,6 +486,49 @@ export async function listSeoOverrides(): Promise<AdminSeoOverride[]> {
     }));
   } catch {
     return [];
+  }
+}
+
+/**
+ * Minimal experience header for the photo-management page.
+ *
+ * Deliberately not `listAdminExperience().find(...)`: that loads every entry with
+ * every translation and tag to render one title.
+ */
+export async function getExperienceForPhotos(id: string): Promise<{
+  slug: string;
+  status: CvItem["status"];
+  roleTitle: string;
+} | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const { data } = await supabase
+      .from("experiences")
+      .select("slug, status, experience_translations(locale, role_title)")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!data) return null;
+
+    const row = data as unknown as {
+      slug: string;
+      status: CvItem["status"];
+      experience_translations: Array<{ locale: string; role_title: string }>;
+    };
+
+    return {
+      slug: row.slug,
+      status: row.status,
+      roleTitle:
+        row.experience_translations.find((item) => item.locale === "en")?.role_title ??
+        row.slug,
+    };
+  } catch {
+    return null;
   }
 }
 

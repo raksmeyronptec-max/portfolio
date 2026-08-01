@@ -32,6 +32,21 @@ export const analyticsEventNames = [
   "language_change",
   "theme_change",
   "outbound_link_click",
+  /*
+   * Journey. All of these describe what was looked at, never who looked — the
+   * gallery event carries a story slug and a position index, and nothing else.
+   * `journey_photo_view` in particular is deliberately not per-photograph
+   * identity: it records that the gallery advanced, which is what tells the owner
+   * whether anyone reaches the end of a story.
+   */
+  "journey_view",
+  "journey_gallery_open",
+  "journey_photo_view",
+  "journey_video_play",
+  "journey_related_experience_click",
+  "journey_related_education_click",
+  "journey_related_certificate_click",
+  "journey_related_project_click",
 ] as const;
 
 export type AnalyticsEventName = (typeof analyticsEventNames)[number];
@@ -42,6 +57,7 @@ export const entityTypes = [
   "resume",
   "page",
   "social_link",
+  "journey",
 ] as const;
 
 /**
@@ -72,6 +88,7 @@ export const pageViewEvents: ReadonlySet<AnalyticsEventName> = new Set([
   "project_view",
   "certificate_view",
   "resume_view",
+  "journey_view",
 ]);
 
 /** Events that also get a row in `outbound_clicks`. */
