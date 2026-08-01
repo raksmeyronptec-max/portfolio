@@ -262,7 +262,8 @@ export const publishBlockerLabels: Record<string, string> = {
     "An SEO description (50–160 characters) is required so search engines do not invent one.",
   coverMissing: "A cover image is required for the card and the social preview.",
   needsReview:
-    "This project is still marked “needs review”. Confirm the unverified facts, then clear the flag.",
+    "This project is still marked “needs review”. Nothing is missing — untick “Needs review” " +
+    "in the Review status panel once you have confirmed the facts listed in the review note.",
   featureTitleRequired: "Every feature needs an English title.",
   metricLabelRequired: "Every measured result needs an English label.",
   metricValueRequired: "Every measured result needs a value.",
