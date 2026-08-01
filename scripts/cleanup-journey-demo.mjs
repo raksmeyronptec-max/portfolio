@@ -47,8 +47,29 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false },
 });
 
-/** The synthetic demo files, and nothing else. */
-const DEMO_FILENAME_PATTERN = "IMG_45%";
+/**
+ * The synthetic demo files, and nothing else.
+ *
+ * Two independent narrowings, because this script deletes storage objects and a
+ * mistake here is not recoverable:
+ *
+ *   · the filename prefix, overridable so the same script can clear the
+ *     batch-upload probe's files as well as the importer's;
+ *   · the media kind, which is NOT overridable — the demo scripts only ever
+ *     create these two, so nothing the owner uploaded by hand for a project,
+ *     certificate, resume or profile can be matched however the pattern is set.
+ */
+const DEMO_FILENAME_PATTERN = process.env.DEMO_PATTERN ?? "IMG_45%";
+const DEMO_KINDS = ["journey_photo", "video_poster"];
+
+if (!DEMO_FILENAME_PATTERN.endsWith("%") || DEMO_FILENAME_PATTERN.length < 4) {
+  // A bare "%" would match the whole library. Refuse rather than trust the caller.
+  console.error(
+    `Refusing to run: DEMO_PATTERN "${DEMO_FILENAME_PATTERN}" is too broad. ` +
+      "Use a specific prefix such as 'IMG_45%'.",
+  );
+  process.exit(1);
+}
 
 console.log(`Supabase: ${SUPABASE_URL}`);
 
@@ -57,7 +78,7 @@ const { data: assets, error } = await supabase
   .select(
     "id, bucket_id, storage_path, thumbnail_path, card_path, preview_path, storage_provider, original_filename",
   )
-  .eq("kind", "journey_photo")
+  .in("kind", DEMO_KINDS)
   .like("original_filename", DEMO_FILENAME_PATTERN);
 
 if (error) {
