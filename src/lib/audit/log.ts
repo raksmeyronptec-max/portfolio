@@ -101,6 +101,41 @@ export type AuditAction =
   | "journey.video_removed"
   | "journey.relation_added"
   | "journey.relation_removed"
+  /*
+   * Publications (migration 0026). Each decision has its own verb rather than
+   * collapsing into `publication.updated`, because the questions asked a year
+   * later are "when did the served PDF change?", "who opened the source
+   * archive?" and "who decided this was safe to publish?" — and a single
+   * "someone edited a book" answers none of them.
+   */
+  | "publication.created"
+  | "publication.updated"
+  | "publication.published"
+  | "publication.unpublished"
+  | "publication.archived"
+  | "publication.restored"
+  | "publication.deleted"
+  | "publication.duplicated"
+  | "publication.featured_changed"
+  | "publication.reordered"
+  | "publication.cover_changed"
+  | "publication.privacy_reviewed"
+  | "publication.license_changed"
+  | "publication.download_policy_changed"
+  | "publication.version_created"
+  | "publication.version_updated"
+  | "publication.version_activated"
+  | "publication.version_deleted"
+  | "publication.pdf_replaced"
+  | "publication.original_uploaded"
+  | "publication.source_uploaded"
+  | "publication.source_downloaded"
+  | "publication.original_downloaded"
+  | "publication.sample_pages_changed"
+  | "publication.chapters_changed"
+  | "publication.topics_changed"
+  | "publication.relation_added"
+  | "publication.relation_removed"
   | "skill.updated"
   | "testimonial.updated"
   | "message.updated"

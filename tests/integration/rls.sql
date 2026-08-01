@@ -1405,6 +1405,243 @@ begin
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+--  9d. Publications: the column boundary and the three file levels
+--
+--  The interesting assertions here are not "can anon read a draft" — that is the
+--  same `is_publicly_visible` predicate as everywhere else. They are:
+--
+--    · anon has no grant on `publication_versions` at all, because the private
+--      file references live in its columns and RLS cannot filter a column;
+--    · the view that replaces it exposes no `*_media_id` and restates the row
+--      predicate, since definer rights mean the base table's policies do not run;
+--    · the file-level triggers refuse a public asset in any of the three slots;
+--    · the publish gate refuses a book whose privacy review is not approved.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+do $$
+declare
+  ok             boolean;
+  n              integer;
+  v_pub          uuid;
+  v_draft_pub    uuid;
+  v_public_asset uuid;
+  v_pdf_asset    uuid;
+  cols           text;
+begin
+  raise notice '';
+  raise notice '── 9d. Publications ────────────────────────────────────';
+
+  perform pg_temp.become_postgres();
+
+  -- A published publication with a published and a draft edition.
+  insert into public.publications (slug, status, privacy_status, privacy_reviewed_at)
+  values ('rls-pub-published', 'draft', 'approved', now())
+  returning id into v_pub;
+
+  insert into public.publication_translations (publication_id, locale, title)
+  values (v_pub, 'en', 'RLS published book');
+
+  update public.publications set status = 'published' where id = v_pub;
+
+  insert into public.publication_versions (publication_id, version_label, status)
+  values (v_pub, 'RLS first edition', 'published');
+  insert into public.publication_versions (publication_id, version_label, status)
+  values (v_pub, 'RLS draft edition', 'draft');
+
+  -- A draft publication that must stay invisible in every direction.
+  insert into public.publications (slug, status)
+  values ('rls-pub-draft', 'draft')
+  returning id into v_draft_pub;
+
+  insert into public.publication_translations (publication_id, locale, title)
+  values (v_draft_pub, 'en', 'RLS draft book');
+
+  insert into public.publication_versions (publication_id, version_label, status)
+  values (v_draft_pub, 'RLS secret edition', 'published');
+
+  -- ── The grant boundary ────────────────────────────────────────────────
+  begin
+    perform pg_temp.become_anon();
+    select count(*) into n from public.publication_versions;
+    ok := false;   -- reaching this line at all is the failure
+    perform pg_temp.become_postgres();
+  exception when insufficient_privilege then
+    perform pg_temp.become_postgres();
+    ok := true;
+  when others then
+    perform pg_temp.become_postgres();
+    ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'anon has no grant on publication_versions, so the private file columns are unreachable');
+
+  -- ── The view is the column filter ─────────────────────────────────────
+  select string_agg(column_name, ',') into cols
+    from information_schema.columns
+   where table_schema = 'public' and table_name = 'public_publication_versions';
+
+  perform pg_temp.assert(cols not like '%media_id%',
+    'the public edition view exposes no media asset ids');
+  perform pg_temp.assert(cols like '%has_pdf%',
+    'the public edition view reports file presence as a boolean instead');
+
+  -- ── The view restates the row predicate ───────────────────────────────
+  perform pg_temp.become_anon();
+
+  select count(*) into n from public.public_publication_versions
+   where publication_id = v_pub;
+  perform pg_temp.become_postgres();
+  perform pg_temp.assert(n = 1,
+    'anon sees only the published edition of a published publication');
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.public_publication_versions
+   where publication_id = v_draft_pub;
+  perform pg_temp.become_postgres();
+  perform pg_temp.assert(n = 0,
+    'a draft publication''s editions are invisible through the view');
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.publications where slug = 'rls-pub-draft';
+  perform pg_temp.become_postgres();
+  perform pg_temp.assert(n = 0, 'a draft publication is invisible to anon');
+
+  perform pg_temp.become_anon();
+  select count(*) into n from public.publication_translations
+   where publication_id = v_draft_pub;
+  perform pg_temp.become_postgres();
+  perform pg_temp.assert(n = 0,
+    'a draft publication''s translations are invisible to anon');
+
+  -- ── The three file levels ─────────────────────────────────────────────
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename, mime_type, file_size_bytes)
+  values
+    ('publication-previews', 'rls-pub/cover.webp', 'publication_cover', 'public',
+     'cover.webp', 'image/webp', 1000)
+  returning id into v_public_asset;
+
+  -- A public asset must be refused in the reader-facing PDF slot. It reads
+  -- backwards until you follow the request path: the download route is what
+  -- enforces `pdf_download_policy`, and an object with a public URL bypasses it.
+  begin
+    insert into public.publication_versions (publication_id, version_label, pdf_media_id)
+    values (v_pub, 'RLS bad pdf', v_public_asset);
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'a public asset is refused as an edition''s downloadable PDF');
+
+  begin
+    insert into public.publication_versions (publication_id, version_label, original_media_id)
+    values (v_pub, 'RLS bad original', v_public_asset);
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'a public asset is refused as an edition''s archival original');
+
+  begin
+    insert into public.publication_versions (publication_id, version_label, source_archive_media_id)
+    values (v_pub, 'RLS bad source', v_public_asset);
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'a public asset is refused as an edition''s LaTeX source archive');
+
+  -- A ZIP may only ever be a private publication_source asset.
+  begin
+    insert into public.media_assets
+      (bucket_id, storage_path, kind, visibility, original_filename, mime_type, file_size_bytes)
+    values ('publication-previews', 'rls-pub/src.zip', 'publication_source', 'public',
+            'src.zip', 'application/zip', 1000);
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok, 'a source archive cannot be marked public');
+
+  begin
+    insert into public.media_assets
+      (bucket_id, storage_path, kind, visibility, original_filename, mime_type, file_size_bytes)
+    values ('publication-files', 'rls-pub/book.pdf', 'publication_pdf', 'public',
+            'book.pdf', 'application/pdf', 1000);
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'even the reader-facing publication PDF cannot be marked public');
+
+  -- The correct shape is accepted.
+  insert into public.media_assets
+    (bucket_id, storage_path, kind, visibility, original_filename, mime_type, file_size_bytes)
+  values ('publication-files', 'rls-pub/book.pdf', 'publication_pdf', 'private',
+          'book.pdf', 'application/pdf', 1000)
+  returning id into v_pdf_asset;
+
+  insert into public.publication_versions
+    (publication_id, version_label, pdf_media_id, status, is_active)
+  values (v_pub, 'RLS good edition', v_pdf_asset, 'published', true);
+
+  select count(*) into n from public.publications
+   where id = v_pub and active_version_id is not null;
+  perform pg_temp.assert(n = 1,
+    'activating an edition points the publication at it');
+
+  -- ── The publish gate ──────────────────────────────────────────────────
+  begin
+    update public.publications
+       set privacy_status = 'pending_review', privacy_reviewed_at = null,
+           status = 'published'
+     where id = v_draft_pub;
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'a publication cannot be published while its privacy review is pending');
+
+  begin
+    update public.publications
+       set privacy_status = 'approved', privacy_reviewed_at = now(),
+           needs_review = true, status = 'published'
+     where id = v_draft_pub;
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok,
+    'a publication cannot be published while flagged as needing review');
+
+  -- An approval must be attributable.
+  begin
+    update public.publications
+       set privacy_status = 'approved', privacy_reviewed_at = null
+     where id = v_draft_pub;
+    ok := false;
+  exception when check_violation then ok := true;
+  when others then ok := false;
+  end;
+  perform pg_temp.assert(ok, 'an approved privacy review must carry a timestamp');
+
+  -- ── Editor writes still work ──────────────────────────────────────────
+  perform pg_temp.become_user('00000000-0000-4000-8000-0000000000ff');
+  begin
+    update public.publications set display_order = 5 where id = v_pub;
+    ok := true;
+  exception when others then ok := false;
+  end;
+  perform pg_temp.become_postgres();
+  perform pg_temp.assert(ok, 'an editor can still update a publication');
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 --  10. RLS is enabled everywhere it must be
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -1468,6 +1705,25 @@ begin
   delete from public.journey_entries where slug like 'rls-journey-%';
   delete from public.experiences where slug like 'rls-journey-exp-%';
   delete from public.media_assets where storage_path like 'rls-journey/%';
+
+  /*
+   * Publications.
+   *
+   * Order matters twice over. `active_version_id` is cleared *first*, because
+   * that UPDATE fires the publish-rules trigger — and if the translations were
+   * already gone, the trigger would refuse it with "cannot be published without
+   * an English title" and the whole teardown would abort.
+   *
+   * Then the editions, because their three file columns are ON DELETE RESTRICT
+   * and the assets cannot go while anything points at them. The publications
+   * themselves go last but one; their translations cascade.
+   */
+  update public.publications set active_version_id = null where slug like 'rls-pub-%';
+  delete from public.publication_versions pv
+   using public.publications p
+   where pv.publication_id = p.id and p.slug like 'rls-pub-%';
+  delete from public.publications where slug like 'rls-pub-%';
+  delete from public.media_assets where storage_path like 'rls-pub/%';
 
   delete from public.project_metrics
    where label_en in ('Verified metric', 'Unverified metric', 'No source');

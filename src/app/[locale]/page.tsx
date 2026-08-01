@@ -11,6 +11,7 @@ import {
   Hero,
   Journey,
   SelectedMoments,
+  SelectedPublications,
   Testimonials,
 } from "@/components/public/home-sections";
 import { getDictionary } from "@/i18n/dictionary";
@@ -27,6 +28,7 @@ import {
 import { getFeaturedProjects } from "@/lib/data/projects";
 import { getFeaturedCertificates } from "@/lib/data/certificates";
 import { getFeaturedJourneyEntries } from "@/lib/data/journey";
+import { getFeaturedPublications } from "@/lib/data/publications";
 import {
   getCapabilityGroups,
   getEducation,
@@ -110,6 +112,7 @@ export default async function HomePage({
     experiences,
     testimonials,
     featuredMoments,
+    featuredPublications,
   ] = await Promise.all([
     getSiteSettings(locale),
     getOwnerProfile(locale),
@@ -125,6 +128,8 @@ export default async function HomePage({
     // Four to six, per section 15 of the brief. The homepage is a summary, not
     // the collection — the Journey page holds the rest.
     getFeaturedJourneyEntries(locale, 6),
+    // Four at most — the section is a signal that these exist, not a catalogue.
+    getFeaturedPublications(locale, 4),
   ]);
 
   const displayName = profile?.displayName ?? settings.siteName;
@@ -198,6 +203,14 @@ export default async function HomePage({
         like. Renders nothing when no story is featured.
       */}
       <SelectedMoments locale={locale} t={t} entries={featuredMoments} />
+
+      {/*
+        After the journey strip: the books are the most durable evidence on the
+        page, so they sit close to the references and the call to action rather
+        than competing with the project work up top. Renders nothing when no
+        publication is featured.
+      */}
+      <SelectedPublications locale={locale} t={t} publications={featuredPublications} />
 
       <Testimonials locale={locale} t={t} testimonials={testimonials} />
 

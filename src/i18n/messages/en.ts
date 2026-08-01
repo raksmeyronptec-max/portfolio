@@ -44,6 +44,7 @@ export const en = {
     certificates: "Certificates",
     experience: "Experience",
     journey: "Journey",
+    publications: "Publications",
     education: "Education",
     about: "About",
     resume: "Resume",
@@ -164,6 +165,19 @@ export const en = {
         "Fieldwork, teaching practice, exchanges and the events along the way.",
       viewStory: "View story",
       viewAll: "View the full journey",
+    },
+    /*
+     * The homepage's curated strip of authored books. Three or four, never the
+     * whole shelf — the Publications page holds the rest, and the homepage's job
+     * is to establish that these exist rather than to be a catalogue.
+     */
+    publications: {
+      eyebrow: "Authored work",
+      heading: "Selected publications",
+      description:
+        "Mathematics books and learning materials I have written and typeset with LaTeX.",
+      viewPublication: "View publication",
+      viewAll: "View all publications",
     },
     testimonials: {
       eyebrow: "References",
@@ -521,6 +535,191 @@ export const en = {
       externalOnly: "This video opens on the site that hosts it.",
       posterAlt: "Poster frame for the video “{title}”",
     },
+  },
+
+  publications: {
+    title: "Publications",
+    description:
+      "Mathematics books and learning materials I have written and typeset with LaTeX.",
+    eyebrow: "Authored work",
+    subtitle: "Mathematics books, learning materials and LaTeX publications",
+
+    emptyState: "Publications will appear here once they are published.",
+    emptyHeading: "Books are being prepared",
+    emptyBody:
+      "Every book is reviewed before it is published here — for contact details, third-party figures and anything that should not be public.",
+
+    // Listing
+    featuredHeading: "Selected publications",
+    allHeading: "All publications",
+    viewPublication: "View publication",
+    backToPublications: "Back to publications",
+
+    // Filters. Shown progressively — see the note in publication-filters.tsx.
+    searchLabel: "Search publications",
+    searchPlaceholder: "Search by title, subject or topic",
+    filterType: "Type",
+    filterSubject: "Subject",
+    filterYear: "Year",
+    filterLevel: "Level",
+    allTypes: "All types",
+    allSubjects: "All subjects",
+    allYears: "All years",
+    allLevels: "All levels",
+    resultCount: "{count} publication",
+    resultCountPlural: "{count} publications",
+    noResults: "No publications match these filters",
+    noResultsHint: "Try removing a filter or clearing your search.",
+    showFilters: "Filter publications",
+    hideFilters: "Hide filters",
+    clearFilters: "Clear filters",
+
+    // Metadata labels
+    originalTitle: "Original title",
+    type: "Type",
+    subject: "Subject",
+    level: "Level",
+    audience: "Who this is for",
+    edition: "Edition",
+    year: "Year",
+    language: "Language of the book",
+    pages: "Pages",
+    pageCount: "{count} page",
+    pageCountPlural: "{count} pages",
+    topics: "Topics",
+    author: "Author",
+
+    languageKm: "Khmer",
+    languageEn: "English",
+    languageBilingual: "Khmer and English",
+    languageOther: "Other",
+
+    levelLowerSecondary: "Lower secondary",
+    levelUpperSecondary: "Upper secondary",
+    levelUniversity: "University",
+    levelTeacher: "Teachers",
+    levelGeneral: "General",
+
+    // Sections
+    aboutHeading: "About this book",
+    introductionHeading: "Introduction",
+    objectivesHeading: "What you will learn",
+    authorNoteHeading: "A note from the author",
+    acknowledgementsHeading: "Acknowledgements",
+    contentsHeading: "Contents",
+    samplePagesHeading: "Sample pages",
+    galleryHeading: "From the book",
+    editionsHeading: "Edition history",
+    citationHeading: "How to cite this",
+    licenceHeading: "Licence and use",
+    productionHeading: "How this was made",
+    relatedHeading: "Related work",
+    relatedPublicationsHeading: "Other publications",
+
+    // Contents
+    chapterPages: "pages {start}–{end}",
+    chapterPage: "page {start}",
+
+    // Preview and download
+    previewHeading: "Read a sample",
+    openPreview: "Open the reader",
+    closePreview: "Close the reader",
+    previewNotAvailable: "No preview is available for this publication.",
+    previewSampleOnly: "This preview shows selected sample pages only.",
+    previewFirstPages: "This preview shows the first {count} pages.",
+    previewFull: "This preview shows the whole book.",
+    previewLoading: "Loading the reader…",
+    previewFailed: "The reader could not be loaded.",
+    previewFallback: "Download the PDF instead",
+    previewPage: "Page {page}",
+    previewPageOf: "Page {page} of {total}",
+    previewNextPage: "Next page",
+    previewPreviousPage: "Previous page",
+    previewZoomIn: "Zoom in",
+    previewZoomOut: "Zoom out",
+    previewFullscreen: "Full screen",
+    previewExitFullscreen: "Exit full screen",
+    previewKeyboardHint:
+      "Use the left and right arrow keys to turn pages, and Escape to close.",
+
+    download: "Download",
+    downloadPdf: "Download the PDF",
+    downloadLabel: "Download the PDF ({size})",
+    downloadEdition: "Download this edition",
+    downloadNotAvailable: "This publication is not available for download.",
+    downloadOnRequest: "Available on request",
+    downloadOnRequestBody:
+      "Get in touch and I will send you a copy.",
+    downloadContactAuthor: "Contact the author for a copy",
+    contactAboutThis: "Ask about this publication",
+    fileMeta: "{type}, {size}",
+
+    // Sample pages
+    samplePagesBody:
+      "A few pages from inside the book, chosen by the author.",
+    samplePageOf: "Page {page}",
+    openSamplePage: "View this page larger",
+
+    // Editions
+    currentEdition: "Current edition",
+    previousEdition: "Previous edition",
+    editionChangelog: "What changed",
+    editionNoChangelog: "No notes were recorded for this edition.",
+
+    // Citation
+    copyCitation: "Copy citation",
+    citationCopied: "Citation copied",
+    copyBibtex: "Copy BibTeX",
+    bibtexCopied: "BibTeX copied",
+    citationNote:
+      "This citation is built from the details recorded here. Check it against your style guide.",
+
+    // Licence
+    licenceAllRightsReserved: "All rights reserved",
+    licencePersonalEducational: "Free for personal and educational use",
+    licenceNonCommercial: "Free for non-commercial use",
+    licenceCcBy: "Creative Commons Attribution 4.0",
+    licenceCcBySa: "Creative Commons Attribution-ShareAlike 4.0",
+    licenceCcByNd: "Creative Commons Attribution-NoDerivatives 4.0",
+    licenceCcByNc: "Creative Commons Attribution-NonCommercial 4.0",
+    licenceCcByNcSa: "Creative Commons Attribution-NonCommercial-ShareAlike 4.0",
+    licenceCcByNcNd: "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0",
+    licenceCc0: "Creative Commons Zero (public domain dedication)",
+    licencePublicDomain: "Public domain",
+    licenceCustom: "Custom terms",
+    licenceReadTerms: "Read the licence",
+    copyright: "© {year} {holder}",
+    redistributionAllowed: "You may share copies of this.",
+    redistributionNotAllowed: "Please link to this page rather than sharing copies.",
+    modificationAllowed: "You may adapt this.",
+    modificationNotAllowed: "Please do not publish modified versions.",
+
+    // LaTeX production
+    latexBadge: "LaTeX",
+    latexHeading: "Created with LaTeX",
+    latexEngine: "Engine",
+    latexDocumentClass: "Document class",
+    latexBuildYear: "Typeset in",
+    latexSource: "Source",
+    latexSourcePrivate: "The source is not published.",
+    latexSourceOnRequest: "The source is available on request.",
+    latexSourcePublic: "Download the LaTeX source",
+    latexSourceRepository: "View the source repository",
+    latexSourceRequestCta: "Request the source",
+
+    // Relations
+    relatedJourney: "Journey story",
+    relatedExperience: "Experience",
+    relatedEducation: "Education",
+    relatedCertificate: "Certificate",
+    relatedProject: "Project",
+    viewRelatedPublication: "View the related publication",
+    viewRelatedPublications: "View related publications",
+
+    // Prev / next
+    previousPublication: "Previous publication",
+    nextPublication: "Next publication",
+    publicationNavigation: "Publication navigation",
   },
 
   contact: {

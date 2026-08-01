@@ -2168,6 +2168,687 @@ export type Database = {
           },
         ]
       }
+      publication_chapters: {
+        Row: {
+          chapter_number: string | null
+          created_at: string
+          description_en: string | null
+          description_km: string | null
+          end_page: number | null
+          id: string
+          publication_id: string
+          sort_order: number
+          start_page: number | null
+          title_en: string | null
+          title_km: string | null
+          updated_at: string
+        }
+        Insert: {
+          chapter_number?: string | null
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          end_page?: number | null
+          id?: string
+          publication_id: string
+          sort_order?: number
+          start_page?: number | null
+          title_en?: string | null
+          title_km?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chapter_number?: string | null
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          end_page?: number | null
+          id?: string
+          publication_id?: string
+          sort_order?: number
+          start_page?: number | null
+          title_en?: string | null
+          title_km?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_chapters_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_media: {
+        Row: {
+          alt_text_en: string | null
+          alt_text_km: string | null
+          caption_en: string | null
+          caption_km: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          media_asset_id: string
+          page_number: number | null
+          publication_id: string
+          role: string
+          sort_order: number
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          media_asset_id: string
+          page_number?: number | null
+          publication_id: string
+          role?: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          alt_text_en?: string | null
+          alt_text_km?: string | null
+          caption_en?: string | null
+          caption_km?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          media_asset_id?: string
+          page_number?: number | null
+          publication_id?: string
+          role?: string
+          sort_order?: number
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_media_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_media_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_relations: {
+        Row: {
+          certificate_id: string | null
+          created_at: string
+          display_order: number
+          education_id: string | null
+          experience_id: string | null
+          id: string
+          journey_entry_id: string | null
+          project_id: string | null
+          publication_id: string
+        }
+        Insert: {
+          certificate_id?: string | null
+          created_at?: string
+          display_order?: number
+          education_id?: string | null
+          experience_id?: string | null
+          id?: string
+          journey_entry_id?: string | null
+          project_id?: string | null
+          publication_id: string
+        }
+        Update: {
+          certificate_id?: string | null
+          created_at?: string
+          display_order?: number
+          education_id?: string | null
+          experience_id?: string | null
+          id?: string
+          journey_entry_id?: string | null
+          project_id?: string | null
+          publication_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_relations_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "public_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_education_id_fkey"
+            columns: ["education_id"]
+            isOneToOne: false
+            referencedRelation: "education"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_journey_entry_id_fkey"
+            columns: ["journey_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journey_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_relations_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_topic_links: {
+        Row: {
+          publication_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          publication_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          publication_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_topic_links_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_topic_links_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "publication_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_topics: {
+        Row: {
+          created_at: string
+          id: string
+          name_en: string
+          name_km: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_en: string
+          name_km?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_en?: string
+          name_km?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      publication_translations: {
+        Row: {
+          acknowledgements: string | null
+          author_note: string | null
+          citation_text: string | null
+          created_at: string
+          description: string | null
+          id: string
+          introduction: string | null
+          learning_objectives: string | null
+          license_terms: string | null
+          locale: Database["public"]["Enums"]["content_locale"]
+          original_title: string | null
+          production_notes: string | null
+          publication_id: string
+          seo_description: string | null
+          seo_title: string | null
+          short_summary: string | null
+          subtitle: string | null
+          target_audience: string | null
+          title: string
+          translation_state: Database["public"]["Enums"]["translation_state"]
+          updated_at: string
+        }
+        Insert: {
+          acknowledgements?: string | null
+          author_note?: string | null
+          citation_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          introduction?: string | null
+          learning_objectives?: string | null
+          license_terms?: string | null
+          locale: Database["public"]["Enums"]["content_locale"]
+          original_title?: string | null
+          production_notes?: string | null
+          publication_id: string
+          seo_description?: string | null
+          seo_title?: string | null
+          short_summary?: string | null
+          subtitle?: string | null
+          target_audience?: string | null
+          title: string
+          translation_state?: Database["public"]["Enums"]["translation_state"]
+          updated_at?: string
+        }
+        Update: {
+          acknowledgements?: string | null
+          author_note?: string | null
+          citation_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          introduction?: string | null
+          learning_objectives?: string | null
+          license_terms?: string | null
+          locale?: Database["public"]["Enums"]["content_locale"]
+          original_title?: string | null
+          production_notes?: string | null
+          publication_id?: string
+          seo_description?: string | null
+          seo_title?: string | null
+          short_summary?: string | null
+          subtitle?: string | null
+          target_audience?: string | null
+          title?: string
+          translation_state?: Database["public"]["Enums"]["translation_state"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_translations_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_types: {
+        Row: {
+          created_at: string
+          description_en: string | null
+          description_km: string | null
+          icon: string | null
+          id: string
+          name_en: string
+          name_km: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          icon?: string | null
+          id?: string
+          name_en: string
+          name_km?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_en?: string | null
+          description_km?: string | null
+          icon?: string | null
+          id?: string
+          name_en?: string
+          name_km?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      publication_versions: {
+        Row: {
+          changelog_en: string | null
+          changelog_km: string | null
+          created_at: string
+          created_by: string | null
+          edition_number: number | null
+          id: string
+          is_active: boolean
+          original_media_id: string | null
+          page_count: number | null
+          pdf_media_id: string | null
+          publication_date: string | null
+          publication_id: string
+          publication_year: number | null
+          source_archive_media_id: string | null
+          status: Database["public"]["Enums"]["publication_status"]
+          updated_at: string
+          version_label: string
+        }
+        Insert: {
+          changelog_en?: string | null
+          changelog_km?: string | null
+          created_at?: string
+          created_by?: string | null
+          edition_number?: number | null
+          id?: string
+          is_active?: boolean
+          original_media_id?: string | null
+          page_count?: number | null
+          pdf_media_id?: string | null
+          publication_date?: string | null
+          publication_id: string
+          publication_year?: number | null
+          source_archive_media_id?: string | null
+          status?: Database["public"]["Enums"]["publication_status"]
+          updated_at?: string
+          version_label: string
+        }
+        Update: {
+          changelog_en?: string | null
+          changelog_km?: string | null
+          created_at?: string
+          created_by?: string | null
+          edition_number?: number | null
+          id?: string
+          is_active?: boolean
+          original_media_id?: string | null
+          page_count?: number | null
+          pdf_media_id?: string | null
+          publication_date?: string | null
+          publication_id?: string
+          publication_year?: number | null
+          source_archive_media_id?: string | null
+          status?: Database["public"]["Enums"]["publication_status"]
+          updated_at?: string
+          version_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_versions_original_media_id_fkey"
+            columns: ["original_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_versions_pdf_media_id_fkey"
+            columns: ["pdf_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_versions_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_versions_source_archive_media_id_fkey"
+            columns: ["source_archive_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publications: {
+        Row: {
+          active_version_id: string | null
+          allow_modification: boolean
+          allow_redistribution: boolean
+          author_profile_id: string | null
+          build_year: number | null
+          content_language: string
+          copyright_holder: string | null
+          copyright_year: number | null
+          cover_media_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_order: number
+          document_class: string | null
+          doi: string | null
+          edition_label: string | null
+          edition_number: number | null
+          external_url: string | null
+          featured: boolean
+          grade_level_en: string | null
+          grade_level_km: string | null
+          id: string
+          isbn: string | null
+          latex_engine: string | null
+          license_type: string
+          needs_review: boolean
+          noindex: boolean
+          page_count: number | null
+          pdf_download_policy: string
+          preview_page_limit: number | null
+          preview_policy: string
+          privacy_review_note: string | null
+          privacy_reviewed_at: string | null
+          privacy_reviewed_by: string | null
+          privacy_status: string
+          publication_date: string | null
+          publication_type_id: string | null
+          publication_year: number | null
+          published_at: string | null
+          reading_level: string | null
+          review_note: string | null
+          sample_download_policy: string
+          slug: string
+          source_policy: string
+          source_repository_url: string | null
+          status: Database["public"]["Enums"]["publication_status"]
+          subject_en: string | null
+          subject_km: string | null
+          typeset_with_latex: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active_version_id?: string | null
+          allow_modification?: boolean
+          allow_redistribution?: boolean
+          author_profile_id?: string | null
+          build_year?: number | null
+          content_language?: string
+          copyright_holder?: string | null
+          copyright_year?: number | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number
+          document_class?: string | null
+          doi?: string | null
+          edition_label?: string | null
+          edition_number?: number | null
+          external_url?: string | null
+          featured?: boolean
+          grade_level_en?: string | null
+          grade_level_km?: string | null
+          id?: string
+          isbn?: string | null
+          latex_engine?: string | null
+          license_type?: string
+          needs_review?: boolean
+          noindex?: boolean
+          page_count?: number | null
+          pdf_download_policy?: string
+          preview_page_limit?: number | null
+          preview_policy?: string
+          privacy_review_note?: string | null
+          privacy_reviewed_at?: string | null
+          privacy_reviewed_by?: string | null
+          privacy_status?: string
+          publication_date?: string | null
+          publication_type_id?: string | null
+          publication_year?: number | null
+          published_at?: string | null
+          reading_level?: string | null
+          review_note?: string | null
+          sample_download_policy?: string
+          slug: string
+          source_policy?: string
+          source_repository_url?: string | null
+          status?: Database["public"]["Enums"]["publication_status"]
+          subject_en?: string | null
+          subject_km?: string | null
+          typeset_with_latex?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active_version_id?: string | null
+          allow_modification?: boolean
+          allow_redistribution?: boolean
+          author_profile_id?: string | null
+          build_year?: number | null
+          content_language?: string
+          copyright_holder?: string | null
+          copyright_year?: number | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number
+          document_class?: string | null
+          doi?: string | null
+          edition_label?: string | null
+          edition_number?: number | null
+          external_url?: string | null
+          featured?: boolean
+          grade_level_en?: string | null
+          grade_level_km?: string | null
+          id?: string
+          isbn?: string | null
+          latex_engine?: string | null
+          license_type?: string
+          needs_review?: boolean
+          noindex?: boolean
+          page_count?: number | null
+          pdf_download_policy?: string
+          preview_page_limit?: number | null
+          preview_policy?: string
+          privacy_review_note?: string | null
+          privacy_reviewed_at?: string | null
+          privacy_reviewed_by?: string | null
+          privacy_status?: string
+          publication_date?: string | null
+          publication_type_id?: string | null
+          publication_year?: number | null
+          published_at?: string | null
+          reading_level?: string | null
+          review_note?: string | null
+          sample_download_policy?: string
+          slug?: string
+          source_policy?: string
+          source_repository_url?: string | null
+          status?: Database["public"]["Enums"]["publication_status"]
+          subject_en?: string | null
+          subject_km?: string | null
+          typeset_with_latex?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publications_active_version_fk"
+            columns: ["active_version_id"]
+            isOneToOne: false
+            referencedRelation: "public_publication_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publications_active_version_fk"
+            columns: ["active_version_id"]
+            isOneToOne: false
+            referencedRelation: "publication_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publications_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publications_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publications_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publications_publication_type_id_fkey"
+            columns: ["publication_type_id"]
+            isOneToOne: false
+            referencedRelation: "publication_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resume_versions: {
         Row: {
           created_at: string
@@ -2844,6 +3525,65 @@ export type Database = {
         }
         Relationships: []
       }
+      public_publication_versions: {
+        Row: {
+          changelog_en: string | null
+          changelog_km: string | null
+          created_at: string | null
+          edition_number: number | null
+          has_archived_original: boolean | null
+          has_pdf: boolean | null
+          has_source_archive: boolean | null
+          id: string | null
+          is_active: boolean | null
+          page_count: number | null
+          publication_date: string | null
+          publication_id: string | null
+          publication_year: number | null
+          version_label: string | null
+        }
+        Insert: {
+          changelog_en?: string | null
+          changelog_km?: string | null
+          created_at?: string | null
+          edition_number?: number | null
+          has_archived_original?: never
+          has_pdf?: never
+          has_source_archive?: never
+          id?: string | null
+          is_active?: boolean | null
+          page_count?: number | null
+          publication_date?: string | null
+          publication_id?: string | null
+          publication_year?: number | null
+          version_label?: string | null
+        }
+        Update: {
+          changelog_en?: string | null
+          changelog_km?: string | null
+          created_at?: string | null
+          edition_number?: number | null
+          has_archived_original?: never
+          has_pdf?: never
+          has_source_archive?: never
+          id?: string | null
+          is_active?: boolean | null
+          page_count?: number | null
+          publication_date?: string | null
+          publication_id?: string | null
+          publication_year?: number | null
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_versions_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_site_counts: {
         Row: {
           featured_projects: number | null
@@ -2954,6 +3694,11 @@ export type Database = {
         | "experience_photo"
         | "journey_photo"
         | "video_poster"
+        | "publication_cover"
+        | "publication_page"
+        | "publication_pdf"
+        | "publication_original"
+        | "publication_source"
       message_state: "unread" | "read" | "archived" | "spam"
       project_status:
         | "live"
@@ -3656,6 +4401,11 @@ export const Constants = {
         "experience_photo",
         "journey_photo",
         "video_poster",
+        "publication_cover",
+        "publication_page",
+        "publication_pdf",
+        "publication_original",
+        "publication_source",
       ],
       message_state: ["unread", "read", "archived", "spam"],
       project_status: [

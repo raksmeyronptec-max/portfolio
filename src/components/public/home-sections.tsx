@@ -14,6 +14,8 @@ import { interpolate, type Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
 import { langAttribute } from "@/lib/content/translation";
 import type { CapabilityGroup, EducationEntry, ExperienceEntry, Testimonial } from "@/lib/data/cv";
+import { PublicationCard } from "./publication-card";
+import type { PublicationSummary } from "@/lib/content/publication";
 import type { JourneyEntrySummary } from "@/lib/content/journey";
 import type { CertificateCardData } from "@/lib/data/certificates";
 import type { ProjectCardData } from "@/lib/data/projects";
@@ -1092,6 +1094,73 @@ function MomentCard({
  * Uses the `periodLabel` when present — the honest precision for migrated v1
  * content — and only formats a stored date when no label exists.
  */
+/**
+ * Selected publications.
+ *
+ * Three or four authored books, never the whole shelf. Deliberately does NOT
+ * mount a PDF viewer or a download control: the homepage's job is to establish
+ * that these exist, and a reader who wants the book goes to its page, where the
+ * download policy and the file size can be stated properly.
+ *
+ * Renders nothing when nothing is featured, like every other optional section
+ * here — an empty band with a heading is worse than no band.
+ */
+export function SelectedPublications({
+  locale,
+  t,
+  publications,
+}: {
+  locale: Locale;
+  t: Dictionary;
+  publications: PublicationSummary[];
+}) {
+  if (publications.length === 0) return null;
+
+  return (
+    <section aria-labelledby="publications-heading" className="section-y">
+      <div className="container-content flex flex-col gap-10">
+        <Reveal>
+          <SectionHead
+            id="publications-heading"
+            eyebrow={t.home.publications.eyebrow}
+            title={t.home.publications.heading}
+            description={t.home.publications.description}
+            watermark="05"
+            action={
+              <ButtonLink
+                href={localePath(locale, "publications")}
+                variant="outline"
+                iconEnd="arrowRight"
+                className="group rounded-(--radius-full) px-5"
+              >
+                {t.home.publications.viewAll}
+              </ButtonLink>
+            }
+          />
+        </Reveal>
+
+        {/*
+          Three across on desktop. The data layer caps at four, so a fourth book
+          wraps to a second row rather than being silently dropped.
+        */}
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {publications.map((publication, index) => (
+            <li key={publication.id} className="flex">
+              <Reveal delay={index * 60} className="flex flex-1">
+                <PublicationCard
+                  publication={publication}
+                  locale={locale}
+                  headingLevel="h3"
+                />
+              </Reveal>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export function Journey({
   locale,
   t,

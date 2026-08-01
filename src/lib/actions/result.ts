@@ -123,6 +123,7 @@ export function revalidatePublicContent(
       revalidatePath(`/${locale}/education`);
       revalidatePath(`/${locale}/resume`);
       revalidatePath(`/${locale}/journey`);
+      revalidatePath(`/${locale}/publications`);
     }
 
     if (projectSlug) revalidatePath(`/${locale}/projects/${projectSlug}`);
@@ -145,6 +146,40 @@ export function revalidatePublicContent(
  * `previousSlug` covers a rename: without it the old URL keeps serving the story
  * from cache under a path that no longer resolves.
  */
+/**
+ * Revalidate the surfaces a publication change can appear on.
+ *
+ * Narrower than `revalidatePublicContent`, on the same reasoning
+ * `revalidateJourney` uses. A publication appears on its own page, the
+ * publications listing, the homepage's selected publications, and — through
+ * `publication_relations` — on the Journey, Experience and Education pages. It
+ * does not appear on the projects listing or the resume, and busting those on
+ * every chapter edit would discard warm caches for nothing.
+ *
+ * `previousSlug` covers a rename: without it the old URL keeps serving the
+ * publication from cache under a path that no longer resolves.
+ */
+export function revalidatePublications(
+  options: { slug?: string; previousSlug?: string } = {},
+) {
+  const { slug, previousSlug } = options;
+
+  for (const locale of locales) {
+    revalidatePath(`/${locale}`);
+    revalidatePath(`/${locale}/publications`);
+    revalidatePath(`/${locale}/journey`);
+    revalidatePath(`/${locale}/experience`);
+    revalidatePath(`/${locale}/education`);
+
+    if (slug) revalidatePath(`/${locale}/publications/${slug}`);
+    if (previousSlug && previousSlug !== slug) {
+      revalidatePath(`/${locale}/publications/${previousSlug}`);
+    }
+  }
+
+  revalidatePath("/sitemap.xml");
+}
+
 export function revalidateJourney(
   options: { slug?: string; previousSlug?: string } = {},
 ) {

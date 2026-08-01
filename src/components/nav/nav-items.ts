@@ -45,6 +45,18 @@ export function primaryNav(locale: Locale, t: Dictionary): NavItem[] {
       label: t.nav.journey,
       icon: "mapPin",
     },
+    /*
+     * Publications is primary rather than secondary because it is the strongest
+     * evidence on the site of what the owner actually does — several authored
+     * mathematics books are a harder claim than a list of roles, and burying
+     * them in the footer would be an odd thing to do with them.
+     */
+    {
+      key: "publications",
+      href: localePath(locale, "publications"),
+      label: t.nav.publications,
+      icon: "book",
+    },
     { key: "about", href: localePath(locale, "about"), label: t.nav.about, icon: "user" },
     { key: "contact", href: localePath(locale, "contact"), label: t.nav.contact, icon: "mail" },
   ];

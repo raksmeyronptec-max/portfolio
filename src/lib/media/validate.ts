@@ -40,9 +40,32 @@ export const ALLOWED_IMAGE_TYPES = [
 
 export const ALLOWED_DOCUMENT_TYPES = ["application/pdf"] as const;
 
+/**
+ * ZIP — LaTeX source packages, and nothing else.
+ *
+ * Kept in its own list rather than folded into the document types because it is
+ * only ever accepted for one kind. A ZIP is an archive of arbitrary files, so
+ * the reasons it is safe here are specific and worth stating:
+ *
+ *  · it is never expanded, parsed or executed by this application — the bytes
+ *    are stored and later streamed back verbatim;
+ *  · it can only be uploaded as `publication_source`, which a database CHECK
+ *    pins to a private bucket, so it is never served from a public URL;
+ *  · the download route sets `Content-Disposition: attachment` and
+ *    `X-Content-Type-Options: nosniff`, so the browser saves it rather than
+ *    trying to interpret it.
+ *
+ * The archive's *contents* are the owner's responsibility and the privacy
+ * checklist's subject — `latexSourceWarnings()` flags build artefacts and
+ * absolute paths, but nothing here can verify what is inside a ZIP without
+ * expanding it, which is precisely what this refuses to do.
+ */
+export const ALLOWED_ARCHIVE_TYPES = ["application/zip"] as const;
+
 export const ALLOWED_UPLOAD_TYPES = [
   ...ALLOWED_IMAGE_TYPES,
   ...ALLOWED_DOCUMENT_TYPES,
+  ...ALLOWED_ARCHIVE_TYPES,
 ] as const;
 
 export type AllowedUploadType = (typeof ALLOWED_UPLOAD_TYPES)[number];
@@ -64,6 +87,10 @@ export const STORED_AS_IS_TYPES = [
   "application/pdf",
 ] as const;
 
+/** What a publication's three file slots accept. PDFs, or a source archive. */
+export const PUBLICATION_PDF_TYPES = ["application/pdf"] as const;
+export const PUBLICATION_SOURCE_TYPES = ["application/zip"] as const;
+
 /** Extensions permitted per MIME type. */
 const EXTENSIONS: Record<AllowedUploadType, string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
@@ -75,6 +102,7 @@ const EXTENSIONS: Record<AllowedUploadType, string[]> = {
   "image/heic": ["heic", "heif"],
   "image/heif": ["heif", "heic"],
   "application/pdf": ["pdf"],
+  "application/zip": ["zip"],
 };
 
 /**
@@ -98,6 +126,7 @@ const EXTENSION_TO_TYPE: Record<string, AllowedUploadType> = {
   heic: "image/heic",
   heif: "image/heif",
   pdf: "application/pdf",
+  zip: "application/zip",
 };
 
 /**
@@ -165,6 +194,26 @@ const SIGNATURES: Record<AllowedUploadType, SignatureCheck[]> = {
   "image/heic": [FTYP, { offset: 8, anyOf: HEIF_BRANDS }],
   "image/heif": [FTYP, { offset: 8, anyOf: HEIF_BRANDS }],
   "application/pdf": [{ offset: 0, bytes: ascii("%PDF-") }],
+  /*
+   * ZIP local-file header, `PK\x03\x04`.
+   *
+   * The two other `PK` signatures are deliberately accepted as well: `PK\x05\x06`
+   * is an empty archive and `PK\x07\x08` a spanned one. Neither is what a LaTeX
+   * package should look like, but rejecting them *here* would report "the file's
+   * contents do not match its extension", which is untrue and unhelpful — they
+   * are genuinely ZIPs. An empty archive is a content problem, and the privacy
+   * checklist is where it belongs.
+   */
+  "application/zip": [
+    {
+      offset: 0,
+      anyOf: [
+        [0x50, 0x4b, 0x03, 0x04],
+        [0x50, 0x4b, 0x05, 0x06],
+        [0x50, 0x4b, 0x07, 0x08],
+      ],
+    },
+  ],
 };
 
 /**
@@ -187,15 +236,32 @@ const SIGNATURES: Record<AllowedUploadType, SignatureCheck[]> = {
  */
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
+/**
+ * The exception the paragraph above anticipated: a book.
+ *
+ * A 200-page typeset mathematics book with embedded figures does not fit in
+ * 10 MB — the examination collection spanning Bac II 2002–2025 is not going to.
+ * Refusing the owner's own books is not a security posture, it is a broken
+ * feature, so the publication kinds get the 25 MB the `media_assets` size CHECK
+ * and the storage buckets already permit.
+ *
+ * It is still a ceiling rather than "no limit": 25 MB is what the database
+ * constraint allows, so a larger file would be rejected on insert *after* the
+ * bytes had been uploaded, which is the worst possible place to find out.
+ */
+const MAX_PUBLICATION_BYTES = 25 * 1024 * 1024;
+
 export const SIZE_LIMITS = {
   publicImage: MAX_UPLOAD_BYTES,
   certificatePreview: MAX_UPLOAD_BYTES,
   certificateOriginal: MAX_UPLOAD_BYTES,
   resume: MAX_UPLOAD_BYTES,
+  publicationFile: MAX_PUBLICATION_BYTES,
 } as const;
 
 /** The ceiling itself, for anything that needs to display or enforce it. */
 export const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_BYTES;
+export const MAX_PUBLICATION_UPLOAD_BYTES = MAX_PUBLICATION_BYTES;
 
 export type ValidationFailure = {
   code:
@@ -261,7 +327,13 @@ export function validateUpload(input: {
       code: "type_not_allowed",
       message: isHeif
         ? "HEIC files are converted on upload, so they cannot be used where the original is kept byte-for-byte — a certificate original or a resume. Export this one as JPEG or PDF first."
-        : `${input.declaredType || "That file type"} is not allowed. Upload a JPEG, PNG, WebP, AVIF, HEIC or PDF.`,
+        : /*
+           * Names the types allowed for *this* upload rather than the full set.
+           * A narrowed allowlist — a publication source archive accepts only
+           * ZIP — otherwise produced "application/pdf is not allowed. Upload a
+           * JPEG, PNG, WebP, AVIF, HEIC or PDF", which contradicts itself.
+           */
+          `${input.declaredType || "That file type"} is not allowed here. Upload ${describeTypes(allowed)}.`,
     };
   }
 
@@ -291,6 +363,31 @@ export function validateUpload(input: {
   }
 
   return null;
+}
+
+/** "a JPEG, PNG or PDF" — the allowed set, in words, for an error message. */
+function describeTypes(allowed: readonly string[]): string {
+  const labels = [
+    ...new Set(
+      allowed.map(
+        (type) =>
+          ({
+            "image/jpeg": "JPEG",
+            "image/png": "PNG",
+            "image/webp": "WebP",
+            "image/avif": "AVIF",
+            "image/heic": "HEIC",
+            "image/heif": "HEIC",
+            "application/pdf": "PDF",
+            "application/zip": "ZIP",
+          })[type] ?? type,
+      ),
+    ),
+  ];
+
+  if (labels.length === 0) return "a supported file";
+  if (labels.length === 1) return `a ${labels[0]}`;
+  return `a ${labels.slice(0, -1).join(", ")} or ${labels[labels.length - 1]}`;
 }
 
 function matchesSignature(buffer: Uint8Array, type: AllowedUploadType): boolean {

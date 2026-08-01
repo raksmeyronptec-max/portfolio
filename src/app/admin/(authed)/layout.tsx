@@ -36,6 +36,7 @@ export default async function AuthedAdminLayout({
       unreadMessages={badges.unreadMessages}
       pendingPrivacyReviews={badges.pendingPrivacyReviews}
       pendingJourneyReviews={badges.pendingJourneyReviews}
+      pendingPublicationReviews={badges.pendingPublicationReviews}
     >
       {children}
     </AdminShell>

@@ -20,6 +20,11 @@ export const MEDIA_KINDS = [
   "experience_photo",
   "journey_photo",
   "video_poster",
+  "publication_cover",
+  "publication_page",
+  "publication_pdf",
+  "publication_original",
+  "publication_source",
   "testimonial_image",
   "open_graph_image",
   "diagram",
@@ -53,6 +58,17 @@ export const MEDIA_KIND_LABELS: Record<MediaKind, string> = {
   // legible at small size, standing in for a video. Kept distinct so it does not
   // turn up when the owner filters for photographs they might publish.
   video_poster: "Video poster frame",
+
+  // ── Publications (migration 0026) ────────────────────────────────────────
+  // The first two are public images. The last three are private files, and the
+  // gap between them is the entire security story of the feature — see
+  // PRIVATE_MEDIA_KINDS below.
+  publication_cover: "Publication cover",
+  publication_page: "Publication sample page",
+  publication_pdf: "Publication PDF (public-safe edition, served through the download route)",
+  publication_original: "Publication original (private archival copy)",
+  publication_source: "Publication LaTeX source archive (private)",
+
   testimonial_image: "Reference avatar",
   open_graph_image: "Social preview image",
   diagram: "Diagram",
@@ -68,8 +84,51 @@ export const MEDIA_KIND_LABELS: Record<MediaKind, string> = {
 export const PRIVATE_MEDIA_KINDS: ReadonlySet<MediaKind> = new Set([
   "certificate_original",
   "resume_file",
+  /*
+   * All three publication file levels, including the one a reader can download.
+   *
+   * `publication_pdf` looks like it belongs on the public side and does not. A
+   * publication carries a `pdf_download_policy` whose values include `signed`,
+   * `on_request` and `contact_author`; none of those can be enforced against an
+   * object with a permanent public URL, because the URL is the access. So the
+   * bytes stay private and `/api/publications/[slug]/download` is the only way
+   * in — the same shape as the resume, which is also a public-facing document
+   * served from a private bucket.
+   *
+   * A migration-0026 CHECK constraint says the same thing at the database, so
+   * this set and the schema cannot drift into disagreeing.
+   */
+  "publication_pdf",
+  "publication_original",
+  "publication_source",
 ]);
 
 export function isPrivateKind(kind: MediaKind): boolean {
   return PRIVATE_MEDIA_KINDS.has(kind);
 }
+
+/**
+ * Which logical bucket a kind's bytes belong in.
+ *
+ * Single source of truth for the routing, so the upload endpoint, the importer
+ * and any future script all agree. Kept here rather than in the upload route
+ * because it is now a five-way decision rather than the three-way conditional
+ * that route grew organically.
+ */
+export const MEDIA_KIND_BUCKETS: Partial<Record<MediaKind, string>> = {
+  certificate_original: "certificate-originals",
+  certificate_preview: "certificate-previews",
+  resume_file: "resumes",
+  publication_cover: "publication-previews",
+  publication_page: "publication-previews",
+  publication_pdf: "publication-files",
+  publication_original: "publication-originals",
+  publication_source: "publication-sources",
+};
+
+/** Publication kinds that are stored byte-for-byte rather than re-encoded. */
+export const PUBLICATION_FILE_KINDS: ReadonlySet<MediaKind> = new Set([
+  "publication_pdf",
+  "publication_original",
+  "publication_source",
+]);

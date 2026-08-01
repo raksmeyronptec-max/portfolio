@@ -3,9 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { checkPermission } from "@/lib/auth/guards";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/audit/log";
-import { isMediaKind, type MediaKind } from "@/lib/media/kinds";
+import {
+  isMediaKind,
+  isPrivateKind,
+  MEDIA_KIND_BUCKETS,
+  PUBLICATION_FILE_KINDS,
+  type MediaKind,
+} from "@/lib/media/kinds";
 import {
   buildStoragePath,
+  PUBLICATION_PDF_TYPES,
+  PUBLICATION_SOURCE_TYPES,
   resolveUploadType,
   SIZE_LIMITS,
   sanitizeFilename,
@@ -30,11 +38,22 @@ import type { StorageBucket } from "@/lib/storage/buckets";
  *  | certificate_original  | certificate-originals | none — stored byte-for-byte   |
  *  | certificate_preview   | certificate-previews  | full image pipeline           |
  *  | resume_file           | resumes               | none (PDF)                    |
+ *  | publication_cover     | publication-previews  | full image pipeline           |
+ *  | publication_page      | publication-previews  | full image pipeline           |
+ *  | publication_pdf       | publication-files     | none (PDF, private)           |
+ *  | publication_original  | publication-originals | none (PDF, private)           |
+ *  | publication_source    | publication-sources   | none (ZIP, private)           |
  *  | everything else       | public-media          | full image pipeline           |
  *
  * A certificate original is never processed: it is the evidentiary copy, and
  * re-encoding it would destroy exactly the fidelity that makes it useful. A resume
  * PDF is likewise stored as-is.
+ *
+ * The bucket column is not written out here — it comes from `MEDIA_KIND_BUCKETS`,
+ * and visibility comes from `isPrivateKind()`, so this table documents a mapping
+ * rather than duplicating it. All three publication file kinds are private,
+ * including the one readers download; `/api/publications/[slug]/download`
+ * enforces the download policy, which a permanent public URL could not.
  */
 
 export const runtime = "nodejs";
@@ -83,18 +102,20 @@ export async function POST(request: NextRequest) {
   const isPrivateOriginal = kind === "certificate_original";
   const isResume = kind === "resume_file";
   const isCertificatePreview = kind === "certificate_preview";
+  /*
+   * A publication's three file levels: the reader-facing PDF, the archival
+   * original and the LaTeX source archive. All three are private and all three
+   * are stored byte-for-byte — see `PRIVATE_MEDIA_KINDS` for why the first one
+   * is private despite being the one people download.
+   */
+  const isPublicationFile = PUBLICATION_FILE_KINDS.has(kind);
+  const isPublicationSource = kind === "publication_source";
 
-  const bucketId: StorageBucket = isPrivateOriginal
-    ? "certificate-originals"
-    : isResume
-      ? "resumes"
-      : isCertificatePreview
-        ? "certificate-previews"
-        : "public-media";
+  const bucketId = (MEDIA_KIND_BUCKETS[kind] ?? "public-media") as StorageBucket;
 
-  // Both `resumes` and `certificate-originals` are private buckets.
-  const visibility: "public" | "private" =
-    isPrivateOriginal || isResume ? "private" : "public";
+  // Derived from the kind rather than restated, so this and the database CHECK
+  // in migration 0026 cannot drift apart.
+  const visibility: "public" | "private" = isPrivateKind(kind) ? "private" : "public";
 
   const maxBytes = isPrivateOriginal
     ? SIZE_LIMITS.certificateOriginal
@@ -102,7 +123,9 @@ export async function POST(request: NextRequest) {
       ? SIZE_LIMITS.resume
       : isCertificatePreview
         ? SIZE_LIMITS.certificatePreview
-        : SIZE_LIMITS.publicImage;
+        : isPublicationFile
+          ? SIZE_LIMITS.publicationFile
+          : SIZE_LIMITS.publicImage;
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -129,8 +152,13 @@ export async function POST(request: NextRequest) {
      * MIME allowlist would reject it, and no browser but Safari could display
      * it. Everything else converts to WebP, where HEIC is fine.
      */
-    allowedTypes:
-      isPrivateOriginal || isResume ? STORED_AS_IS_TYPES : undefined,
+    allowedTypes: isPublicationSource
+      ? PUBLICATION_SOURCE_TYPES
+      : isPublicationFile
+        ? PUBLICATION_PDF_TYPES
+        : isPrivateOriginal || isResume
+          ? STORED_AS_IS_TYPES
+          : undefined,
   });
 
   if (failure) {
@@ -212,7 +240,7 @@ export async function POST(request: NextRequest) {
      */
     let storageProvider = activeStorageProvider();
 
-    if (isPdf || isPrivateOriginal) {
+    if (isPdf || isPrivateOriginal || isPublicationFile) {
       /*
        * Stored exactly as received.
        *
@@ -220,9 +248,18 @@ export async function POST(request: NextRequest) {
        * copy. For a PDF there is nothing useful to re-encode, and rasterising it
        * would require a PDF renderer, which is a large attack surface for no gain.
        * The PDF is never executed or parsed by us; it is only ever streamed back
-       * out with `Content-Type: application/pdf` and `nosniff`.
+       * out with `Content-Type: application/pdf` and `nosniff`. A publication
+       * source archive is likewise stored and returned verbatim — it is never
+       * expanded, which is exactly why accepting a ZIP is safe.
+       *
+       * Dimensions are read only from an actual image. A certificate original may
+       * be a scan (dimensions are useful) or a PDF (they are not), and handing a
+       * ZIP to `readDimensions` would throw on a file that is perfectly valid.
        */
-      const dimensions = isPdf ? { width: null, height: null } : await readDimensions(bytes);
+      const isImageOriginal = isPrivateOriginal && !isPdf;
+      const dimensions = isImageOriginal
+        ? await readDimensions(bytes)
+        : { width: null, height: null };
       width = dimensions.width;
       height = dimensions.height;
     } else {
@@ -272,7 +309,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Non-image and private-original paths still need the main object uploaded.
-    if (isPdf || isPrivateOriginal) {
+    if (isPdf || isPrivateOriginal || isPublicationFile) {
       const upload = await putStorageObject({
         bucket: bucketId,
         storagePath: finalPath,
@@ -317,8 +354,16 @@ export async function POST(request: NextRequest) {
         caption_en: captionEn,
         caption_km: captionKm,
         credit,
-        // A freshly uploaded original has not been reviewed for redaction yet.
-        requires_privacy_review: isPrivateOriginal,
+        /*
+         * A freshly uploaded original has not been reviewed for redaction yet —
+         * and neither has a book PDF. These are real teaching documents: they can
+         * carry the author's phone number, a QR code pointing at a channel that
+         * has since changed hands, a reviewer's name or a pupil's written work.
+         * None of that is detectable automatically, so the file arrives flagged
+         * and the publication's publish gate refuses to go public until a human
+         * clears it.
+         */
+        requires_privacy_review: isPrivateOriginal || isPublicationFile,
         uploaded_by: auth.session.userId,
       })
       .select("id")
@@ -350,7 +395,7 @@ export async function POST(request: NextRequest) {
         bucket: bucketId,
         width,
         height,
-        processed: !isPdf && !isPrivateOriginal,
+        processed: !isPdf && !isPrivateOriginal && !isPublicationFile,
       },
       201,
     );

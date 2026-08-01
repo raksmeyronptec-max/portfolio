@@ -23,6 +23,14 @@ const PUBLIC_PAGES = [
   { path: "/en/education", name: "education" },
   { path: "/en/resume", name: "resume" },
   { path: "/en/contact", name: "contact" },
+  { path: "/en/publications", name: "publications list" },
+  /*
+   * Both locales for the publications list, because it is the page where Khmer
+   * and Latin script sit side by side in the same card — a translated display
+   * title above the book's own Khmer title — and that is where a colour-contrast
+   * or line-height regression would actually land.
+   */
+  { path: "/km/publications", name: "publications list (Khmer)" },
   { path: "/en/this-page-does-not-exist", name: "404 page" },
 ];
 

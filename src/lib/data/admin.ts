@@ -28,11 +28,13 @@ export async function getAdminBadgeCounts(): Promise<{
   unreadMessages: number;
   pendingPrivacyReviews: number;
   pendingJourneyReviews: number;
+  pendingPublicationReviews: number;
 }> {
   const empty = {
     unreadMessages: 0,
     pendingPrivacyReviews: 0,
     pendingJourneyReviews: 0,
+    pendingPublicationReviews: 0,
   };
 
   if (!isSupabaseConfigured()) return empty;
@@ -40,7 +42,7 @@ export async function getAdminBadgeCounts(): Promise<{
   try {
     const supabase = await createSupabaseServerClient();
 
-    const [messages, certificates, journeyMedia] = await Promise.all([
+    const [messages, certificates, journeyMedia, publications] = await Promise.all([
       supabase
         .from("contact_messages")
         .select("id", { count: "exact", head: true })
@@ -58,12 +60,20 @@ export async function getAdminBadgeCounts(): Promise<{
         .select("id", { count: "exact", head: true })
         .eq("privacy_status", "pending_review")
         .is("deleted_at", null),
+      // Publications still awaiting a privacy decision. Same rule again: this is
+      // the queue that blocks publication, so it is the one worth a badge.
+      supabase
+        .from("publications")
+        .select("id", { count: "exact", head: true })
+        .eq("privacy_status", "pending_review")
+        .is("deleted_at", null),
     ]);
 
     return {
       unreadMessages: messages.count ?? 0,
       pendingPrivacyReviews: certificates.count ?? 0,
       pendingJourneyReviews: journeyMedia.count ?? 0,
+      pendingPublicationReviews: publications.count ?? 0,
     };
   } catch {
     return empty;

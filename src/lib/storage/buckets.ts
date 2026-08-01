@@ -33,6 +33,20 @@ export const storageBuckets = [
   "certificate-previews",
   "certificate-originals",
   "resumes",
+  /*
+   * Publications (migration 0026). Covers and rendered sample pages are public
+   * images; all three PDF/archive levels are private and reached only through
+   * `/api/publications/[slug]/download`, which checks the publication's download
+   * policy first.
+   *
+   * That is why `publication-files` — the *reader-facing* PDF — is private. A
+   * permanent public URL would make every download policy except "public" a
+   * decoration, since the object could be fetched without passing the check.
+   */
+  "publication-previews",
+  "publication-files",
+  "publication-originals",
+  "publication-sources",
 ] as const;
 
 export type StorageBucket = (typeof storageBuckets)[number];
@@ -50,6 +64,8 @@ export function isStorageBucket(value: string): value is StorageBucket {
 const PUBLIC_BUCKETS = new Set<StorageBucket>([
   "public-media",
   "certificate-previews",
+  // Covers and sample-page renders only. The books themselves are not here.
+  "publication-previews",
 ]);
 
 export function isPublicBucket(bucket: string): boolean {

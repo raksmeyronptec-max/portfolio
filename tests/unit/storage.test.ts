@@ -23,23 +23,48 @@ import {
 const BUCKETS = { publicBucket: "site-media", privateBucket: "site-private" };
 
 describe("logical buckets", () => {
-  it("recognises exactly the four known buckets", () => {
+  it("recognises exactly the known buckets", () => {
     expect([...storageBuckets]).toEqual([
       "public-media",
       "certificate-previews",
       "certificate-originals",
       "resumes",
+      "publication-previews",
+      "publication-files",
+      "publication-originals",
+      "publication-sources",
     ]);
     expect(isStorageBucket("public-media")).toBe(true);
     expect(isStorageBucket("admin-uploads")).toBe(false);
     expect(isStorageBucket("")).toBe(false);
   });
 
-  it("treats only the two display buckets as public", () => {
+  it("treats only the display buckets as public", () => {
     expect(isPublicBucket("public-media")).toBe(true);
     expect(isPublicBucket("certificate-previews")).toBe(true);
+    // Covers and rendered sample pages — images the listing shows directly.
+    expect(isPublicBucket("publication-previews")).toBe(true);
+
     expect(isPublicBucket("certificate-originals")).toBe(false);
     expect(isPublicBucket("resumes")).toBe(false);
+  });
+
+  /*
+   * The three publication file levels, asserted together.
+   *
+   * `publication-files` holds the PDF readers are *meant* to download, and it is
+   * still private — which reads backwards until you follow the request path. A
+   * publication carries a download policy whose values include `signed`,
+   * `on_request` and `contact_author`, and none of those can be true of an
+   * object anybody can fetch by URL. So access is decided by
+   * `/api/publications/[slug]/download`, and the bucket stays shut.
+   *
+   * If a future change makes any of these public, this test is the alarm.
+   */
+  it("keeps every publication file level private, including the downloadable PDF", () => {
+    expect(isPublicBucket("publication-files")).toBe(false);
+    expect(isPublicBucket("publication-originals")).toBe(false);
+    expect(isPublicBucket("publication-sources")).toBe(false);
   });
 
   it("fails closed for an unknown bucket name", () => {

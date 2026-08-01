@@ -47,6 +47,28 @@ export const analyticsEventNames = [
   "journey_related_education_click",
   "journey_related_certificate_click",
   "journey_related_project_click",
+  /*
+   * Publications. Same rule: what was looked at, never who.
+   *
+   * `publication_sample_page_view` records that the sample gallery advanced, not
+   * which page a given reader reached — the useful signal is whether anybody
+   * gets past page two, and per-reader progress is not needed to answer that.
+   *
+   * The edition a download came from travels in `properties.edition`, which is
+   * why there is no separate download-events table; see the note in migration
+   * 0026. `publication_pdf_download_failed` exists because a download that
+   * 404s or is refused by policy is invisible otherwise, and "the button does
+   * nothing" is the report the owner would get instead.
+   */
+  "publication_view",
+  "publication_preview_open",
+  "publication_sample_page_view",
+  "publication_pdf_download",
+  "publication_pdf_download_failed",
+  "publication_source_request",
+  "publication_source_download",
+  "publication_citation_copy",
+  "publication_related_journey_click",
 ] as const;
 
 export type AnalyticsEventName = (typeof analyticsEventNames)[number];
@@ -58,6 +80,7 @@ export const entityTypes = [
   "page",
   "social_link",
   "journey",
+  "publication",
 ] as const;
 
 /**
@@ -89,6 +112,7 @@ export const pageViewEvents: ReadonlySet<AnalyticsEventName> = new Set([
   "certificate_view",
   "resume_view",
   "journey_view",
+  "publication_view",
 ]);
 
 /** Events that also get a row in `outbound_clicks`. */

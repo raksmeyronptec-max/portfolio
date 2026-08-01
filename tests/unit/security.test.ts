@@ -306,10 +306,41 @@ describe("media kinds", () => {
     expect(isPrivateKind("resume_file")).toBe(true);
   });
 
+  /*
+   * All three publication file levels are private — including `publication_pdf`,
+   * the one readers download.
+   *
+   * That is deliberate rather than an over-tightening. The publication's
+   * `pdf_download_policy` can say `signed`, `on_request` or `contact_author`,
+   * and none of those can be enforced against an object with a permanent public
+   * URL. The download route is the enforcement point; the bucket stays shut.
+   * Migration 0026 states the same rule as a CHECK constraint.
+   */
+  it("marks every publication file level as private", () => {
+    expect(isPrivateKind("publication_pdf")).toBe(true);
+    expect(isPrivateKind("publication_original")).toBe(true);
+    expect(isPrivateKind("publication_source")).toBe(true);
+  });
+
+  it("keeps publication covers and sample pages public", () => {
+    // These are ordinary images the listing renders directly; nothing is gained
+    // by routing them through a handler.
+    expect(isPrivateKind("publication_cover")).toBe(false);
+    expect(isPrivateKind("publication_page")).toBe(false);
+  });
+
   it("marks everything else as public", () => {
+    const privateKinds = new Set([
+      "certificate_original",
+      "resume_file",
+      "publication_pdf",
+      "publication_original",
+      "publication_source",
+    ]);
+
     for (const kind of MEDIA_KINDS) {
-      if (kind === "certificate_original" || kind === "resume_file") continue;
-      expect(isPrivateKind(kind)).toBe(false);
+      if (privateKinds.has(kind)) continue;
+      expect(isPrivateKind(kind), `${kind} should be public`).toBe(false);
     }
   });
 });
@@ -340,15 +371,33 @@ function makeAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
 }
 
 describe("upload size ceiling", () => {
-  it("is 10 MB for every kind", () => {
-    // One number the form, the route, the buckets and the CHECK constraint all
-    // agree on. A per-kind limit is what made a rejected upload look arbitrary.
+  it("is 10 MB for every kind except a publication file", () => {
+    /*
+     * One number the form, the route, the buckets and the CHECK constraint all
+     * agree on. A per-kind limit is what made a rejected upload look arbitrary.
+     *
+     * Publications are the one documented exception: a 200-page typeset
+     * mathematics book with embedded figures does not fit in 10 MB, and refusing
+     * the owner's own books is a broken feature rather than a security posture.
+     * 25 MB is what `media_assets_size_limit` and the storage buckets already
+     * permit, so nothing downstream has to change to accept it.
+     */
     for (const [kind, limit] of Object.entries(SIZE_LIMITS)) {
+      if (kind === "publicationFile") continue;
       expect(limit, `${kind} should share the common ceiling`).toBe(
         MAX_UPLOAD_SIZE_BYTES,
       );
     }
+
     expect(MAX_UPLOAD_SIZE_BYTES).toBe(10 * 1024 * 1024);
+    expect(SIZE_LIMITS.publicationFile).toBe(25 * 1024 * 1024);
+  });
+
+  it("keeps the publication ceiling inside what the database will accept", () => {
+    // `media_assets_size_limit` is 25 MiB. A larger app-side ceiling would mean
+    // the bytes upload and *then* the row insert fails — the worst place to find
+    // out, because the object is already written.
+    expect(SIZE_LIMITS.publicationFile).toBeLessThanOrEqual(26214400);
   });
 
   it("rejects a file one byte over, for every kind", () => {

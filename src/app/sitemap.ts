@@ -5,6 +5,7 @@ import { localeMeta, localePath, locales } from "@/i18n/config";
 import { getPublishedProjectSlugs } from "@/lib/data/projects";
 import { getPublishedCertificateSlugs } from "@/lib/data/certificates";
 import { getPublishedJourneySlugs } from "@/lib/data/journey";
+import { getPublicationSitemapEntries } from "@/lib/data/publications";
 import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
@@ -38,6 +39,7 @@ const STATIC_ROUTES: StaticRoute[] = [
   { key: "about", path: "about", priority: 0.7, changeFrequency: "monthly" },
   { key: "experience", path: "experience", priority: 0.7, changeFrequency: "monthly" },
   { key: "journey", path: "journey", priority: 0.8, changeFrequency: "weekly" },
+  { key: "publications", path: "publications", priority: 0.9, changeFrequency: "monthly" },
   { key: "education", path: "education", priority: 0.7, changeFrequency: "monthly" },
   { key: "resume", path: "resume", priority: 0.6, changeFrequency: "monthly" },
   { key: "contact", path: "contact", priority: 0.6, changeFrequency: "yearly" },
@@ -64,10 +66,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // ── Content routes ────────────────────────────────────────────────────────
-  const [projects, certificates, journeyStories] = await Promise.all([
+  const [projects, certificates, journeyStories, publications] = await Promise.all([
     getPublishedProjectSlugs(),
     getPublishedCertificateSlugs(),
     getPublishedJourneySlugs(),
+    getPublicationSitemapEntries(),
   ]);
 
   for (const project of projects) {
@@ -112,6 +115,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(story.updatedAt),
         changeFrequency: "monthly",
         priority: 0.75,
+        alternates: { languages: languageMap(path) },
+      });
+    }
+  }
+
+  /*
+   * Publications.
+   *
+   * The highest content priority on the site: an authored book is the most
+   * durable and most linkable thing here, and unlike a project it does not go
+   * stale. `noindex` is honoured — a publication the owner has excluded from
+   * search must not be reintroduced through the sitemap, which would be the
+   * exact contradiction the flag exists to prevent.
+   */
+  for (const publication of publications) {
+    if (publication.noindex) continue;
+
+    const path = `publications/${publication.slug}`;
+    for (const locale of locales) {
+      entries.push({
+        url: absoluteUrl(localePath(locale, path)),
+        lastModified: new Date(publication.updatedAt),
+        changeFrequency: "monthly",
+        priority: 0.85,
         alternates: { languages: languageMap(path) },
       });
     }

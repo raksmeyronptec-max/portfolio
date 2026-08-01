@@ -109,6 +109,51 @@ Four things are worth knowing before touching it:
 rather than a `(type, id)` pair — the pair cannot have a foreign key, which is
 the thing that makes a dangling relation impossible.
 
+### Publications: books, editions and three file levels
+
+`publications` is the fourth content type (migrations 0025–0027). A *publication*
+is an authored work — a mathematics book, an exercise collection, lecture notes —
+with editions, a table of contents, a licence, a citation and files.
+
+Five things are worth knowing before touching it:
+
+- **Files live on the edition, not the publication.** A new edition means a new
+  PDF, so `publication_versions` owns `pdf_media_id` / `original_media_id` /
+  `source_archive_media_id`, and `publications.active_version_id` says which one
+  is current. `publication_media` carries only the cover, sample pages and
+  gallery. Producing a redacted edition never overwrites the archival original —
+  they are two different `media_assets` rows on the same version.
+- **All three file levels are private, including the one readers download.**
+  This reads backwards until you follow the request path: `pdf_download_policy`
+  has values (`signed`, `on_request`, `contact_author`) that cannot be true of an
+  object anybody can fetch by URL. So access is decided by
+  `/api/publications/[slug]/download`, which checks the policy first, and the
+  buckets stay shut. Same shape as the resume. `publication-previews` is the only
+  public bucket and holds images only.
+- **`preview_policy` is separate from `pdf_download_policy`,** because "you may
+  read five pages here" and "you may keep a copy" are different permissions.
+  `first_pages` serves a genuinely truncated PDF, rebuilt by
+  `extractFirstPages()` in [src/lib/media/pdf.ts](src/lib/media/pdf.ts) — streaming
+  the whole file and opening the viewer on page one would put the entire book in
+  the browser cache, which is the thing the policy exists to prevent.
+- **Anonymous readers have no grant on `publication_versions` at all.** The
+  private file references are columns, and RLS cannot filter a column, so the
+  boundary is the `public_publication_versions` view: it projects the three ids
+  away into booleans. It is a *definer-rights* view, so its `WHERE` clause
+  carries the row predicate that the table's policy carries — the two must stay
+  in step, and `tests/integration/rls.sql` asserts both.
+- **Publication is gated three times.** `needs_review`, an approved
+  `privacy_status`, and an English title — enforced by
+  `enforce_publication_publish_rules()`, mirrored in `publicationSchema`. The
+  privacy decision moves only through `reviewPublicationPrivacy()` (owner-only),
+  never through the edit form: approving a book PDF means somebody opened it and
+  read to the end, and it must not be a side effect of fixing a subtitle.
+
+Nothing here fabricates. `buildCitation()` omits every element it does not know
+rather than emitting "n.d." or an inferred publisher; `buildBibTeX()` returns
+`null` below the threshold for a valid entry; ISBN and DOI are never generated.
+`containsLocalPath()` refuses public production notes containing `/Users/…`.
+
 ### Media import (development only)
 
 `/admin/media/import` scans `imports/portfolio-media/` and runs selected files
