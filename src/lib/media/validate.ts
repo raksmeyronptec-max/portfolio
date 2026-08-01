@@ -21,6 +21,21 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/png",
   "image/webp",
   "image/avif",
+  /*
+   * HEIC/HEIF — what every iPhone produces by default.
+   *
+   * Accepted because refusing it means the owner has to convert a folder of
+   * holiday-format photographs by hand before they can be published, which is
+   * the friction this CMS exists to remove. It is safe to accept precisely
+   * because it is never *served*: `processImage()` decodes it through sharp's
+   * libheif and re-encodes to WebP, so the browser only ever sees WebP and the
+   * stored MIME is `image/webp`.
+   *
+   * That is also why HEIC is refused for the byte-for-byte kinds — see
+   * `STORED_AS_IS_TYPES` below.
+   */
+  "image/heic",
+  "image/heif",
 ] as const;
 
 export const ALLOWED_DOCUMENT_TYPES = ["application/pdf"] as const;
@@ -32,35 +47,124 @@ export const ALLOWED_UPLOAD_TYPES = [
 
 export type AllowedUploadType = (typeof ALLOWED_UPLOAD_TYPES)[number];
 
+/**
+ * What may be stored without re-encoding.
+ *
+ * A certificate original is kept byte-for-byte because it is the evidentiary
+ * copy, and a resume is a PDF. Neither goes through `processImage()`, so
+ * whatever arrives is what gets stored — and a stored HEIC would be a file the
+ * `media_assets_mime_allowlist` CHECK rejects, that no browser but Safari can
+ * display, and that the owner could never preview. So HEIC is accepted
+ * everywhere the image is converted, and refused where it would be kept.
+ */
+export const STORED_AS_IS_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+] as const;
+
 /** Extensions permitted per MIME type. */
 const EXTENSIONS: Record<AllowedUploadType, string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/png": ["png"],
   "image/webp": ["webp"],
   "image/avif": ["avif"],
+  // Both extensions are accepted for both types: the container is the same and
+  // encoders are inconsistent about which pair they emit.
+  "image/heic": ["heic", "heif"],
+  "image/heif": ["heif", "heic"],
   "application/pdf": ["pdf"],
 };
 
 /**
+ * MIME type inferred from a filename extension.
+ *
+ * Needed because browsers do not reliably report a type for HEIC: macOS gives
+ * `image/heic`, several Windows and Linux builds give an empty string, and an
+ * empty `declaredType` would otherwise fail the allowlist before the magic-byte
+ * check — the one check that could actually identify the file — ever ran.
+ *
+ * This only ever *fills in a blank*. A declared type is never overridden, and
+ * the signature check still has to pass either way, so a `.png` full of HEIC
+ * bytes is still rejected.
+ */
+const EXTENSION_TO_TYPE: Record<string, AllowedUploadType> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  avif: "image/avif",
+  heic: "image/heic",
+  heif: "image/heif",
+  pdf: "application/pdf",
+};
+
+/**
+ * The type an upload should be validated and stored as.
+ *
+ * Returns the browser's own value when it gave one, and otherwise the type
+ * implied by the extension. Callers use the result for the allowlist check and
+ * for the stored `mime_type`, so the two can never disagree.
+ */
+export function resolveUploadType(filename: string, declaredType: string): string {
+  const declared = declaredType.trim();
+  if (declared) return declared;
+
+  return EXTENSION_TO_TYPE[fileExtension(filename)] ?? "";
+}
+
+/** ASCII helper, so the tables below read as the four-character codes they are. */
+const ascii = (text: string): number[] => [...text].map((char) => char.charCodeAt(0));
+
+/**
  * File signatures (magic bytes).
  *
- * WebP and AVIF are container formats, so their signature check needs a second
- * marker at an offset — a bare `RIFF` header is not enough to prove WebP.
+ * WebP, AVIF and HEIC are container formats, so their check needs a second
+ * marker at an offset — a bare `RIFF` header is not enough to prove WebP, and a
+ * bare `ftyp` box proves only "some ISO base media file", which HEIC, AVIF, MP4
+ * and MOV all are.
+ *
+ * That last point is why `anyOf` exists. AVIF and HEIC share the `ftyp` box at
+ * offset 4 and are told apart only by the *brand* at offset 8, of which each has
+ * several. Previously `image/avif` checked for `ftyp` alone, which meant a HEIC
+ * — or an MP4 — renamed to `.avif` and declared as AVIF passed the signature
+ * check. Both are now pinned to their brand lists.
  */
-const SIGNATURES: Record<
-  AllowedUploadType,
-  Array<{ offset: number; bytes: number[]; mask?: number[] }>
-> = {
+type SignatureCheck =
+  | { offset: number; bytes: number[] }
+  /** Passes when the bytes at `offset` match any one of these sequences. */
+  | { offset: number; anyOf: number[][] };
+
+/** ISOBMFF brands that denote a HEIF-family still image. */
+const HEIF_BRANDS = [
+  "heic", // the common iPhone brand
+  "heix",
+  "heim",
+  "heis",
+  "hevc", // HEVC image sequences
+  "hevx",
+  "hevm",
+  "hevs",
+  "mif1", // generic HEIF image
+  "msf1", // generic HEIF sequence
+].map(ascii);
+
+const AVIF_BRANDS = ["avif", "avis"].map(ascii);
+
+const FTYP = { offset: 4, bytes: ascii("ftyp") };
+
+const SIGNATURES: Record<AllowedUploadType, SignatureCheck[]> = {
   "image/jpeg": [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }],
   "image/png": [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] }],
   "image/webp": [
-    { offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] }, // "RIFF"
-    { offset: 8, bytes: [0x57, 0x45, 0x42, 0x50] }, // "WEBP"
+    { offset: 0, bytes: ascii("RIFF") },
+    { offset: 8, bytes: ascii("WEBP") },
   ],
-  "image/avif": [
-    { offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }, // "ftyp"
-  ],
-  "application/pdf": [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46, 0x2d] }], // "%PDF-"
+  "image/avif": [FTYP, { offset: 8, anyOf: AVIF_BRANDS }],
+  "image/heic": [FTYP, { offset: 8, anyOf: HEIF_BRANDS }],
+  "image/heif": [FTYP, { offset: 8, anyOf: HEIF_BRANDS }],
+  "application/pdf": [{ offset: 0, bytes: ascii("%PDF-") }],
 };
 
 /**
@@ -125,7 +229,17 @@ export function validateUpload(input: {
   size: number;
   buffer: Uint8Array;
   maxBytes: number;
+  /**
+   * Narrows the allowlist for this upload. Defaults to everything.
+   *
+   * The upload route passes `STORED_AS_IS_TYPES` for the kinds it keeps
+   * byte-for-byte, which is what refuses a HEIC certificate original while
+   * still accepting one as a journey photograph.
+   */
+  allowedTypes?: readonly string[];
 }): ValidationFailure | null {
+  const allowed = input.allowedTypes ?? ALLOWED_UPLOAD_TYPES;
+
   if (input.size === 0) {
     return { code: "empty_file", message: "The file is empty." };
   }
@@ -134,10 +248,20 @@ export function validateUpload(input: {
     return { code: "name_too_long", message: "The filename is too long." };
   }
 
-  if (!isAllowedUploadType(input.declaredType)) {
+  if (!isAllowedUploadType(input.declaredType) || !allowed.includes(input.declaredType)) {
+    /*
+     * HEIC gets its own sentence. "image/heic is not allowed" next to a list
+     * that includes JPEG is baffling when the same file uploaded as a journey
+     * photograph a minute earlier worked — so say which kinds keep the file
+     * as-is, and why that excludes it.
+     */
+    const isHeif = input.declaredType === "image/heic" || input.declaredType === "image/heif";
+
     return {
       code: "type_not_allowed",
-      message: `${input.declaredType || "That file type"} is not allowed. Upload a JPEG, PNG, WebP, AVIF or PDF.`,
+      message: isHeif
+        ? "HEIC files are converted on upload, so they cannot be used where the original is kept byte-for-byte — a certificate original or a resume. Export this one as JPEG or PDF first."
+        : `${input.declaredType || "That file type"} is not allowed. Upload a JPEG, PNG, WebP, AVIF, HEIC or PDF.`,
     };
   }
 
@@ -170,14 +294,16 @@ export function validateUpload(input: {
 }
 
 function matchesSignature(buffer: Uint8Array, type: AllowedUploadType): boolean {
-  const checks = SIGNATURES[type];
+  const matchesAt = (offset: number, expected: number[]): boolean => {
+    if (buffer.length < offset + expected.length) return false;
+    return expected.every((byte, index) => buffer[offset + index] === byte);
+  };
 
-  return checks.every((check) => {
-    if (buffer.length < check.offset + check.bytes.length) return false;
-    return check.bytes.every(
-      (byte, index) => buffer[check.offset + index] === byte,
-    );
-  });
+  return SIGNATURES[type].every((check) =>
+    "anyOf" in check
+      ? check.anyOf.some((candidate) => matchesAt(check.offset, candidate))
+      : matchesAt(check.offset, check.bytes),
+  );
 }
 
 /**

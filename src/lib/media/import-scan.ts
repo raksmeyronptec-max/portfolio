@@ -26,11 +26,10 @@ import sharp from "sharp";
  *
  * ── HEIC ───────────────────────────────────────────────────────────────────
  * iPhone photographs arrive as HEIC, which Safari renders and nothing else does.
- * `sharp` in this project is built with libheif, so HEIC is *decoded* here and
- * re-encoded to WebP like every other image — the browser never sees a HEIC file.
- * `sharpSupportsHeic()` reports the capability honestly rather than assuming it,
- * because a sharp rebuilt without libheif would otherwise fail one file at a time
- * with an opaque error.
+ * They are decoded and re-encoded to WebP like every other image, so the browser
+ * never sees a HEIC file. Note that this does *not* go through sharp: its
+ * prebuilt libvips has an AV1 decoder only and cannot read HEVC. See the long
+ * note on `decodeSource` in `lib/media/process.ts`.
  *
  * ── Privacy ────────────────────────────────────────────────────────────────
  * Two things happen to every imported image, both non-optional:
@@ -179,13 +178,20 @@ export type ScanResult = {
   heicSupported: boolean;
 };
 
-/** Whether this build of sharp can decode HEIC. */
+/**
+ * Whether HEIC can be decoded.
+ *
+ * Always true now, and the function is kept only so the scan result keeps
+ * reporting the capability to the UI.
+ *
+ * It used to test `sharp.format.heif.input.buffer`, which was a false positive:
+ * that flag is true for AVIF, which shares the HEIF container, while sharp's
+ * prebuilt libvips has no HEVC decoder at all. HEIC files were therefore offered
+ * for import and then failed one at a time deep inside the pipeline. Decoding now
+ * goes through `heic-decode` in `lib/media/process.ts` — see the long note there.
+ */
 export function sharpSupportsHeic(): boolean {
-  try {
-    return Boolean(sharp.format.heif?.input?.buffer);
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 /**
@@ -372,15 +378,6 @@ export async function scanImportDirectory(
       }
 
       const isHeic = extension === ".heic" || extension === ".heif";
-
-      if (isHeic && !heicSupported) {
-        skipped.push({
-          filename: entry.name,
-          reason:
-            "HEIC, and this build of sharp cannot decode it. Convert to JPEG before importing.",
-        });
-        continue;
-      }
 
       let buffer: Buffer;
       try {

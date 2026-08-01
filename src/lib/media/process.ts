@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 
 /**
  * Server-side image processing.
@@ -48,20 +48,108 @@ const DERIVATIVES = [
 /** Cap on the stored full-size image. Nothing on this site displays wider. */
 const MAX_DIMENSION = 2400;
 
+/** Shared sharp options: reject a truncated upload, and cap decoded pixels. */
+const SHARP_OPTIONS = { failOn: "truncated", limitInputPixels: 40_000_000 } as const;
+
+/**
+ * True when the bytes are a HEIF-family still image (`ftyp` + a HEIF brand).
+ *
+ * AVIF shares the same container, and sharp reads AVIF natively, so the AVIF
+ * brands are deliberately excluded here — routing AVIF through the HEIC decoder
+ * would be slower and pointless.
+ */
+function isHeic(input: Uint8Array): boolean {
+  if (input.length < 12) return false;
+
+  const at = (offset: number, text: string) =>
+    [...text].every((char, index) => input[offset + index] === char.charCodeAt(0));
+
+  if (!at(4, "ftyp")) return false;
+
+  return ["heic", "heix", "heim", "heis", "hevc", "hevx", "hevm", "hevs", "mif1", "msf1"].some(
+    (brand) => at(8, brand),
+  );
+}
+
+/**
+ * A decoded source that sharp can read.
+ *
+ * ── Why HEIC needs its own decoder ─────────────────────────────────────────
+ * Every iPhone shoots HEIC by default, so refusing it would mean the owner
+ * converting a folder by hand before anything could be published. But sharp's
+ * prebuilt libvips ships libheif with an AV1 decoder only — there is no HEVC
+ * decoder in it, for patent reasons. The failure mode is nasty: `metadata()`
+ * succeeds and even reports `compression: 'hevc'`, because parsing the container
+ * needs no codec, and only the *pixel* read then fails with an opaque
+ * "bad seek" error. Feature-detecting on `sharp.format.heif.input` is therefore
+ * a false positive — it is true for AVIF.
+ *
+ * So HEIC is decoded by `heic-decode` (libheif + libde265, compiled to WASM) to
+ * raw RGBA, and sharp takes it from there. The import is dynamic so the decoder
+ * is only loaded when a HEIC actually arrives; the common JPEG path never pays
+ * for it.
+ *
+ * Two consequences worth knowing:
+ *  · raw RGBA carries no metadata at all, so EXIF — including GPS — is gone by
+ *    construction rather than by `.rotate()` stripping it;
+ *  · libheif applies the container's own `irot`/`imir` rotation during decode,
+ *    so the pixels arrive upright and there is no EXIF orientation left to act
+ *    on. `.rotate()` becomes a no-op on this path, which is correct.
+ */
+type DecodedSource = {
+  /** Builds a fresh sharp instance over the source. */
+  open: () => Sharp;
+  width: number;
+  height: number;
+};
+
+async function decodeSource(input: Uint8Array): Promise<DecodedSource> {
+  if (isHeic(input)) {
+    const { default: decode } = await import("heic-decode");
+
+    let frame;
+    try {
+      frame = await decode({ buffer: Buffer.from(input) });
+    } catch (cause) {
+      throw new Error(
+        `This HEIC file could not be decoded. It may be a multi-image “Live Photo” or be corrupt. ${
+          cause instanceof Error ? cause.message : ""
+        }`.trim(),
+      );
+    }
+
+    const { width, height, data } = frame;
+
+    if (width * height > 40_000_000) {
+      throw new Error("Could not read the image dimensions.");
+    }
+
+    const raw = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+
+    return {
+      open: () => sharp(raw, { raw: { width, height, channels: 4 } }),
+      width,
+      height,
+    };
+  }
+
+  const metadata = await sharp(input, SHARP_OPTIONS).metadata();
+
+  return {
+    open: () => sharp(input, SHARP_OPTIONS),
+    width: metadata.width ?? 0,
+    height: metadata.height ?? 0,
+  };
+}
+
 export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
   const checksum = createHash("sha256").update(input).digest("hex");
 
-  // `failOn: "truncated"` rejects a partially uploaded file rather than storing a
-  // half-decoded image. `limitInputPixels` guards against decompression bombs —
-  // a small file that expands to gigabytes of raw pixels.
-  const base = sharp(input, {
-    failOn: "truncated",
-    limitInputPixels: 40_000_000,
-  });
-
-  const metadata = await base.metadata();
-  const sourceWidth = metadata.width ?? 0;
-  const sourceHeight = metadata.height ?? 0;
+  // Computed from the *source* bytes, so duplicate detection identifies the file
+  // the owner actually has, not the derived WebP.
+  const source = await decodeSource(input);
+  const sourceWidth = source.width;
+  const sourceHeight = source.height;
 
   if (sourceWidth === 0 || sourceHeight === 0) {
     throw new Error("Could not read the image dimensions.");
@@ -69,7 +157,8 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
 
   // `rotate()` with no argument applies the EXIF orientation and then discards it,
   // so a portrait phone photo is not stored sideways once metadata is stripped.
-  const mainPipeline = sharp(input, { failOn: "truncated", limitInputPixels: 40_000_000 })
+  const mainPipeline = source
+    .open()
     .rotate()
     .resize({
       width: Math.min(sourceWidth, MAX_DIMENSION),
@@ -85,10 +174,8 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
     // Skip a derivative that would be an upscale of the source.
     if (derivative.width > sourceWidth * 1.1) continue;
 
-    const result = await sharp(input, {
-      failOn: "truncated",
-      limitInputPixels: 40_000_000,
-    })
+    const result = await source
+      .open()
       .rotate()
       .resize({ width: derivative.width, withoutEnlargement: true })
       .webp({ quality: derivative.suffix === "thumb" ? 72 : 80, effort: 4 })
@@ -111,7 +198,7 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
       height: mainResult.info.height,
     },
     derivatives,
-    blurDataUrl: await generateBlurPlaceholder(input),
+    blurDataUrl: await generateBlurPlaceholder(source),
     checksum,
   };
 }
@@ -123,9 +210,10 @@ export async function processImage(input: Uint8Array): Promise<ProcessedImage> {
  * would trade one performance problem for another. Returns null on failure rather
  * than throwing: a missing placeholder is cosmetic, a failed upload is not.
  */
-async function generateBlurPlaceholder(input: Uint8Array): Promise<string | null> {
+async function generateBlurPlaceholder(source: DecodedSource): Promise<string | null> {
   try {
-    const buffer = await sharp(input, { failOn: "truncated" })
+    const buffer = await source
+      .open()
       .rotate()
       .resize(16, 16, { fit: "inside" })
       .webp({ quality: 40 })

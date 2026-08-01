@@ -6,8 +6,10 @@ import { writeAuditLog } from "@/lib/audit/log";
 import { isMediaKind, type MediaKind } from "@/lib/media/kinds";
 import {
   buildStoragePath,
+  resolveUploadType,
   SIZE_LIMITS,
   sanitizeFilename,
+  STORED_AS_IS_TYPES,
   validateUpload,
 } from "@/lib/media/validate";
 import { checksumOf, processImage, readDimensions } from "@/lib/media/process";
@@ -104,20 +106,38 @@ export async function POST(request: NextRequest) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
+  /*
+   * The effective type.
+   *
+   * Browsers do not reliably report a MIME type for HEIC — macOS gives
+   * `image/heic`, several other platforms give an empty string — so the
+   * extension fills the blank. A type the browser *did* state is never
+   * overridden, and the magic-byte check below still has to pass either way.
+   */
+  const declaredType = resolveUploadType(file.name, file.type);
+
   // ── Validate: declared type, extension AND magic bytes ────────────────────
   const failure = validateUpload({
     filename: file.name,
-    declaredType: file.type,
+    declaredType,
     size: bytes.byteLength,
     buffer: bytes,
     maxBytes,
+    /*
+     * These two kinds are stored byte-for-byte, so whatever arrives is what is
+     * served and what goes in `mime_type`. HEIC is excluded there: the DB's
+     * MIME allowlist would reject it, and no browser but Safari could display
+     * it. Everything else converts to WebP, where HEIC is fine.
+     */
+    allowedTypes:
+      isPrivateOriginal || isResume ? STORED_AS_IS_TYPES : undefined,
   });
 
   if (failure) {
     return json({ ok: false, error: failure.code, message: failure.message }, 400);
   }
 
-  const isPdf = file.type === "application/pdf";
+  const isPdf = declaredType === "application/pdf";
 
   /*
    * A PDF never belongs in a public bucket.
@@ -181,7 +201,7 @@ export async function POST(request: NextRequest) {
     let cardPath: string | null = null;
     let previewPath: string | null = null;
     let storedBytes = bytes.byteLength;
-    let storedMime = file.type;
+    let storedMime = declaredType;
     let uploadBody: Uint8Array | Buffer = bytes;
     let finalPath = storagePath;
     /*
@@ -257,7 +277,7 @@ export async function POST(request: NextRequest) {
         bucket: bucketId,
         storagePath: finalPath,
         body: new Uint8Array(uploadBody),
-        contentType: file.type,
+        contentType: declaredType,
         // Private objects are read through the server or a short-lived signed
         // URL, so a long cache would be pointless and slightly risky.
         cacheControl:

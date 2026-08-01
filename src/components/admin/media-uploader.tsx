@@ -95,9 +95,20 @@ export function MediaUploader() {
   const maxSizeLabel = formatBytes(MAX_UPLOAD_SIZE_BYTES);
   const needsAltText = !isPrivate && kind !== "resume_file";
 
+  /*
+   * File extensions are listed alongside the MIME types.
+   *
+   * `accept` matches on either, and several platforms report no MIME type at all
+   * for a HEIC file — on those, a MIME-only `accept` greys the file out in the
+   * picker so it cannot even be chosen. The extensions are what make iPhone
+   * photographs selectable everywhere.
+   *
+   * `isPdfKind` covers the two kinds stored byte-for-byte, which is why HEIC is
+   * absent there; the server refuses it for those with an explanation.
+   */
   const accept = isPdfKind
-    ? "application/pdf,image/jpeg,image/png,image/webp"
-    : "image/jpeg,image/png,image/webp,image/avif";
+    ? "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+    : "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif";
 
   /*
    * Object URLs are a manual resource. Without this, dropping several hundred
@@ -359,7 +370,7 @@ export function MediaUploader() {
             description={
               isPdfKind
                 ? `PDF, JPEG, PNG or WebP. Up to ${maxSizeLabel} each. Choose several at once, or drop them below.`
-                : `Images only — JPEG, PNG, WebP or AVIF, up to ${maxSizeLabel} each. Choose several at once, or drop them below. To upload a PDF, choose “Certificate original” or “Resume PDF” above; PDFs are always stored privately. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
+                : `Images only — JPEG, PNG, WebP, AVIF or HEIC, up to ${maxSizeLabel} each. Choose several at once, or drop them below. iPhone HEIC photographs are converted automatically, so the site never serves one. To upload a PDF, choose “Certificate original” or “Resume PDF” above; PDFs are always stored privately. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
             }
           >
             {({ describedBy }) => (
