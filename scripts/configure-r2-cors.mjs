@@ -27,6 +27,7 @@
  *   node scripts/configure-r2-cors.mjs --origin https://your-site.example
  *   node scripts/configure-r2-cors.mjs --origin https://a.example --origin https://b.example
  *   node scripts/configure-r2-cors.mjs --show      # print the current policy
+ *   node scripts/configure-r2-cors.mjs --check     # is the public bucket readable?
  *
  * Credentials come from the environment (.env), the same ones the application
  * signs with. Nothing is printed that could identify them.
@@ -170,6 +171,48 @@ console.log(`R2 account ${env.R2_ACCOUNT_ID.slice(0, 6)}…\n`);
 if (showOnly) {
   console.log("Current CORS policy:");
   for (const bucket of buckets) await show(bucket);
+  process.exit(0);
+}
+
+/*
+ * ── Is the public bucket actually public? ──────────────────────────────────
+ *
+ * Worth its own check because the failure is completely silent. R2 buckets are
+ * private by default: public reads require the r2.dev development URL to be
+ * enabled, or a custom domain attached, and neither is visible from the S3 API
+ * that everything else here uses. With it off, every object uploads perfectly,
+ * every `media_assets` row is correct, `publicStorageUrl()` builds a URL that
+ * looks right — and every image on the site is broken, because that URL answers
+ * 401. Nothing logs, because nothing of ours is in the request path.
+ */
+if (args.includes("--check")) {
+  const publicUrl = (
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ??
+    env.NEXT_PUBLIC_R2_PUBLIC_URL ??
+    ""
+  ).replace(/\/+$/, "");
+
+  if (!publicUrl) {
+    console.error("NEXT_PUBLIC_R2_PUBLIC_URL is not set — public images cannot resolve.");
+    process.exit(1);
+  }
+
+  const response = await fetch(`${publicUrl}/`, { method: "GET" });
+
+  if (response.status === 401 || response.status === 403) {
+    console.error(`Public access is DISABLED on ${publicUrl} (HTTP ${response.status}).`);
+    console.error("");
+    console.error("Every public image on the site will be broken until this is on:");
+    console.error("  Cloudflare dashboard → R2 → your public bucket → Settings");
+    console.error("  → Public access → enable the r2.dev subdomain, or attach a");
+    console.error("    custom domain and point NEXT_PUBLIC_R2_PUBLIC_URL at it.");
+    console.error("");
+    console.error("The private buckets must NOT be made public — only the one that");
+    console.error("holds covers, screenshots and sample pages.");
+    process.exit(1);
+  }
+
+  console.log(`Public access looks enabled on ${publicUrl} (HTTP ${response.status}).`);
   process.exit(0);
 }
 

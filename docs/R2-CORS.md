@@ -54,3 +54,32 @@ blocks the PUT under the site's own Content Security Policy, before CORS is even
 reached. It is added to `connect-src` and nothing else — nothing is ever
 *rendered* from the S3 endpoint, and the private bucket must stay unreadable
 from the browser.
+
+
+# Public access — a separate setting, and a silent one
+
+CORS decides who may *upload*. It says nothing about who may *read*, and R2
+buckets are private by default.
+
+Public reads need the bucket's **r2.dev development URL enabled**, or a custom
+domain attached. Neither is visible from the S3 API, so nothing in this codebase
+can detect it while uploading. With it off, every symptom points the wrong way:
+the upload succeeds, the `media_assets` row is correct, `publicStorageUrl()`
+builds a URL that looks right — and every image on the site is broken, because
+that URL answers `401`. Nothing is logged, because no server of ours is in the
+request path.
+
+Check it:
+
+```bash
+node scripts/configure-r2-cors.mjs --check
+```
+
+To enable: Cloudflare dashboard → R2 → the **public** bucket → Settings →
+Public access → allow the `r2.dev` subdomain, or attach a custom domain and
+point `NEXT_PUBLIC_R2_PUBLIC_URL` at it.
+
+**Only the public bucket.** `portfolio-private` holds certificate originals,
+resume PDFs, book PDFs, archival originals and LaTeX sources; making it public
+would expose every one of them, which is the single thing the two-bucket split
+exists to prevent.
