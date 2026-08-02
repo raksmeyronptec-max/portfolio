@@ -27,6 +27,7 @@ import {
 import { DualIdentity } from "@/components/public/dual-identity";
 import { FeaturedCaseStudy } from "@/components/public/featured-case-study";
 import { ProjectEcosystem } from "@/components/public/project-ecosystem";
+import { SystemMap } from "@/components/public/system-map";
 import { getFeaturedProjects, getProjectBySlug } from "@/lib/data/projects";
 import { getFeaturedCertificates } from "@/lib/data/certificates";
 import { getFeaturedJourneyEntries } from "@/lib/data/journey";
@@ -189,15 +190,14 @@ export default async function HomePage({
     <>
       <JsonLd data={structuredData} />
 
-      <Hero
-        locale={locale}
+      <Hero locale={locale} t={t} settings={settings} profile={profile} />
+
+      <CredibilityStrip
         t={t}
-        settings={settings}
-        profile={profile}
+        counts={counts}
+        location={settings.location ?? profile?.location}
         languages={languages}
       />
-
-      <CredibilityStrip t={t} counts={counts} />
 
       {/*
         Order below follows the brief's information architecture, and the
@@ -239,6 +239,20 @@ export default async function HomePage({
         groups={capabilities}
         settings={settings}
         profile={profile}
+      />
+
+      {/*
+        The system map sits between the dual-identity claim and the capability
+        list, because it is what connects them: the two practices above state
+        that one person does both, this shows the route between them, and the
+        capabilities below are the things that route requires.
+      */}
+      <SystemMap
+        locale={locale}
+        t={t}
+        experiences={experiences}
+        projects={featuredProjects}
+        publications={featuredPublications}
       />
 
       <Capabilities locale={locale} t={t} groups={capabilities} />

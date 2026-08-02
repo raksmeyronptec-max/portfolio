@@ -162,6 +162,39 @@ export const en = {
       skillCount: "{count} capabilities",
     },
 
+    /*
+     * Education-to-product system map. Only the stage names and descriptions
+     * live here — every example under a stage is a CMS row, so this file makes
+     * no claim about what was built or taught.
+     */
+    systemMap: {
+      eyebrow: "How the work happens",
+      heading: "A classroom problem, followed all the way to a system",
+      body: "Most of these products started as something that did not work in a real classroom or a real library. This is the route from noticing that to shipping something that fixes it.",
+      stages: {
+        teaching: {
+          title: "Teaching practice",
+          body: "Tutoring, student teaching and school placements — where the problems are met first, as the person responsible for solving them that day.",
+        },
+        problems: {
+          title: "The problem, stated plainly",
+          body: "Teacher workflows that take too long, resources nobody can find, academic material with no consistent home. Written down before anything is designed.",
+        },
+        design: {
+          title: "Research and product design",
+          body: "Who it is for, what they already do, and the smallest system that would help. Information architecture, workflows and interface design.",
+        },
+        engineering: {
+          title: "Engineering",
+          body: "Building it: data model, permissions, authentication, storage and delivery. Bilingual from the first screen rather than translated afterwards.",
+        },
+        access: {
+          title: "Accessible learning material",
+          body: "The output — platforms teachers and students can actually reach, and authored mathematics material that goes into them.",
+        },
+      },
+    },
+
     about: {
       eyebrow: "About",
       heading: "Two practices, one purpose",
@@ -223,6 +256,7 @@ export const en = {
       present: "Present",
       expected: "expected",
       viewAll: "View full experience",
+      moreEntries: "And {count} more on the full experience page.",
     },
     /*
      * The homepage's curated strip of journey stories. Distinct from
@@ -913,7 +947,7 @@ export const en = {
     navHeading: "Pages",
     connectHeading: "Connect",
     legalHeading: "About this site",
-    builtWith: "Built with Next.js Supabase & cloudflare.",
+    builtWith: "Built with Next.js, Supabase and Cloudflare.",
     sourceNote: "Content is managed through a private admin dashboard.",
     copyright: "© {year} Ron Raksmey",
     backToTop: "Back to top",

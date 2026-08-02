@@ -122,10 +122,59 @@ export function resolveImage(
     // way.
     width: derivative ? null : asset.width,
     height: derivative ? null : asset.height,
-    alt: pickLocalized(locale, asset.alt_text_en, asset.alt_text_km) ?? "",
+    alt: usableAltText(pickLocalized(locale, asset.alt_text_en, asset.alt_text_km)),
     blurDataURL: asset.blur_data_url,
     caption: pickLocalized(locale, asset.caption_en, asset.caption_km),
   };
+}
+
+/**
+ * Filename-shaped alt text, rejected.
+ *
+ * The upload form pre-fills alt text from the file name as a convenience, and
+ * on the live site a number of those were saved unedited. A screen-reader user
+ * on the homepage heard "ptec underscore library underscore logo",
+ * "krusmart dash one", "Book underscore coverrr" and "cover underscore seq" —
+ * strings that describe the asset on disk and tell a reader nothing about the
+ * picture.
+ *
+ * An empty alt is not a good outcome either, but it is a *better* one: an
+ * image with `alt=""` is skipped as decorative, while a filename is announced
+ * as though it were a description. `isMissingAltText()` below still reports the
+ * gap to the admin's content-health panel, so this hides nothing from the
+ * owner — it only stops the bad value reaching a visitor.
+ *
+ * Two signals only, and both are restricted to pure-ASCII strings:
+ *
+ *   1. an image or document extension — `photo.jpg`, `scan.pdf`;
+ *   2. `snake_case` or `kebab-case` with no whitespace — `ptec_library_logo`,
+ *      `krusmart-1`, `cover_bacii`, `Certificate_at_techno`.
+ *
+ * A first attempt also rejected any value with no whitespace, on the theory
+ * that prose has spaces and filenames do not. Two unit tests caught what that
+ * would have done: **Khmer is written without spaces between words**, so the
+ * rule would have blanked essentially every Khmer alt string on the site — a
+ * far worse accessibility regression than the one it was fixing. Hence the
+ * ASCII-only guard on both signals.
+ *
+ * The cost of being this conservative is that weak-but-human values like
+ * "covers" or "Diploma" still pass through. They are poor alt text and
+ * `isMissingAltText()` does not flag them, but they are not machine noise, and
+ * blanking a real word because it is short would trade one defect for another.
+ */
+export function usableAltText(value: string | null | undefined): string {
+  const alt = value?.trim();
+  if (!alt) return "";
+
+  // Anything outside the ASCII range is prose in some language — leave it be.
+  const isAscii = /^[\x20-\x7E]+$/.test(alt);
+  if (!isAscii) return alt;
+
+  const looksLikeFilename =
+    /\.(png|jpe?g|webp|avif|gif|svg|heic|pdf)$/i.test(alt) ||
+    (/^[\w.-]+$/.test(alt) && /[_-]/.test(alt));
+
+  return looksLikeFilename ? "" : alt;
 }
 
 /**

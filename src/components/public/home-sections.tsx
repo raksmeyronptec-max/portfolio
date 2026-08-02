@@ -54,19 +54,16 @@ export function Hero({
   t,
   settings,
   profile,
-  languages,
 }: {
   locale: Locale;
   t: Dictionary;
   settings: SiteSettings;
   profile: OwnerProfile | null;
-  languages: SpokenLanguage[];
 }) {
   // CMS content wins; the dictionary only supplies a floor so the hero is never
   // empty on a fresh install.
   const headline = settings.heroHeadline ?? profile?.headline ?? null;
   const subheadline = settings.heroSubheadline ?? profile?.bio ?? t.home.hero.intro;
-  const location = settings.location ?? profile?.location ?? null;
   /*
    * The keyed portrait: the same photograph with its green studio backdrop
    * removed by `scripts/key-portrait.mjs`, so the hero's own lighting sits
@@ -240,33 +237,21 @@ export function Hero({
               </ButtonLink>
             </Reveal>
 
-            {/* ── Status line ─────────────────────────────────────────────── */}
-            <Reveal
-              delay={260}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-foreground-muted"
-            >
-              <span className="inline-flex items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5">
+            {/* ── Availability ────────────────────────────────────────────
+                The last thing in the hero, and the only metadata left in it.
+                Location and spoken languages moved down to the proof strip:
+                they are supporting facts, and holding six competing pieces of
+                information at the same visual level was the hero's main
+                problem. Availability stays because it is the one fact that
+                changes what a visitor does next. */}
+            <Reveal delay={260}>
+              <span className="inline-flex items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5 text-small text-foreground-muted">
                 <StatusDot tone={settings.isAvailableForWork ? "success" : "neutral"} />
                 {settings.availabilityStatus ??
                   (settings.isAvailableForWork
                     ? t.home.hero.availableForWork
                     : t.home.hero.notAvailable)}
               </span>
-
-              {location ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon name="mapPin" size={15} />
-                  {interpolate(t.home.hero.basedIn, { location })}
-                </span>
-              ) : null}
-
-              {languages.length > 0 ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon name="languages" size={15} />
-                  <span className="sr-only">{t.home.hero.speaks}: </span>
-                  {languages.map((language) => language.name).join(" · ")}
-                </span>
-              ) : null}
             </Reveal>
 
           </div>
@@ -306,9 +291,14 @@ export function Hero({
 export function CredibilityStrip({
   t,
   counts,
+  location,
+  languages,
 }: {
   t: Dictionary;
   counts: SiteCounts;
+  /** Moved down out of the hero — see the note on the hero's availability row. */
+  location?: string | null;
+  languages?: SpokenLanguage[];
 }) {
   const items = [
     { key: "projects", value: counts.publishedProjects, label: t.home.credibility.publishedProjects },
@@ -349,7 +339,32 @@ export function CredibilityStrip({
             ))}
           </dl>
 
-          <p className="mt-8 text-[0.8125rem] text-foreground-subtle">
+          {/* ── Supporting metadata ─────────────────────────────────────────
+              Location and spoken languages, relocated from the hero. They are
+              real facts worth stating, but stating them beside the value
+              proposition made a visitor weigh six things at once. Both are
+              dropped entirely when the CMS has not recorded them, rather than
+              rendering a label with nothing after it. */}
+          {location || (languages && languages.length > 0) ? (
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-6 text-small text-foreground-muted">
+              {location ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="mapPin" size={15} aria-hidden />
+                  {interpolate(t.home.hero.basedIn, { location })}
+                </span>
+              ) : null}
+
+              {languages && languages.length > 0 ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="languages" size={15} aria-hidden />
+                  <span className="sr-only">{t.home.hero.speaks}: </span>
+                  {languages.map((language) => language.name).join(" · ")}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
+          <p className="mt-6 text-[0.8125rem] text-foreground-subtle">
             {t.home.credibility.note}
           </p>
         </Reveal>
@@ -1074,6 +1089,23 @@ export function Journey({
 
   if (items.length === 0) return null;
 
+  /*
+   * Curated, not complete.
+   *
+   * This rendered every published education and experience row — nine entries
+   * on the live site, running from two current degrees down to a Grade 9
+   * diploma. That is the Experience page's job. A homepage timeline that long
+   * stops being a summary and starts being a second copy of a dedicated page,
+   * which is the specific thing the brief asks the homepage not to do.
+   *
+   * Five, taken off a sort that already puts current roles first and then works
+   * backwards, keeps both degrees in progress and the most recent placements
+   * while dropping school-leaving certificates that the credentials section
+   * covers anyway. "View full experience" below reaches the rest.
+   */
+  const visible = items.slice(0, 5);
+  const hiddenCount = items.length - visible.length;
+
   return (
     <section
       aria-labelledby="journey-heading"
@@ -1099,7 +1131,15 @@ export function Journey({
           />
         </Reveal>
 
-        <Timeline locale={locale} t={t} items={items} />
+        <Timeline locale={locale} t={t} items={visible} />
+
+        {hiddenCount > 0 ? (
+          <p className="text-small text-foreground-subtle">
+            {interpolate(t.home.journey.moreEntries, {
+              count: String(hiddenCount),
+            })}
+          </p>
+        ) : null}
       </div>
     </section>
   );

@@ -12,20 +12,20 @@ import { cn } from "@/lib/utils/cn";
  * brief rules it out; each phrase here is either fully present or fully gone.
  *
  * Accessibility and SEO
- *   • Every phrase is in the DOM from the first server render, inside a
- *     visually hidden list. Assistive technology and crawlers get the complete
- *     set, not whichever phrase happened to be showing.
- *   • The animated element is `aria-hidden`, so a screen reader is never
- *     interrupted by text swapping underneath it, and there is no live region
- *     announcing a change every few seconds.
+ *   • Every phrase is in the DOM from the first server render, so a crawler
+ *     and a no-JS visitor both see real text rather than an empty box.
+ *   • The first phrase is the accessibility anchor: it stays in the tree at all
+ *     times and is the one stable sentence a screen reader reads. The others
+ *     are `aria-hidden` and `visibility: hidden`, so nothing is announced when
+ *     the visible phrase changes and no live region is needed.
  *   • Reduced motion pins it to the first phrase and starts no timer at all.
  *
  * Layout
- *   The longest phrase is rendered invisibly in the same grid cell to reserve
- *   the line's width and height, so a swap can never reflow the hero or shift
- *   the call to action underneath it. Both the visible and the hidden copy sit
- *   in `col-start-1 row-start-1`, which is what makes the box the size of the
- *   longest phrase rather than the current one.
+ *   All phrases are stacked in one grid cell, so the box is as wide and as tall
+ *   as the longest phrase in whichever language is rendering. A swap therefore
+ *   cannot reflow the hero or shift the call to action underneath it — which
+ *   matters most in Khmer, where phrases run 20–40% longer than their English
+ *   equivalents and a `min-width` guess would be wrong in both directions.
  *
  * Why it stops when the tab is hidden
  *   A timer that keeps firing in a background tab burns wakeups for an
@@ -95,45 +95,78 @@ export function RotatingWords({
   const [first] = words;
   if (first === undefined) return null;
 
-  const longest = words.reduce((a, b) => (b.length > a.length ? b : a), first);
-  const current = words[index] ?? first;
-
+  /*
+   * Every phrase is rendered exactly once, stacked in one grid cell, and every
+   * inactive one is `visibility: hidden`.
+   *
+   * ── What this replaces, and why ──────────────────────────────────────────
+   * The previous version shipped three separate copies of the phrase text: an
+   * invisible "longest phrase" sizer to reserve width, the visible phrase, and
+   * an `sr-only` comma-joined list. Extracting the rendered page's text found
+   * "teacher tools" and "academic platforms" twice each — and when the sizer's
+   * longest phrase happened to be the showing one, the two copies sat adjacent
+   * and read as "digital libraries digital libraries".
+   *
+   * Stacking does the sizer's job without the copy: the cell is as wide and as
+   * tall as the longest phrase in whichever language is rendering, so nothing
+   * reflows on a swap and Khmer — 20–40% longer — is measured rather than
+   * guessed at with a `min-width`.
+   *
+   * `visibility: hidden` rather than `opacity: 0` for the inactive phrases is
+   * the load-bearing detail. Both hide a phrase visually, but a
+   * zero-opacity element is still in the accessibility tree, still selectable,
+   * and still counted by text extraction — so opacity alone would have left
+   * all four phrases readable to a crawler. Visibility removes them from all
+   * three while still reserving their box. It is animatable as a discrete step
+   * that holds "visible" until a transition to hidden finishes, so the fade
+   * still plays in full.
+   *
+   * ── Accessibility ────────────────────────────────────────────────────────
+   * The whole rotator is `aria-hidden`, and the one stable sentence below is
+   * what assistive technology reads. That sentence never changes, so nothing
+   * is re-announced every four seconds.
+   */
   return (
-    <span className={cn("relative inline-grid align-bottom", className)}>
-      {/* Reserves the width and height of the longest phrase so nothing
-          reflows. Khmer runs 20–40% longer than English, which is exactly why
-          this is measured from the rendered strings rather than guessed at with
-          a fixed `min-width`. */}
-      <span
-        aria-hidden="true"
-        className="invisible col-start-1 row-start-1 whitespace-nowrap"
-      >
-        {longest}
-      </span>
-
-      {/* The animated phrase. Hidden from assistive tech; the list below is the
-          accessible copy.
-
-          Cyan rather than the multi-stop gradient this used to carry: the
-          identity system gives gold to education and cyan to the technology
-          half, and a phrase that changes every four seconds is the wrong place
-          for a third treatment competing with the heading above it. */}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "col-start-1 row-start-1 whitespace-nowrap font-semibold",
-          "text-(--identity-cyan)",
-          // Transform and opacity only — both compositor properties, so the
-          // swap cannot trigger layout.
-          "transition-[opacity,transform] duration-320 ease-out",
-          visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
-        )}
-      >
-        {current}
-      </span>
-
-      {/* Server-rendered, always complete, never animated. */}
-      <span className="sr-only">{words.join(", ")}</span>
+    <span className={cn("inline-grid align-bottom", className)}>
+      {words.map((word, i) => {
+        const shown = i === index && visible;
+        /*
+         * The first phrase is the accessibility anchor and is hidden with
+         * opacity alone, so it stays in the accessibility tree and in the
+         * page's text no matter which phrase is on screen. Every other phrase
+         * uses `visibility: hidden`, which removes it from both.
+         *
+         * That asymmetry is what finally removed the duplication. A separate
+         * `sr-only` sentence was tried first and simply moved the problem: it
+         * repeated whichever phrase it quoted, so "teacher tools" still
+         * appeared twice in the extracted text. With the anchor doing double
+         * duty there is exactly one copy of every phrase in the DOM, one
+         * stable sentence for a screen reader, and nothing re-announced when
+         * the visible phrase changes.
+         */
+        const isAnchor = i === 0;
+        return (
+          <span
+            key={word}
+            aria-hidden={isAnchor ? undefined : "true"}
+            className={cn(
+              "col-start-1 row-start-1 font-semibold",
+              // Cyan rather than the multi-stop gradient this used to carry:
+              // the identity system gives gold to education and cyan to the
+              // technology half, and a phrase that changes every four seconds
+              // is the wrong place for a third treatment competing with the
+              // heading above it.
+              "text-(--identity-cyan)",
+              // Compositor properties only, so a swap cannot trigger layout.
+              "transition-[opacity,transform,visibility] duration-320 ease-out",
+              shown ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
+              shown ? "visible" : isAnchor ? "visible" : "invisible",
+            )}
+          >
+            {word}
+          </span>
+        );
+      })}
     </span>
   );
 }
