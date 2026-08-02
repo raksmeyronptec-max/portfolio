@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A bilingual (English/Khmer) portfolio **CMS** for Ron Raksmey: Next.js 16 App Router + React 19, Supabase (Postgres + Auth + Storage), Cloudflare R2, Tailwind v4, deployed to Netlify. `legacy/` holds the pre-rebuild static site — kept for content reference only, excluded from lint and tests, never imported.
+A bilingual (English/Khmer) portfolio **CMS** for Ron Raksmey: Next.js 16 App Router + React 19, Supabase (Postgres + Auth + Storage), Cloudflare R2, Tailwind v4. `legacy/` holds the pre-rebuild static site — kept for content reference only, excluded from lint and tests, never imported.
+
+Hosting is deliberately not assumed. `netlify.toml` is committed and there is a
+live Vercel deployment; `siteUrl()` resolves the origin from either platform's
+env vars, and the serverless constraints that shape the code (read-only function
+filesystem, 4.5 MB request bodies) hold on both.
 
 `docs/AUDIT.md` records the v1 defects the rebuild exists to fix (leaked Telegram token, wrong canonical host, client-side i18n, unresolved content contradictions). Many comments in the code refer back to it; read it before "simplifying" something that looks defensive.
 
@@ -24,13 +29,17 @@ npx vitest run tests/unit/validation.test.ts          # single file
 npx vitest run -t "rejects protocol-relative"          # single test by name
 
 npm run test:e2e               # playwright; builds + starts on :3100 itself
+npm run test:e2e:install       # one-time: playwright chromium + system deps
 npx playwright test tests/e2e/admin.spec.ts --project=chromium
 E2E_BASE_URL=http://127.0.0.1:3000 npx playwright test  # reuse a running server
 
 npm run db:start / db:stop     # local Supabase (ports 553xx, not the defaults)
 npm run db:reset               # reapply all migrations + seed.sql
 npm run db:types               # regenerate src/lib/supabase/database.types.ts — do this after every migration
+npm run db:diff / db:push      # author a migration from Studio edits / apply to the linked project
 npm run test:rls               # psql suite in tests/integration/rls.sql; needs db:start + docker
+
+node scripts/configure-r2-cors.mjs --origin https://…   # see "Direct-to-storage uploads"
 ```
 
 Playwright projects: `chromium`, `mobile-390`, `mobile-320` (320px is the narrowest supported width).
@@ -111,7 +120,7 @@ the thing that makes a dangling relation impossible.
 
 ### Publications: books, editions and three file levels
 
-`publications` is the fourth content type (migrations 0025–0027). A *publication*
+`publications` is the fourth content type (migrations 0025–0028). A *publication*
 is an authored work — a mathematics book, an exercise collection, lecture notes —
 with editions, a table of contents, a licence, a citation and files.
 
@@ -148,6 +157,10 @@ Five things are worth knowing before touching it:
   privacy decision moves only through `reviewPublicationPrivacy()` (owner-only),
   never through the edit form: approving a book PDF means somebody opened it and
   read to the end, and it must not be a side effect of fixing a subtitle.
+  Migration 0028 added a fourth condition: the *active edition* must itself be
+  `published`. The gate reads `publication_versions` and the public page reads
+  `public_publication_versions`, and the two disagreeing meant a published book
+  rendered with no download button, silently.
 
 Nothing here fabricates. `buildCitation()` omits every element it does not know
 rather than emitting "n.d." or an inferred publisher; `buildBibTeX()` returns
@@ -172,7 +185,58 @@ pupils. Video files are listed but never uploaded.
 
 R2 has no per-object ACLs, so privacy is physical: two buckets, `R2_BUCKET_NAME` (public) and `R2_PRIVATE_BUCKET_NAME` (**must never get a custom domain or public dev URL**). The four *logical* bucket names in [buckets.ts](src/lib/storage/buckets.ts) are a stable vocabulary stored in `media_assets.bucket_id` — don't rename them. Which media kinds are private is decided once in [src/lib/media/kinds.ts](src/lib/media/kinds.ts); certificate originals and resume PDFs are private and are streamed through route handlers, never linked directly.
 
-Uploads go through `POST /api/admin/media/upload` (a route handler, not an action — Server Actions cap bodies at ~2 MB); size limits live in `SIZE_LIMITS` in [src/lib/media/validate.ts](src/lib/media/validate.ts).
+Uploads go through `POST /api/admin/media/upload` (a route handler, not an action — Server Actions cap bodies at ~2 MB); size limits live in `SIZE_LIMITS` in [src/lib/media/validate.ts](src/lib/media/validate.ts), read through `uploadLimitFor(kind)` so the form and the route cannot disagree.
+
+**Two ceilings, not one.** 10 MB for every kind (migration 0019 made that uniform,
+and `media_assets_size_limit` is the database backstop), except the three
+publication file kinds at 25 MB. The storage buckets permit 25 MB.
+
+### Direct-to-storage uploads
+
+`POST /api/admin/media/direct-upload` is a second upload path, for
+`publication_pdf` / `publication_original` / `publication_source` only. It exists
+because every serverless platform caps the request body it will accept (4.5 MB),
+and a typeset mathematics book is larger — the platform rejected the request
+before any of our code ran, with a non-JSON response, so the uploader could
+report only "Upload failed" and no server log existed.
+
+It is two steps, and the server keeps everything that matters:
+
+- `?step=sign` checks the permission, pins the kind to a bucket and a visibility,
+  **chooses the object key itself**, and signs a short-lived URL for that one key.
+  The browser cannot pick where its bytes land.
+- `?step=register` reads the object back and runs the same magic-byte validation,
+  checksum and duplicate check the ordinary route runs — against the bytes that
+  actually arrived. Anything that fails is deleted from the bucket before
+  returning.
+
+Images must never be routed here: they would skip `processImage()` and be stored
+as unstripped camera originals, GPS and all. The route enforces that with
+`PUBLICATION_FILE_KINDS`.
+
+**The PUT is cross-origin, so the R2 bucket needs a CORS policy.** A bucket
+without one answers `NoSuchCORSConfiguration`, the preflight fails, and the
+browser reports only "Failed to fetch". Apply it with
+`node scripts/configure-r2-cors.mjs --origin <site>` and **re-run it for every new
+origin** — a custom domain or a preview deployment is not covered by the previous
+policy. [docs/R2-CORS.md](docs/R2-CORS.md) explains what the policy grants and why
+it is not `*`.
+
+### Contact and analytics
+
+`POST /api/contact` is a direct rewrite of the v1 Netlify function and each
+difference is deliberate (the route's header lists all five). The load-bearing
+ones: the database write is the source of truth and the Telegram notification is
+best-effort on top, so an outage cannot lose an enquiry; the response reports
+whether a notification actually went out, and the UI wording differs accordingly;
+rate limiting is evaluated in Postgres against stored messages, because v1's
+module-level counter reset on every cold start. Missing `TELEGRAM_*` env vars are
+a supported state — the form still works and simply does not claim delivery.
+
+`trackEvent()` ([src/lib/analytics/track.ts](src/lib/analytics/track.ts)) is
+fire-and-forget, honours Do Not Track and Global Privacy Control, and attaches no
+identifier — the server derives a rotating hash from request headers in
+[visitor.ts](src/lib/analytics/visitor.ts).
 
 ### Audit log
 
