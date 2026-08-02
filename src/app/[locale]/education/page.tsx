@@ -1,28 +1,66 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  Badge,
-  Card,
-  CardBody,
-  MetaList,
-  ProseText,
-  SmartLink,
-} from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/states";
-import { PageHeader } from "@/components/layout/page-header";
+import { EducationHero } from "@/components/public/education/hero";
+import { DualDegreeSpotlight } from "@/components/public/education/spotlight";
+import { AcademicWeek } from "@/components/public/education/academic-week";
+import { KnowledgeConvergence } from "@/components/public/education/convergence";
+import { FieldworkFeature } from "@/components/public/education/fieldwork";
+import { MilestoneAndTimeline } from "@/components/public/education/milestone-timeline";
+import { ClosingBand } from "@/components/public/closing-band";
 import { getDictionary } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
-import { getSeoOverride, getSpokenLanguages } from "@/lib/data/site";
-import { getEducation } from "@/lib/data/cv";
-import { getJourneyStoriesByRelation } from "@/lib/data/journey";
-import { JourneyStoryLinks } from "@/components/public/journey-story-links";
-import { langAttribute } from "@/lib/content/translation";
+import { getSeoOverride } from "@/lib/data/site";
+import { getEducation, getExperiences } from "@/lib/data/cv";
+import { getFeaturedProjects } from "@/lib/data/projects";
+import { getFeaturedPublications } from "@/lib/data/publications";
+import {
+  getJourneyEntries,
+  getJourneyStoriesByRelation,
+} from "@/lib/data/journey";
+import {
+  buildConvergenceApplications,
+  buildEducationTimeline,
+  buildEducationViews,
+} from "@/lib/content/education-view";
 import { buildPageMetadata } from "@/lib/seo/metadata";
-import { JsonLd, breadcrumbSchema, graph } from "@/lib/seo/jsonld";
+import {
+  JsonLd,
+  breadcrumbSchema,
+  graph,
+  profilePageSchema,
+} from "@/lib/seo/jsonld";
+
+/**
+ * The Education page.
+ *
+ * ── One argument, one derivation ───────────────────────────────────────────
+ * "Two degrees, one educational mission." The two active programmes carry the
+ * page; the school qualifications are the compact run-up to them, and every
+ * claim in between — the week split, the convergence, the applications — is
+ * derived once in `education-view.ts` from the CMS rows and the records the
+ * other content types already publish.
+ *
+ * ── Why the extra queries ──────────────────────────────────────────────────
+ * Experiences, projects, publications and journey stories are fetched so the
+ * page can *link* to the real work that applies the study, rather than
+ * describing it again. All are existing cached list queries, they run in
+ * parallel, and the route stays statically rendered on a 300-second
+ * revalidate — the cost is paid at build and revalidation time, not per
+ * visit.
+ */
 
 export const revalidate = 300;
+
+const SPOTLIGHT_SECTION_ID = "education-spotlight";
+const SPOTLIGHT_HEADING_ID = "education-spotlight-heading";
+const WEEK_HEADING_ID = "education-week-heading";
+const CONVERGENCE_HEADING_ID = "education-convergence-heading";
+const FIELDWORK_HEADING_ID = "education-fieldwork-heading";
+const TIMELINE_HEADING_ID = "education-timeline-heading";
+const CTA_HEADING_ID = "education-cta-heading";
 
 export async function generateMetadata({
   params,
@@ -57,161 +95,147 @@ export default async function EducationPage({
   const locale: Locale = raw;
 
   const t = getDictionary(locale);
-  const [education, languages, journeyByEducation] = await Promise.all([
+
+  const [
+    education,
+    journeyByEducation,
+    journeyEntries,
+    experiences,
+    projects,
+    publications,
+  ] = await Promise.all([
     getEducation(locale),
-    getSpokenLanguages(locale),
-    /*
-      One query for the whole page rather than one per entry. Section 17 of the
-      brief: an Education entry links to its related journey collection —
-      "View my RUPP journey" — rather than absorbing the photographs itself.
-    */
     getJourneyStoriesByRelation("education", locale),
+    getJourneyEntries(locale),
+    getExperiences(locale),
+    getFeaturedProjects(locale, 6),
+    getFeaturedPublications(locale, 3),
   ]);
+
+  const views = buildEducationViews({ entries: education, locale, t });
+  const timeline = buildEducationTimeline({ views, locale, t });
+  const applications = buildConvergenceApplications({
+    evidence: {
+      experiences,
+      projects,
+      publications,
+    },
+    locale,
+    t,
+  });
+
+  /*
+   * The fieldwork feature: the first journey story related to a current
+   * programme, resolved to its full summary (cover, date, location) from the
+   * already-fetched journey list. The by-relation map says *which* stories
+   * belong here; the summaries carry what the feature renders.
+   */
+  const fieldworkProgramme = views.programmes.find(
+    (programme) => (journeyByEducation[programme.id]?.length ?? 0) > 0,
+  );
+  const fieldworkSlug = fieldworkProgramme
+    ? journeyByEducation[fieldworkProgramme.id]?.[0]?.slug
+    : undefined;
+  const fieldworkStory =
+    journeyEntries.find((entry) => entry.slug === fieldworkSlug) ?? null;
 
   const structuredData = graph([
     breadcrumbSchema([
       { name: t.nav.home, url: absoluteUrl(localePath(locale)) },
       { name: t.nav.education, url: absoluteUrl(localePath(locale, "education")) },
     ]),
+    /*
+      ProfilePage pointing at the site-wide Person node — nothing stronger.
+      `EducationalOccupationalCredential` is deliberately not emitted: two of
+      the four records are in-progress programmes, not credentials, and
+      marking up the other two without verification URLs would assert more
+      than the page can back.
+    */
+    profilePageSchema({
+      locale,
+      path: "education",
+      name: t.education.title,
+      description: t.education.description,
+    }),
   ]);
 
   return (
     <>
       <JsonLd data={structuredData} />
 
-      <PageHeader
-        title={t.education.title}
-        description={t.education.description}
-        eyebrow={t.nav.education}
-        breadcrumbs={[
-          { label: t.nav.home, href: localePath(locale) },
-          { label: t.nav.education },
-        ]}
-        breadcrumbLabel={t.a11y.breadcrumb}
-        watermark="∑"
-      />
+      <EducationHero locale={locale} t={t} spotlightId={SPOTLIGHT_SECTION_ID} />
 
-      <div className="container-content flex flex-col gap-8 py-14 sm:py-16">
-        {education.length === 0 ? (
+      {views.programmes.length === 0 && views.milestones.length === 0 ? (
+        <div className="container-content py-16">
           <EmptyState icon="graduation" title={t.education.emptyState} />
-        ) : (
-          <ol className="flex flex-col gap-6">
-            {education.map((entry) => {
-              const contentLang = langAttribute(locale, entry.contentLocale);
-              const kindLabel =
-                t.education.kind[entry.kind as keyof typeof t.education.kind] ??
-                entry.kind;
+        </div>
+      ) : (
+        <>
+          <DualDegreeSpotlight
+            locale={locale}
+            t={t}
+            programmes={views.programmes}
+            stories={journeyByEducation}
+            sectionId={SPOTLIGHT_SECTION_ID}
+            headingId={SPOTLIGHT_HEADING_ID}
+          />
 
-              return (
-                <li key={entry.id} id={`education-${entry.slug}`} className="scroll-mt-24">
-                  <Card as="article">
-                    <CardBody className="flex flex-col gap-3">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        {entry.periodLabel ? (
-                          <span className="font-mono text-[0.8125rem] text-foreground-muted">
-                            {entry.periodLabel}
-                          </span>
-                        ) : null}
+          <AcademicWeek
+            t={t}
+            programmes={views.programmes}
+            headingId={WEEK_HEADING_ID}
+          />
 
-                        {entry.isCurrent ? (
-                          <Badge tone="success">{t.education.current}</Badge>
-                        ) : null}
+          <KnowledgeConvergence
+            t={t}
+            programmes={views.programmes}
+            applications={applications}
+            headingId={CONVERGENCE_HEADING_ID}
+          />
 
-                        <Badge tone="neutral" icon="graduation">
-                          {kindLabel}
-                        </Badge>
-                      </div>
+          <FieldworkFeature
+            locale={locale}
+            t={t}
+            story={fieldworkStory}
+            programmeName={fieldworkProgramme?.institution ?? null}
+            headingId={FIELDWORK_HEADING_ID}
+          />
 
-                      <h2 className="text-h3 font-semibold" lang={contentLang}>
-                        {entry.institutionUrl ? (
-                          <SmartLink
-                            href={entry.institutionUrl}
-                            newTabHint={t.a11y.opensInNewTab}
-                            className="underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
-                          >
-                            {entry.institution}
-                          </SmartLink>
-                        ) : (
-                          entry.institution
-                        )}
-                      </h2>
+          <MilestoneAndTimeline
+            locale={locale}
+            t={t}
+            milestone={views.nationalMilestone}
+            points={timeline}
+            headingId={TIMELINE_HEADING_ID}
+          />
+        </>
+      )}
 
-                      <MetaList
-                        items={[
-                          {
-                            label: t.education.qualification,
-                            value: entry.qualification ?? undefined,
-                          },
-                          {
-                            label: t.education.fieldOfStudy,
-                            value: entry.fieldOfStudy ?? undefined,
-                          },
-                          {
-                            label: t.education.schedule,
-                            value: entry.scheduleLabel ?? undefined,
-                          },
-                          {
-                            /*
-                             * A grade is only ever rendered together with its
-                             * scale. v1 printed "3.79" and "A" as bare numbers,
-                             * which is meaningless without knowing the scale — and
-                             * in the 3.79 case, without knowing which institution
-                             * awarded it.
-                             */
-                            label: t.education.grade,
-                            value:
-                              entry.gradeValue && entry.gradeScale
-                                ? `${entry.gradeValue} — ${entry.gradeScale}`
-                                : undefined,
-                          },
-                        ]}
-                      />
-
-                      {entry.description ? (
-                        <ProseText text={entry.description} className="text-small" />
-                      ) : null}
-
-                      {entry.achievements ? (
-                        <ProseText text={entry.achievements} className="text-small" />
-                      ) : null}
-
-                      <JourneyStoryLinks
-                        locale={locale}
-                        t={t}
-                        stories={journeyByEducation[entry.id]}
-                      />
-                    </CardBody>
-                  </Card>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-
-        {/* ── Languages ────────────────────────────────────────────────────── */}
-        {languages.length > 0 ? (
-          <section aria-labelledby="languages-heading" className="flex flex-col gap-3">
-            <h2 id="languages-heading" className="text-h3 font-semibold">
-              {t.about.languagesHeading}
-            </h2>
-
-            <ul className="grid gap-3 sm:grid-cols-3">
-              {languages.map((language) => (
-                <li key={language.id}>
-                  <Card>
-                    <CardBody className="flex items-baseline justify-between gap-3">
-                      <span className="font-medium">{language.name}</span>
-                      <Badge tone={language.isNative ? "secondary" : "neutral"}>
-                        {language.proficiency}
-                      </Badge>
-                    </CardBody>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-      </div>
+      <ClosingBand
+        headingId={CTA_HEADING_ID}
+        eyebrow={t.education.cta.eyebrow}
+        heading={t.education.cta.heading}
+        body={t.education.cta.body}
+        actions={[
+          {
+            href: localePath(locale, "experience"),
+            label: t.education.cta.experience,
+            variant: "accent",
+            iconEnd: "arrowRight",
+          },
+          {
+            href: localePath(locale, "publications"),
+            label: t.education.cta.publications,
+            variant: "outline",
+          },
+          {
+            href: localePath(locale, "resume"),
+            label: t.nav.resume,
+            variant: "link",
+            iconEnd: "arrowRight",
+          },
+        ]}
+      />
     </>
   );
 }
