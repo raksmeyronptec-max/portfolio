@@ -5,8 +5,10 @@ import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { Icon, toIconName } from "@/components/ui/icon";
 import { SmartLink, StatusDot, Tag } from "@/components/ui/primitives";
+import { AnimatedIdentityName } from "@/components/motion/identity-name";
 import { Reveal } from "@/components/motion/reveal";
 import { RotatingWords } from "@/components/motion/rotating-words";
+import { HeroPortrait } from "@/components/public/hero-portrait";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { ProjectShowcase } from "@/components/public/project-showcase";
 import { CertificateCard } from "@/components/public/certificate-card";
@@ -65,7 +67,15 @@ export function Hero({
   const headline = settings.heroHeadline ?? profile?.headline ?? null;
   const subheadline = settings.heroSubheadline ?? profile?.bio ?? t.home.hero.intro;
   const location = settings.location ?? profile?.location ?? null;
-  const portrait = profile?.avatarUrl ?? "/image/MyPF.jpg";
+  /*
+   * The keyed portrait: the same photograph with its green studio backdrop
+   * removed by `scripts/key-portrait.mjs`, so the hero's own lighting sits
+   * behind the subject rather than being tinted over him. See hero-portrait.tsx.
+   *
+   * A CMS avatar still wins, and an opaque one degrades cleanly — the lighting
+   * layers are simply covered, and the vignette and scrim still apply on top.
+   */
+  const portrait = profile?.avatarUrl ?? "/image/portrait-keyed.webp";
 
   /*
    * The hero name prefers `settings.siteName` over `profile.displayName`.
@@ -80,10 +90,12 @@ export function Hero({
   const displayName = settings.siteName ?? profile?.displayName;
 
   const builds = [
-    t.home.hero.builds.libraries,
-    t.home.hero.builds.platforms,
+    // Ordered most concrete first: a visitor who reads only the first phrase
+    // should get the plainest one.
     t.home.hero.builds.tools,
+    t.home.hero.builds.platforms,
     t.home.hero.builds.systems,
+    t.home.hero.builds.libraries,
   ];
 
   return (
@@ -153,13 +165,10 @@ export function Hero({
                 {t.home.hero.eyebrow}
               </p>
 
-              <p className="flex items-center gap-3">
-                <span className="text-h3 font-bold tracking-[-0.02em] text-foreground">
-                  {displayName}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className="h-px flex-1 bg-gradient-to-r from-border-strong to-transparent"
+              <p>
+                <AnimatedIdentityName
+                  name={displayName ?? ""}
+                  className="text-h3 font-bold tracking-[-0.02em]"
                 />
               </p>
             </Reveal>
@@ -184,8 +193,23 @@ export function Hero({
               </p>
             </Reveal>
 
+            {/* ── "I build …" ─────────────────────────────────────────────
+                The dynamic specialty line, placed between the supporting
+                paragraph and the calls to action — the brief's hierarchy puts
+                it above the availability metadata, and it used to sit below.
+
+                Kept to a quiet one-line strap rather than the h3-sized line it
+                once was: at that size it competed directly with the statement
+                three elements above it. */}
+            <Reveal delay={140}>
+              <p className="flex flex-wrap items-baseline gap-x-2 text-body text-foreground-muted">
+                <span>{t.home.hero.buildsLabel}</span>
+                <RotatingWords words={builds} />
+              </p>
+            </Reveal>
+
             {/* ── Actions ─────────────────────────────────────────────────── */}
-            <Reveal delay={140} className="flex flex-wrap items-center gap-3">
+            <Reveal delay={200} className="flex flex-wrap items-center gap-3">
               <ButtonLink
                 href={localePath(locale, "projects")}
                 variant="accent"
@@ -218,7 +242,7 @@ export function Hero({
 
             {/* ── Status line ─────────────────────────────────────────────── */}
             <Reveal
-              delay={200}
+              delay={260}
               className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-foreground-muted"
             >
               <span className="inline-flex items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5">
@@ -245,153 +269,22 @@ export function Hero({
               ) : null}
             </Reveal>
 
-            {/* ── "I build …" ─────────────────────────────────────────────
-                Demoted from a h3-sized line to a quiet one-line strap. It is a
-                nice touch, not a headline, and at the old size it competed with
-                the statement directly above it. */}
-            <Reveal delay={260}>
-              <p className="flex flex-wrap items-baseline gap-x-2 text-small text-foreground-subtle">
-                <span>{t.home.hero.buildsLabel}</span>
-                <RotatingWords words={builds} />
-              </p>
-            </Reveal>
           </div>
 
           {/* ── Portrait ─────────────────────────────────────────────────────
-              One composition with the copy rather than a card parked beside it:
-              the ring picks up the same gradient as the section decoration, the
-              role chips sit on the frame, and the whole thing is grounded into
-              the ink band by a scrim rather than ending on a hard edge.
+              Extracted to its own component: the lighting is six layers deep
+              and the reasoning behind each one is long enough that inlining it
+              buried the hero's copy. See hero-portrait.tsx.
 
-              `lg:order-none` without `order-first` — on mobile the copy now
-              comes first. It used to be portrait-first, which meant a phone
-              visitor scrolled past a photograph to reach what the site is
-              about. */}
+              No `order-first` — on mobile the copy comes first. It used to be
+              portrait-first, which meant a phone visitor scrolled past a
+              photograph to reach what the site is about. */}
           <Reveal delay={160}>
-            <div className="relative mx-auto w-full max-w-[24rem]">
-              {/* Glow directly behind the portrait. */}
-              <div
-                aria-hidden="true"
-                className="absolute -inset-8 -z-10 rounded-full opacity-70 blur-2xl"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 45%, rgb(var(--glow-primary) / 0.5), transparent 68%)",
-                }}
-              />
-
-              {/* Organic accent shape, offset so it reads as depth rather than
-                  a second frame. */}
-              <div
-                aria-hidden="true"
-                className="absolute -bottom-6 -left-8 -z-10 size-40 rounded-full opacity-60 blur-2xl"
-                style={{
-                  background:
-                    "radial-gradient(circle, rgb(var(--glow-accent) / 0.55), transparent 70%)",
-                }}
-              />
-
-              {/* Gradient ring: a padded wrapper whose background is the
-                  gradient, so the ring follows the squircle exactly. */}
-              <div
-                className="rounded-[2.5rem] p-px"
-                style={{
-                  background:
-                    "linear-gradient(150deg, rgb(var(--glow-primary) / 0.7), rgb(var(--glow-secondary) / 0.35) 45%, rgb(var(--glow-accent) / 0.55))",
-                }}
-              >
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[calc(2.5rem-1px)] bg-surface-raised">
-                  {/*
-                    The single `priority` image on the page. `fill` inside a
-                    fixed aspect-ratio box reserves the space before the file
-                    arrives, so this cannot contribute to layout shift.
-
-                    The `saturate` step is the first of three that tame the
-                    studio green — see the masked blend and the scrims below.
-                    All of it is a display treatment: the stored asset is
-                    untouched, so replacing the photograph with one shot on a
-                    neutral background needs no code change.
-                  */}
-                  <Image
-                    src={portrait}
-                    alt={profile?.displayName ?? t.home.hero.portraitAlt}
-                    fill
-                    sizes="(min-width: 1024px) 24rem, (min-width: 640px) 60vw, 88vw"
-                    priority
-                    className="object-cover object-top [filter:saturate(0.3)_contrast(1.06)_brightness(0.97)]"
-                  />
-
-                  {/*
-                    Why a flat desaturation rather than something cleverer.
-
-                    Two sharper approaches were tried and both failed on this
-                    photograph. A `mix-blend-mode: color` wash recolours the
-                    whole frame, face included. Masking that wash to spare the
-                    face left a bright green halo exactly on the mask's
-                    transition and turned the suit blue — the subject's
-                    shoulders reach the frame edge, so no ellipse separates
-                    "person" from "backdrop" here.
-
-                    Dropping saturation to 0.3 takes the chroma-key green down
-                    to a dark neutral that the scrims below finish off, and it
-                    does so uniformly, so there is no seam to notice. Skin keeps
-                    its warmth relative to the rest of the frame because
-                    everything else has lost more.
-                  */}
-
-                  {/*
-                    Indigo wash on `soft-light`: lights the frame from the same
-                    direction as the section around it, so the portrait belongs
-                    to the ink band rather than sitting on top of it.
-                  */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 mix-blend-soft-light"
-                    style={{
-                      background:
-                        "linear-gradient(165deg, rgb(var(--glow-primary) / 0.9), rgb(var(--glow-secondary) / 0.5) 60%, transparent)",
-                    }}
-                  />
-
-                  {/*
-                    Vignette, doing most of the remaining work: the backdrop is
-                    brightest at the corners, which is where this is darkest.
-                  */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        "radial-gradient(105% 78% at 50% 30%, transparent 28%, rgb(8 10 18 / 0.82) 100%)",
-                    }}
-                  />
-
-                  {/* Grounds the portrait into the dark band instead of ending
-                      at a hard edge. */}
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[rgb(8_10_18)] via-[rgb(8_10_18_/_0.55)] to-transparent"
-                  />
-
-                  {/* ── Role indicators ───────────────────────────────────
-                      Two, not four. The brief warns against overloading the
-                      portrait with floating badges, and these two are the pair
-                      that actually needs saying together — the whole
-                      proposition is that one person does both. */}
-                  <ul className="absolute inset-x-4 bottom-4 flex flex-wrap gap-1.5">
-                    {[t.home.hero.roles.educator, t.home.hero.roles.builder].map(
-                      (role) => (
-                        <li
-                          key={role}
-                          className="rounded-(--radius-full) border border-white/15 bg-white/10 px-2.5 py-1 text-[0.75rem] font-medium text-white backdrop-blur-sm"
-                        >
-                          {role}
-                        </li>
-                      ),
-                    )}
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <HeroPortrait
+              src={portrait}
+              alt={profile?.displayName ?? t.home.hero.portraitAlt}
+              t={t}
+            />
           </Reveal>
         </div>
       </div>

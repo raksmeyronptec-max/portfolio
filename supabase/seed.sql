@@ -740,7 +740,10 @@ begin
     'I am an educator, mathematics student and full-stack product builder creating practical digital platforms for teachers, students and academic institutions in Cambodia.',
     'ខ្ញុំជាអ្នកអប់រំ និស្សិតគណិតវិទ្យា និងអ្នកបង្កើតផលិតផលឌីជីថល ដែលកំពុងបង្កើតវេទិកាឌីជីថលជាក់ស្តែងសម្រាប់គ្រូបង្រៀន សិស្សានុសិស្ស និងស្ថាប័នសិក្សានៅកម្ពុជា។',
     'Phnom Penh, Cambodia',
-    '/image/MyPF.jpg'
+    -- The background-removed variant, produced by scripts/key-portrait.mjs from
+    -- /image/MyPF.jpg. The hero lights the subject from behind, which only
+    -- works on an image with an alpha channel; see hero-portrait.tsx.
+    '/image/portrait-keyed.webp'
   )
   on conflict (id) do update
     set is_site_owner = true,

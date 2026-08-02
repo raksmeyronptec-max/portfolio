@@ -4,6 +4,7 @@ import { Icon, toIconName } from "@/components/ui/icon";
 import { SmartLink, StatusDot } from "@/components/ui/primitives";
 import { getDictionary, interpolate } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
+import { BrandMark } from "./brand";
 import { primaryNav } from "@/components/nav/nav-items";
 import type { SiteSettings, SocialLink } from "@/lib/data/site";
 
@@ -67,7 +68,7 @@ export function SiteFooter({
           {/* ── Identity ─────────────────────────────────────────────────── */}
           <div className="flex max-w-[38ch] flex-col gap-4">
             <div className="flex items-center gap-2.5">
-              <Wordmark />
+              <BrandMark gradientId="brand-footer" size={32} />
               <p className="text-h4 font-semibold">{settings.siteName}</p>
             </div>
 
@@ -191,35 +192,5 @@ export function SiteFooter({
         </div>
       </div>
     </footer>
-  );
-}
-
-/** Decorative mark; the adjacent name is the accessible name. */
-function Wordmark() {
-  return (
-    <svg
-      viewBox="0 0 36 36"
-      width={28}
-      height={28}
-      aria-hidden="true"
-      focusable="false"
-      className="shrink-0"
-    >
-      <defs>
-        <linearGradient id="wordmark-tile-footer" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--primary)" />
-          <stop offset="100%" stopColor="var(--secondary)" />
-        </linearGradient>
-      </defs>
-      <rect width="36" height="36" rx="11" fill="url(#wordmark-tile-footer)" />
-      <path
-        d="M23.5 10.5H13l6.2 7.5-6.2 7.5h10.5"
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

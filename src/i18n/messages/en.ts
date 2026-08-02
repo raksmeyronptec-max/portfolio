@@ -38,6 +38,14 @@ export const en = {
     fileTypeAndSize: "{type}, {size}",
   },
 
+  brand: {
+    /* The link's accessible name. The visible text says who; this says that
+       activating it goes home, which the wordmark alone does not. */
+    homeLabel: "Ron Raksmey — Home",
+    /* Header subtitle, shown only where there is room for it. */
+    role: "Educator & Product Builder",
+  },
+
   nav: {
     home: "Home",
     projects: "Projects",
@@ -83,10 +91,10 @@ export const en = {
        * a missing Khmer phrase is still a compile error.
        */
       builds: {
-        libraries: "digital libraries",
-        platforms: "education platforms",
         tools: "teacher tools",
-        systems: "academic systems",
+        platforms: "academic platforms",
+        systems: "digital learning systems",
+        libraries: "access to academic resources",
       },
       exploreWork: "Explore My Work",
       viewProjects: "View My Projects",

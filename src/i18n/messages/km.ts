@@ -47,6 +47,11 @@ export const km: Dictionary = {
     fileTypeAndSize: "{type}, {size}",
   },
 
+  brand: {
+    homeLabel: "រុន រស្មី — ទំព័រដើម",
+    role: "អ្នកអប់រំ និងអ្នកបង្កើតផលិតផល",
+  },
+
   nav: {
     home: "ទំព័រដើម",
     projects: "គម្រោង",
@@ -75,10 +80,10 @@ export const km: Dictionary = {
         "ខ្ញុំរចនា និងបង្កើតផលិតផលឌីជីថលជាក់ស្តែង សម្រាប់ការអប់រំ ការបង្រៀន និងការទទួលបានធនធានសិក្សា។",
       buildsLabel: "ខ្ញុំបង្កើត",
       builds: {
-        libraries: "បណ្ណាល័យឌីជីថល",
-        platforms: "វេទិកាអប់រំ",
         tools: "ឧបករណ៍សម្រាប់គ្រូ",
-        systems: "ប្រព័ន្ធសិក្សា",
+        platforms: "វេទិកាសិក្សា",
+        systems: "ប្រព័ន្ធរៀនឌីជីថល",
+        libraries: "លទ្ធភាពទទួលបានឯកសារសិក្សា",
       },
       exploreWork: "ស្វែងយល់ស្នាដៃរបស់ខ្ញុំ",
       viewProjects: "មើលគម្រោងរបស់ខ្ញុំ",
