@@ -263,6 +263,61 @@ export const SIZE_LIMITS = {
 export const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_BYTES;
 export const MAX_PUBLICATION_UPLOAD_BYTES = MAX_PUBLICATION_BYTES;
 
+/**
+ * The upload ceiling for one kind.
+ *
+ * Exists so the form and the route cannot disagree. They did: the route learned
+ * the 25 MB publication ceiling and the form did not, so the form rejected a
+ * 12 MB book client-side with "over the 10 MB limit" — a file the server would
+ * have accepted, and an error naming a limit that did not apply to it.
+ *
+ * Isomorphic on purpose. `kind` is typed loosely rather than as `MediaKind` to
+ * avoid a circular import between this module and `kinds.ts`; the lookup falls
+ * through to the common ceiling for anything unrecognised, which fails closed.
+ */
+export function uploadLimitFor(kind: string): number {
+  if (kind === "publication_pdf" || kind === "publication_original" || kind === "publication_source") {
+    return SIZE_LIMITS.publicationFile;
+  }
+  if (kind === "certificate_original") return SIZE_LIMITS.certificateOriginal;
+  if (kind === "resume_file") return SIZE_LIMITS.resume;
+  if (kind === "certificate_preview") return SIZE_LIMITS.certificatePreview;
+  return SIZE_LIMITS.publicImage;
+}
+
+/**
+ * The `accept` attribute for a file input, per kind.
+ *
+ * File extensions are listed alongside the MIME types because `accept` matches
+ * on either, and several platforms report no MIME type at all for HEIC — on
+ * those, a MIME-only `accept` greys the file out in the picker so it cannot even
+ * be chosen.
+ *
+ * That greying-out is exactly the bug this function was added to fix, in the
+ * other direction: the uploader hard-coded an images-only `accept` for every
+ * kind except certificate originals and resumes, so selecting "Publication PDF"
+ * left every PDF in the picker unselectable.
+ */
+export function acceptAttributeFor(kind: string): string {
+  // A LaTeX source package, and nothing else. Offering PDFs here would let an
+  // editor upload one into a slot whose database CHECK requires a ZIP.
+  if (kind === "publication_source") return "application/zip,.zip";
+
+  // The reader-facing edition and the archival original are both PDFs, kept
+  // byte-for-byte. No HEIC: these are never re-encoded, so a stored HEIC would
+  // be a file the MIME allowlist rejects and no browser but Safari can open.
+  if (kind === "publication_pdf" || kind === "publication_original") {
+    return "application/pdf,.pdf";
+  }
+
+  // Certificate originals may be a scan or a PDF; resumes are PDFs.
+  if (kind === "certificate_original" || kind === "resume_file") {
+    return "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp";
+  }
+
+  return "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif";
+}
+
 export type ValidationFailure = {
   code:
     | "type_not_allowed"
@@ -427,6 +482,36 @@ export function sanitizeFilename(filename: string): string {
 
   const safeBase = base || "file";
   return extension ? `${safeBase}.${extension}` : safeBase;
+}
+
+/**
+ * The filename to *show*, as opposed to the one to store bytes under.
+ *
+ * `sanitizeFilename()` reduces anything outside `[a-z0-9._-]` to a hyphen, which
+ * is correct for a storage key — it becomes a URL path segment and an S3 object
+ * key — and destructive for a label. A Khmer filename has no ASCII in it at all,
+ * so it collapses to nothing and falls back to "file": every one of the owner's
+ * books uploads as `file.pdf`, indistinguishable in the media library, and every
+ * reader downloads `file.pdf`.
+ *
+ * So the two are separated. The storage key stays ASCII; `original_filename`
+ * keeps the name the author actually gave the file. This strips only what would
+ * be unsafe in a label or a response header — path separators, control
+ * characters and quotes — and leaves the script alone. The download route emits
+ * the RFC 5987 `filename*=UTF-8''…` form, so a Khmer name survives to the
+ * reader's disk.
+ */
+export function displayFilename(filename: string): string {
+  const cleaned = filename
+    .replace(/[/\\]/g, "-")
+    // C0 and C1 control characters, plus the quote that would break a
+    // `Content-Disposition` header.
+    .replace(/[\u0000-\u001f\u007f-\u009f"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
+
+  return cleaned || "file";
 }
 
 /** Storage key: `<scope>/<yyyy>/<mm>/<random>-<safe-name>`. */

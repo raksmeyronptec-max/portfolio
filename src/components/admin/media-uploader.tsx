@@ -13,9 +13,14 @@ import {
   isPrivateKind,
   MEDIA_KIND_LABELS,
   MEDIA_KINDS,
+  PUBLICATION_FILE_KINDS,
   type MediaKind,
 } from "@/lib/media/kinds";
-import { formatBytes, MAX_UPLOAD_SIZE_BYTES } from "@/lib/media/validate";
+import {
+  acceptAttributeFor,
+  formatBytes,
+  uploadLimitFor,
+} from "@/lib/media/validate";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -103,24 +108,25 @@ export function MediaUploader() {
   const [isDragging, setIsDragging] = useState(false);
 
   const isPrivate = isPrivateKind(kind);
-  const isPdfKind = kind === "certificate_original" || kind === "resume_file";
-  const maxSizeLabel = formatBytes(MAX_UPLOAD_SIZE_BYTES);
-  const needsAltText = !isPrivate && kind !== "resume_file";
+  const isPublicationFile = PUBLICATION_FILE_KINDS.has(kind);
+  const isSourceArchive = kind === "publication_source";
+  const isPdfKind =
+    kind === "certificate_original" || kind === "resume_file" || isPublicationFile;
 
   /*
-   * File extensions are listed alongside the MIME types.
-   *
-   * `accept` matches on either, and several platforms report no MIME type at all
-   * for a HEIC file — on those, a MIME-only `accept` greys the file out in the
-   * picker so it cannot even be chosen. The extensions are what make iPhone
-   * photographs selectable everywhere.
-   *
-   * `isPdfKind` covers the two kinds stored byte-for-byte, which is why HEIC is
-   * absent there; the server refuses it for those with an explanation.
+   * Both derived from the kind rather than hard-coded, so this form and
+   * `upload/route.ts` cannot disagree about what may be selected or how large it
+   * may be. They did disagree: the route learned the publication kinds and this
+   * form did not, which left every PDF greyed out in the picker under
+   * "Publication PDF" and would have rejected a 12 MB book against a 10 MB limit
+   * that does not apply to it.
    */
-  const accept = isPdfKind
-    ? "application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
-    : "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif";
+  const accept = acceptAttributeFor(kind);
+  const maxBytes = uploadLimitFor(kind);
+  const maxSizeLabel = formatBytes(maxBytes);
+
+  // A source archive has no alt text and no preview — it is never rendered.
+  const needsAltText = !isPrivate && kind !== "resume_file" && !isPublicationFile;
 
   /*
    * Object URLs are a manual resource. Without this, dropping several hundred
@@ -151,7 +157,7 @@ export function MediaUploader() {
          * server check is the real one; this only avoids wasting the editor's
          * time and bandwidth.
          */
-        if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        if (file.size > maxBytes) {
           rejected.push(`${file.name} (${formatBytes(file.size)})`);
           continue;
         }
@@ -198,7 +204,7 @@ export function MediaUploader() {
         setQueue((current) => [...current, ...accepted]);
       }
     },
-    [maxSizeLabel, toast],
+    [maxBytes, maxSizeLabel, toast],
   );
 
   function update(id: string, patch: Partial<QueueItem>) {
@@ -389,9 +395,13 @@ export function MediaUploader() {
             id={fileId}
             label="Files"
             description={
-              isPdfKind
-                ? `PDF, JPEG, PNG or WebP. Up to ${maxSizeLabel} each. Choose several at once, or drop them below.`
-                : `Images only — JPEG, PNG, WebP, AVIF or HEIC, up to ${maxSizeLabel} each. Choose several at once, or drop them below. iPhone HEIC photographs are converted automatically, so the site never serves one. To upload a PDF, choose “Certificate original” or “Resume PDF” above; PDFs are always stored privately. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
+              isSourceArchive
+                ? `A ZIP archive, up to ${maxSizeLabel}. Include the .tex, .sty, .bib, figures and a README — and remove .aux, .log, .out, .toc and .synctex.gz first, because a LaTeX log records every absolute path the compiler touched. The archive is stored privately and is never expanded or compiled.`
+                : isPublicationFile
+                  ? `A PDF, up to ${maxSizeLabel}. Stored privately and served only through the publication's download route, which checks its download policy first — so even the reader-facing edition never gets a public URL.`
+                  : isPdfKind
+                    ? `PDF, JPEG, PNG or WebP. Up to ${maxSizeLabel} each. Choose several at once, or drop them below.`
+                    : `Images only — JPEG, PNG, WebP, AVIF or HEIC, up to ${maxSizeLabel} each. Choose several at once, or drop them below. iPhone HEIC photographs are converted automatically, so the site never serves one. To upload a PDF, choose “Certificate original”, “Resume PDF” or one of the “Publication” kinds above; PDFs are always stored privately. Images are re-encoded to WebP, stripped of EXIF metadata, and resized into thumbnail, card and preview versions.`
             }
           >
             {({ describedBy }) => (

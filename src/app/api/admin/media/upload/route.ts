@@ -12,12 +12,13 @@ import {
 } from "@/lib/media/kinds";
 import {
   buildStoragePath,
+  displayFilename,
   PUBLICATION_PDF_TYPES,
   PUBLICATION_SOURCE_TYPES,
   resolveUploadType,
-  SIZE_LIMITS,
   sanitizeFilename,
   STORED_AS_IS_TYPES,
+  uploadLimitFor,
   validateUpload,
 } from "@/lib/media/validate";
 import { checksumOf, processImage, readDimensions } from "@/lib/media/process";
@@ -101,7 +102,6 @@ export async function POST(request: NextRequest) {
   // ── Route by kind ─────────────────────────────────────────────────────────
   const isPrivateOriginal = kind === "certificate_original";
   const isResume = kind === "resume_file";
-  const isCertificatePreview = kind === "certificate_preview";
   /*
    * A publication's three file levels: the reader-facing PDF, the archival
    * original and the LaTeX source archive. All three are private and all three
@@ -117,15 +117,9 @@ export async function POST(request: NextRequest) {
   // in migration 0026 cannot drift apart.
   const visibility: "public" | "private" = isPrivateKind(kind) ? "private" : "public";
 
-  const maxBytes = isPrivateOriginal
-    ? SIZE_LIMITS.certificateOriginal
-    : isResume
-      ? SIZE_LIMITS.resume
-      : isCertificatePreview
-        ? SIZE_LIMITS.certificatePreview
-        : isPublicationFile
-          ? SIZE_LIMITS.publicationFile
-          : SIZE_LIMITS.publicImage;
+  // Shared with the upload form, so the two cannot state different ceilings —
+  // which they briefly did, leaving the form to reject a book the server allowed.
+  const maxBytes = uploadLimitFor(kind);
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
@@ -186,7 +180,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         error: "type_not_allowed",
         message:
-          "A PDF cannot be stored publicly. Choose “Certificate original” or “Resume PDF” — both are private — or upload an image instead.",
+          "A PDF cannot be stored publicly. Choose “Certificate original”, “Resume PDF” or one of the “Publication” kinds — all of them are private — or upload an image instead.",
       },
       400,
     );
@@ -219,7 +213,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /*
+     * Two names, deliberately.
+     *
+     * `safeName` is ASCII-only and becomes the storage key — it ends up in a URL
+     * path and an S3 object key, so it cannot carry Khmer. `displayName` keeps
+     * the name the author gave the file, and is what the library lists and the
+     * download route offers. Using the sanitised one for both meant every
+     * Khmer-titled book was stored and shown as "file.pdf".
+     */
     const safeName = sanitizeFilename(file.name);
+    const displayName = displayFilename(file.name);
     const storagePath = buildStoragePath(kind, safeName);
 
     let width: number | null = null;
@@ -339,7 +343,7 @@ export async function POST(request: NextRequest) {
         storage_provider: storageProvider,
         kind,
         visibility,
-        original_filename: safeName,
+        original_filename: displayName,
         mime_type: storedMime,
         file_size_bytes: storedBytes,
         checksum_sha256: checksum,
@@ -381,8 +385,8 @@ export async function POST(request: NextRequest) {
       actor: auth.session,
       entityType: "media_asset",
       entityId: asset.id,
-      entityLabel: safeName,
-      summary: `Uploaded ${safeName} to ${bucketId} as ${visibility}.`,
+      entityLabel: displayName,
+      summary: `Uploaded ${displayName} to ${bucketId} as ${visibility}.`,
       changes: { kind, bytes: storedBytes, mime_type: storedMime },
     });
 
@@ -390,7 +394,7 @@ export async function POST(request: NextRequest) {
       {
         ok: true,
         id: asset.id,
-        filename: safeName,
+        filename: displayName,
         visibility,
         bucket: bucketId,
         width,

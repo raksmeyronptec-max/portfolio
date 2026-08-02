@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest";
 import { atLeast, isAdminRole, permissions } from "@/lib/auth/roles";
 import { safeInternalPath } from "@/lib/auth/guards";
 import {
+  acceptAttributeFor,
   buildStoragePath,
+  displayFilename,
   fileExtension,
   isAllowedUploadType,
   sanitizeFilename,
   SIZE_LIMITS,
   MAX_UPLOAD_SIZE_BYTES,
+  uploadLimitFor,
   validateUpload,
 } from "@/lib/media/validate";
 import { isPrivateKind, MEDIA_KINDS } from "@/lib/media/kinds";
@@ -370,6 +373,77 @@ function makeAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
   };
 }
 
+/*
+ * The picker has to offer the file the server would accept.
+ *
+ * These two functions exist because the form and the route drifted: the route
+ * learned the publication kinds and the uploader did not, so selecting
+ * "Publication PDF" left every PDF greyed out in the file picker — the upload
+ * was impossible from the UI while being perfectly valid at the endpoint. The
+ * pairing is asserted here so a future kind cannot be added to one side only.
+ */
+describe("accept attribute matches what the server will take", () => {
+  it("offers PDFs for both reader-facing and archival publication files", () => {
+    for (const kind of ["publication_pdf", "publication_original"] as const) {
+      const accept = acceptAttributeFor(kind);
+      expect(accept, kind).toContain("application/pdf");
+      expect(accept, kind).toContain(".pdf");
+    }
+  });
+
+  it("offers only a ZIP for a LaTeX source archive", () => {
+    const accept = acceptAttributeFor("publication_source");
+    expect(accept).toContain("application/zip");
+    // Offering a PDF here would let an editor fill a slot whose database CHECK
+    // requires a source archive.
+    expect(accept).not.toContain("application/pdf");
+  });
+
+  it("does not offer a PDF for an image kind", () => {
+    expect(acceptAttributeFor("publication_cover")).not.toContain("application/pdf");
+    expect(acceptAttributeFor("project_cover")).not.toContain("application/pdf");
+  });
+
+  it("keeps HEIC selectable by extension for kinds that convert it", () => {
+    // Several platforms report no MIME type for HEIC, so a MIME-only accept
+    // greys the file out in the picker.
+    expect(acceptAttributeFor("journey_photo")).toContain(".heic");
+  });
+
+  it("does not offer HEIC where the file is kept byte-for-byte", () => {
+    for (const kind of [
+      "certificate_original",
+      "resume_file",
+      "publication_pdf",
+      "publication_original",
+    ] as const) {
+      expect(acceptAttributeFor(kind), kind).not.toContain(".heic");
+    }
+  });
+});
+
+describe("uploadLimitFor", () => {
+  it("gives publication files the larger ceiling", () => {
+    for (const kind of [
+      "publication_pdf",
+      "publication_original",
+      "publication_source",
+    ] as const) {
+      expect(uploadLimitFor(kind), kind).toBe(SIZE_LIMITS.publicationFile);
+    }
+  });
+
+  it("gives everything else the common ceiling", () => {
+    for (const kind of ["project_cover", "journey_photo", "publication_cover"] as const) {
+      expect(uploadLimitFor(kind), kind).toBe(MAX_UPLOAD_SIZE_BYTES);
+    }
+  });
+
+  it("fails closed to the common ceiling for an unrecognised kind", () => {
+    expect(uploadLimitFor("something_new")).toBe(MAX_UPLOAD_SIZE_BYTES);
+  });
+});
+
 describe("upload size ceiling", () => {
   it("is 10 MB for every kind except a publication file", () => {
     /*
@@ -562,5 +636,49 @@ describe("analytics classification", () => {
     expect(destinationHost("https://www.krusmart.org/login")).toBe("www.krusmart.org");
     expect(destinationHost("mailto:x@y.z")).toBeNull();
     expect(destinationHost("garbage")).toBeNull();
+  });
+});
+
+/*
+ * A Khmer filename must survive to the library and to the reader's disk.
+ *
+ * `sanitizeFilename` reduces anything outside [a-z0-9._-] to a hyphen, which is
+ * right for a storage key and destructive for a label: a Khmer name has no ASCII
+ * in it at all, so it collapsed to the "file" fallback and every one of the
+ * owner's three books uploaded as file.pdf — indistinguishable in the media
+ * library, and the name every reader would have downloaded.
+ */
+describe("displayFilename", () => {
+  it("keeps a Khmer filename intact", () => {
+    const name = "\u179f\u17d2\u179c\u17c9\u17b8\u178f\u1793\u17c3\u1785\u17c6\u1793\u17bd\u1793\u1796\u17b7\u178f.pdf";
+    expect(displayFilename(name)).toBe(name);
+  });
+
+  it("leaves the storage key ASCII, which is a different job", () => {
+    const name = "\u1780\u17d2\u179a\u17b6\u1794\u1793\u17c3\u17a2\u1793\u17bb\u1782\u1798\u1793\u17cd.pdf";
+    expect(displayFilename(name)).toBe(name);
+    // The key becomes a URL path segment and an S3 object key.
+    expect(sanitizeFilename(name)).toMatch(/^[a-z0-9._-]+$/);
+  });
+
+  it("tells the three books apart, which the sanitised name could not", () => {
+    const books = [
+      "\u1780\u1798\u17d2\u179a\u1784\u179c\u17b7\u1789\u17d2\u1789\u17b6\u179f\u17b6.pdf",
+      "\u1780\u17d2\u179a\u17b6\u1794\u1793\u17c3\u17a2\u1793\u17bb\u1782\u1798\u1793\u17cd.pdf",
+      "\u179f\u17d2\u179c\u17c9\u17b8\u178f\u1793\u17c3\u1785\u17c6\u1793\u17bd\u1793\u1796\u17b7\u178f.pdf",
+    ];
+    expect(new Set(books.map(displayFilename)).size).toBe(3);
+    // The defect: all three sanitise to the same fallback.
+    expect(new Set(books.map(sanitizeFilename)).size).toBe(1);
+  });
+
+  it("strips path separators and quotes", () => {
+    expect(displayFilename("../../etc/passwd")).not.toContain("/");
+    expect(displayFilename('a"b.pdf')).not.toContain('"');
+  });
+
+  it("falls back rather than returning an empty label", () => {
+    expect(displayFilename("")).toBe("file");
+    expect(displayFilename("///")).not.toBe("");
   });
 });
