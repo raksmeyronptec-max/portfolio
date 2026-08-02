@@ -74,6 +74,27 @@ const supabaseSocket = supabaseHost
 let r2PublicOrigin: string | null = null;
 let r2PublicHostname: string | null = null;
 
+/**
+ * The R2 S3 API origin, for `connect-src` only.
+ *
+ * A publication file is uploaded straight from the browser to a presigned URL,
+ * because the hosting platform caps request bodies at 4.5 MB and a book is
+ * larger. That PUT goes to `<account>.r2.cloudflarestorage.com`, which is a
+ * different origin from the public bucket URL — so without this the browser
+ * blocks it and the uploader reports a bare "Failed to fetch".
+ *
+ * Deliberately narrow: this appears in `connect-src` and nowhere else. It is not
+ * an image or media source — nothing is ever *rendered* from the S3 endpoint,
+ * and the private bucket behind it must stay unreachable for reads.
+ *
+ * Note that the CSP is only half of it: the R2 bucket itself must also allow
+ * the site origin in its CORS policy, which is configured in Cloudflare rather
+ * than here. See docs/DEPLOYMENT-R2-CORS.md.
+ */
+const r2ApiOrigin = process.env.R2_ACCOUNT_ID?.trim()
+  ? `https://${process.env.R2_ACCOUNT_ID.trim()}.r2.cloudflarestorage.com`
+  : null;
+
 try {
   const raw = process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.trim().replace(/^["']|["']$/g, "");
   if (raw) {
@@ -119,7 +140,7 @@ const csp = [
   // before the move still lives in Supabase storage, and both must load.
   `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
   `media-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
-  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin} ${supabaseSocket}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}`,
+  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin} ${supabaseSocket}` : ""}${r2PublicOrigin ? ` ${r2PublicOrigin}` : ""}${r2ApiOrigin ? ` ${r2ApiOrigin}` : ""}`,
   // The legacy Ask-Ron chat widget is served from our own origin as a static
   // document and is only framed by us.
   `frame-src 'self'`,

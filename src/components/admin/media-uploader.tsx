@@ -232,9 +232,123 @@ export function MediaUploader() {
     });
   }
 
+  /**
+   * Send a publication file straight to storage.
+   *
+   * Three requests, none of which carries the bytes through our own function:
+   * the server signs a URL for a key it chose, the browser PUTs to it, and the
+   * server then reads the object back to validate and register it.
+   *
+   * This exists because a serverless platform caps the request body it accepts —
+   * 4.5 MB on Vercel — and a book is routinely larger. The ordinary route was
+   * failing at the platform, before any of our code ran, with a response that
+   * was not JSON; all the uploader could say was "Upload failed."
+   */
+  async function uploadDirect(item: QueueItem): Promise<boolean> {
+    const signResponse = await fetch("/api/admin/media/direct-upload?step=sign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        filename: item.file.name,
+        contentType: item.file.type,
+        size: item.file.size,
+      }),
+    });
+
+    const signed = (await signResponse.json().catch(() => null)) as {
+      ok?: boolean;
+      uploadUrl?: string;
+      provider?: string;
+      storagePath?: string;
+      contentType?: string;
+      message?: string;
+    } | null;
+
+    if (!signResponse.ok || !signed?.ok || !signed.uploadUrl) {
+      update(item.id, {
+        status: "error",
+        message: signed?.message ?? "Could not start the upload.",
+      });
+      return false;
+    }
+
+    // The bytes, straight to storage. Nothing of ours sits in this path.
+    const putResponse = await fetch(signed.uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": signed.contentType ?? item.file.type },
+      body: item.file,
+    });
+
+    if (!putResponse.ok) {
+      update(item.id, {
+        status: "error",
+        message: `Storage refused the file (${putResponse.status}).`,
+      });
+      return false;
+    }
+
+    const registerResponse = await fetch("/api/admin/media/direct-upload?step=register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        storagePath: signed.storagePath,
+        provider: signed.provider,
+        filename: item.file.name,
+        contentType: signed.contentType ?? item.file.type,
+      }),
+    });
+
+    const result = (await registerResponse.json().catch(() => null)) as UploadResponse | null;
+
+    if (!registerResponse.ok || !result?.ok) {
+      update(item.id, {
+        status: "error",
+        message:
+          result?.error === "duplicate"
+            ? (result.message ?? "Already in the library.")
+            : (result?.message ?? "The file uploaded but could not be registered."),
+      });
+      return false;
+    }
+
+    update(item.id, {
+      status: "done",
+      message: [result.visibility === "private" ? "private" : "public", "stored as-is"].join(
+        " · ",
+      ),
+    });
+    return true;
+  }
+
   /** Upload one file. Never throws — the outcome is written onto the row. */
   async function uploadOne(item: QueueItem): Promise<boolean> {
     update(item.id, { status: "uploading", message: null });
+
+    /*
+     * Publication files go straight to storage. They are the large ones and are
+     * stored byte-for-byte, so nothing is lost by keeping them out of the
+     * function — whereas an image still needs the server to re-encode it and
+     * strip its metadata.
+     */
+    if (isPublicationFile) {
+      try {
+        return await uploadDirect(item);
+      } catch (error) {
+        /*
+         * The reason, not a shrug. A bare "could not be completed" is what made
+         * the original 4.5 MB platform rejection so hard to diagnose, and this
+         * path has its own failure modes — a refused PUT, a network drop — that
+         * are worth naming.
+         */
+        update(item.id, {
+          status: "error",
+          message: `Upload failed: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        return false;
+      }
+    }
 
     const body = new FormData();
     body.set("file", item.file);
@@ -258,7 +372,15 @@ export function MediaUploader() {
           message:
             result?.error === "duplicate"
               ? (result.message ?? "Already in the library.")
-              : (result?.message ?? "Upload failed."),
+              : /*
+                 * 413 comes from the hosting platform, not from us, and carries
+                 * no JSON body — so `result` is null and the old generic
+                 * "Upload failed." was the only thing shown for the single most
+                 * common failure. Name it.
+                 */
+                response.status === 413
+                ? "The file is too large for the server to accept in one request. Images should be under 4 MB."
+                : (result?.message ?? "Upload failed."),
         });
         return false;
       }

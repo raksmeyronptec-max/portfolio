@@ -5,6 +5,7 @@ import {
   r2DeleteObject,
   r2GetObject,
   r2PutObject,
+  r2SignedUploadUrl,
   r2SignedUrl,
 } from "./r2";
 import type { StorageBucket, StorageProvider } from "./buckets";
@@ -49,6 +50,10 @@ type AdminClient = {
         path: string,
         expiresIn: number,
         options: { download: boolean },
+      ): Promise<{ data: { signedUrl: string } | null; error: unknown }>;
+      /** Lets the browser PUT straight to storage — see `signUploadUrl`. */
+      createSignedUploadUrl(
+        path: string,
       ): Promise<{ data: { signedUrl: string } | null; error: unknown }>;
     };
   };
@@ -172,6 +177,45 @@ export async function signStorageUrl(input: {
 
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
+}
+
+/**
+ * A URL the browser can upload to directly.
+ *
+ * The serverless platform this deploys to caps request bodies at 4.5 MB, well
+ * under the 25 MB a publication file is allowed to be, and the rejection
+ * happens before any route handler runs. Handing the browser a signed URL takes
+ * the function out of the byte path; the server still chooses the key, still
+ * signs, and still validates the object afterwards by reading it back.
+ *
+ * Returns `null` when no upload URL can be minted, which the caller must treat
+ * as "fall back to the ordinary upload route" rather than as an error — a small
+ * file has no need of this at all.
+ */
+export async function signUploadUrl(input: {
+  bucket: StorageBucket;
+  storagePath: string;
+  contentType: string;
+  expiresInSeconds: number;
+  admin: AdminClient;
+}): Promise<{ url: string; provider: StorageProvider } | null> {
+  const provider = activeStorageProvider();
+
+  if (provider === "r2") {
+    const url = await r2SignedUploadUrl(
+      input.bucket,
+      input.storagePath,
+      input.expiresInSeconds,
+    );
+    return url ? { url, provider } : null;
+  }
+
+  const { data, error } = await input.admin.storage
+    .from(input.bucket)
+    .createSignedUploadUrl(input.storagePath);
+
+  if (error || !data?.signedUrl) return null;
+  return { url: data.signedUrl, provider };
 }
 
 export { isR2Configured } from "./r2";

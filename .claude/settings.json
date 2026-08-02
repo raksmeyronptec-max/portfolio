@@ -177,7 +177,9 @@
       "Bash(curl -s -o /tmp/pub.html -w 'status %{http_code}\\\\n' https://portfolio-beige-rho-51.vercel.app/km/publications/mathematics-examination-collection --max-time 40)",
       "Bash(cd ~/Documents/My_books *)",
       "Read(//Users/macbookpro/Documents/My_books/**)",
-      "Bash(curl -s -D- -o /dev/null \"http://127.0.0.1:3000/api/publications/mathematics-examination-collection/preview\")"
+      "Bash(curl -s -D- -o /dev/null \"http://127.0.0.1:3000/api/publications/mathematics-examination-collection/preview\")",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(node scripts/configure-r2-cors.mjs --origin https://portfolio-beige-rho-51.vercel.app)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

@@ -272,6 +272,45 @@ export async function r2GetObject(
  * Signed into the query string rather than the Authorization header, because
  * the browser will be following this URL on its own.
  */
+/**
+ * A short-lived URL the *browser* can PUT to.
+ *
+ * Exists because a serverless platform caps the request body it will accept —
+ * 4.5 MB on Vercel — and a typeset mathematics book is routinely larger than
+ * that. The upload never reaches the route handler: the platform rejects it
+ * first, with a response that is not even JSON, so the only thing the uploader
+ * could report was "Upload failed."
+ *
+ * Sending the bytes from the browser straight to R2 removes the function from
+ * the path entirely. What the server keeps is everything that matters: it
+ * decides the object key, it is the only thing that can sign the URL, and it
+ * validates the magic bytes and registers the row afterwards by reading the
+ * object back — see `/api/admin/media/register`. An object that fails that
+ * check is deleted, so a signed URL cannot be used to park arbitrary bytes in
+ * the bucket.
+ *
+ * The expiry is deliberately short. This is a write capability; it should not
+ * outlive the upload it was minted for.
+ */
+export async function r2SignedUploadUrl(
+  bucket: StorageBucket,
+  storagePath: string,
+  expiresInSeconds: number,
+): Promise<string | null> {
+  const config = r2Config();
+  if (!config) return null;
+
+  const url = new URL(endpointFor(config, bucket, storagePath));
+  url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
+
+  const signed = await r2Client(config).sign(
+    new Request(url, { method: "PUT" }),
+    { aws: { signQuery: true } },
+  );
+
+  return signed.url;
+}
+
 export async function r2SignedUrl(
   bucket: StorageBucket,
   storagePath: string,
