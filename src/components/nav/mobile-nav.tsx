@@ -9,7 +9,7 @@ import { ButtonLink, IconButton } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Divider } from "@/components/ui/primitives";
 import { LanguageSwitcher } from "./language-switcher";
-import { isActiveRoute, type NavItem } from "./nav-items";
+import { isActiveRoute, isNavGroup, type NavEntry, type NavItem } from "./nav-items";
 import type { Locale } from "@/i18n/config";
 import { cn } from "@/lib/utils/cn";
 
@@ -35,7 +35,7 @@ export function MobileNav({
   labels,
 }: {
   locale: Locale;
-  primary: NavItem[];
+  primary: NavEntry[];
   secondary: NavItem[];
   resumeHref: string;
   labels: {
@@ -71,15 +71,44 @@ export function MobileNav({
         closeLabel={labels.close}
         variant="drawer"
       >
+        {/*
+          Groups render flat, under a heading — not as nested accordions. The
+          drawer is already a disclosure; making a visitor open a second one to
+          reach Certificates would add a tap and hide the destination behind it.
+          Everything the header groups is visible here in one scroll.
+        */}
         <nav aria-label={labels.title}>
           <ul className="flex flex-col gap-1">
-            {primary.map((item) => (
-              <MobileNavLink
-                key={item.key}
-                item={item}
-                active={isActiveRoute(pathname, item.href, locale)}
-              />
-            ))}
+            {primary.map((entry) =>
+              isNavGroup(entry) ? (
+                <li key={entry.key}>
+                  <p
+                    className="px-3 pb-1 pt-4 text-eyebrow font-semibold uppercase text-foreground-subtle"
+                    id={`drawer-group-${entry.key}`}
+                  >
+                    {entry.label}
+                  </p>
+                  <ul
+                    aria-labelledby={`drawer-group-${entry.key}`}
+                    className="flex flex-col gap-1"
+                  >
+                    {entry.items.map((item) => (
+                      <MobileNavLink
+                        key={item.key}
+                        item={item}
+                        active={isActiveRoute(pathname, item.href, locale)}
+                      />
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                <MobileNavLink
+                  key={entry.key}
+                  item={entry}
+                  active={isActiveRoute(pathname, entry.href, locale)}
+                />
+              ),
+            )}
           </ul>
 
           <Divider className="my-4" />

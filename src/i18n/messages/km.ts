@@ -59,6 +59,10 @@ export const km: Dictionary = {
     resume: "ប្រវត្តិរូប",
     contact: "ទំនាក់ទំនង",
     downloadResume: "ទាញយកប្រវត្តិរូប",
+    groups: {
+      work: "ស្នាដៃ",
+      background: "ប្រវត្តិ",
+    },
   },
 
   home: {
@@ -86,6 +90,42 @@ export const km: Dictionary = {
       speaks: "ភាសា",
       portraitAlt: "រូបថតរបស់ រុន រស្មី",
       scrollCue: "រំកិលចុះក្រោមដើម្បីមើលបន្ត",
+      roles: {
+        educator: "អ្នកអប់រំ",
+        builder: "អ្នកបង្កើតផលិតផល",
+      },
+    },
+
+    caseStudy: {
+      eyebrow: "ករណីសិក្សាពិសេស",
+      problem: "បញ្ហា",
+      approach: "វិធីសាស្ត្រ",
+      outcome: "អ្វីដែលវាធ្វើសព្វថ្ងៃ",
+      role: "តួនាទី",
+      organisation: "ស្ថាប័ន",
+      year: "ឆ្នាំ",
+      category: "ប្រភេទ",
+      whatItDoes: "មុខងារសំខាន់",
+      builtWith: "បង្កើតដោយ",
+      readCaseStudy: "អានករណីសិក្សាពេញលេញ",
+      visitProject: "ចូលមើល {name}",
+    },
+
+    ecosystem: {
+      eyebrow: "របៀបដែលវេទិកាទាំងបីភ្ជាប់គ្នា",
+      heading: "ផលិតផលបី ប្រព័ន្ធតែមួយ",
+      body: "វេទិកានីមួយៗដោះស្រាយបញ្ហារបស់ខ្លួន ហើយនីមួយៗកាន់តែមានប្រយោជន៍ព្រោះមានពីរផ្សេងទៀត។ រួមគ្នាពួកវាគ្របដណ្តប់ការបង្រៀន ឯកសារសិក្សា និងហេដ្ឋារចនាសម្ព័ន្ធនៅពីក្រោមទាំងពីរ។",
+      visit: "ចូលមើលគេហទំព័រ",
+    },
+
+    dualIdentity: {
+      eyebrow: "ការអនុវត្តពីរ",
+      heading: "ថ្នាក់រៀនកំណត់តម្រូវការ វិស្វកម្មធ្វើឱ្យវាកើតឡើង។",
+      educationLabel: "ការអនុវត្តផ្នែកអប់រំ",
+      educationCaption: "ការបង្រៀន គណិតវិទ្យា និងការងារសិក្សា",
+      productLabel: "ការអនុវត្តផ្នែកផលិតផល",
+      productCaption: "ការរចនា វិស្វកម្ម និងប្រព័ន្ធនៅពីក្រោម",
+      skillCount: "សមត្ថភាព {count}",
     },
 
     about: {

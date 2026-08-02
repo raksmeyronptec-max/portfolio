@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import {
-  AboutPreview,
   Capabilities,
   CertificatesPreview,
   ContactCta,
@@ -25,7 +24,10 @@ import {
   getSocialLinks,
   getSpokenLanguages,
 } from "@/lib/data/site";
-import { getFeaturedProjects } from "@/lib/data/projects";
+import { DualIdentity } from "@/components/public/dual-identity";
+import { FeaturedCaseStudy } from "@/components/public/featured-case-study";
+import { ProjectEcosystem } from "@/components/public/project-ecosystem";
+import { getFeaturedProjects, getProjectBySlug } from "@/lib/data/projects";
 import { getFeaturedCertificates } from "@/lib/data/certificates";
 import { getFeaturedJourneyEntries } from "@/lib/data/journey";
 import { getFeaturedPublications } from "@/lib/data/publications";
@@ -134,6 +136,23 @@ export default async function HomePage({
 
   const displayName = profile?.displayName ?? settings.siteName;
 
+  /*
+   * The flagship is whichever featured project the CMS sorts first — see
+   * `FeaturedCaseStudy`. Fetched in a second round trip rather than in the
+   * batch above because the slug is not known until the first batch resolves,
+   * and the case study needs the full detail row (features, metrics, the long
+   * prose fields) that the card select deliberately does not carry.
+   */
+  const flagship = featuredProjects[0]
+    ? await getProjectBySlug(featuredProjects[0].slug, locale)
+    : null;
+
+  /*
+   * The ecosystem section shows how the platforms relate, so it needs at least
+   * two of them. With one project it would be a diagram of a single node.
+   */
+  const ecosystemProjects = featuredProjects.slice(0, 3);
+
   const structuredData = graph([
     personSchema({
       locale,
@@ -176,41 +195,72 @@ export default async function HomePage({
         settings={settings}
         profile={profile}
         languages={languages}
-        socialLinks={socialLinks}
       />
 
       <CredibilityStrip t={t} counts={counts} />
 
+      {/*
+        Order below follows the brief's information architecture, and the
+        reasoning behind it is that the page should answer questions in the
+        order a stranger asks them:
+
+          can he build?          the flagship, told end to end
+          is it one system?      the ecosystem the three products form
+          with what?             capabilities, grouped by outcome
+          why him specifically?  the two practices, and what they do to
+                                 each other
+          says who?              roles, books, credentials, the record
+
+        The remaining featured projects come after the case study rather than
+        before it: leading with three equal cards asks the visitor to choose
+        where to start, which is the thing the flagship exists to avoid.
+      */}
+      {flagship ? (
+        <FeaturedCaseStudy project={flagship} locale={locale} t={t} />
+      ) : null}
+
+      <ProjectEcosystem projects={ecosystemProjects} locale={locale} t={t} />
+
       <FeaturedProjects locale={locale} t={t} projects={featuredProjects} />
 
-      <AboutPreview
+      {/*
+        Dual identity before Capabilities, not after: it frames the four
+        capability groups as two practices, so the detailed section that
+        follows is read as evidence for a claim rather than as a list.
+
+        It replaces the old About preview outright. That block carried the same
+        biography paragraph and the same "more about me" link, plus a facts list
+        — location, languages, availability — that the hero's status line now
+        states above the fold. Keeping both would have said everything twice.
+      */}
+      <DualIdentity
         locale={locale}
         t={t}
+        groups={capabilities}
         settings={settings}
         profile={profile}
-        languages={languages}
       />
 
       <Capabilities locale={locale} t={t} groups={capabilities} />
 
-      <CertificatesPreview locale={locale} t={t} certificates={featuredCertificates} />
-
       <Journey locale={locale} t={t} education={education} experiences={experiences} />
 
       {/*
-        After the education/experience timeline rather than before it: the
-        timeline establishes what the roles were, and these show what they looked
-        like. Renders nothing when no story is featured.
-      */}
-      <SelectedMoments locale={locale} t={t} entries={featuredMoments} />
-
-      {/*
-        After the journey strip: the books are the most durable evidence on the
-        page, so they sit close to the references and the call to action rather
-        than competing with the project work up top. Renders nothing when no
-        publication is featured.
+        The books are the most durable evidence on the page — an authored
+        mathematics collection is a harder claim than a list of roles — so they
+        now sit directly after the record that establishes the roles, rather
+        than trailing the page. Renders nothing when no publication is featured.
       */}
       <SelectedPublications locale={locale} t={t} publications={featuredPublications} />
+
+      <CertificatesPreview locale={locale} t={t} certificates={featuredCertificates} />
+
+      {/*
+        Journey stories close the evidence run: the timeline states what the
+        roles were, and these show what they looked like. Renders nothing when
+        no story is featured.
+      */}
+      <SelectedMoments locale={locale} t={t} entries={featuredMoments} />
 
       <Testimonials locale={locale} t={t} testimonials={testimonials} />
 

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { isActiveRoute, type NavItem } from "./nav-items";
+import { NavMenu } from "./nav-menu";
+import { isActiveRoute, isNavGroup, type NavEntry } from "./nav-items";
 import type { Locale } from "@/i18n/config";
 import { cn } from "@/lib/utils/cn";
 
@@ -29,7 +30,7 @@ export function DesktopNav({
   label,
 }: {
   locale: Locale;
-  items: NavItem[];
+  items: NavEntry[];
   label: string;
 }) {
   const pathname = usePathname();
@@ -37,13 +38,24 @@ export function DesktopNav({
   return (
     <nav aria-label={label} className="hidden lg:block">
       <ul className="flex items-center gap-1">
-        {items.map((item) => {
-          const active = isActiveRoute(pathname, item.href, locale);
+        {items.map((entry) => {
+          if (isNavGroup(entry)) {
+            return (
+              <NavMenu
+                key={entry.key}
+                group={entry}
+                locale={locale}
+                pathname={pathname}
+              />
+            );
+          }
+
+          const active = isActiveRoute(pathname, entry.href, locale);
 
           return (
-            <li key={item.key}>
+            <li key={entry.key}>
               <Link
-                href={item.href}
+                href={entry.href}
                 aria-current={active ? "page" : undefined}
                 data-active={active ? "true" : undefined}
                 className={cn(
@@ -54,7 +66,7 @@ export function DesktopNav({
                     : "font-medium text-foreground-muted hover:text-foreground",
                 )}
               >
-                {item.label}
+                {entry.label}
               </Link>
             </li>
           );

@@ -180,7 +180,18 @@
       "Bash(curl -s -D- -o /dev/null \"http://127.0.0.1:3000/api/publications/mathematics-examination-collection/preview\")",
       "Bash(node --input-type=module -e ' *)",
       "Bash(node scripts/configure-r2-cors.mjs --origin https://portfolio-beige-rho-51.vercel.app)",
-      "Bash(node scripts/configure-r2-cors.mjs --check)"
+      "Bash(node scripts/configure-r2-cors.mjs --check)",
+      "Bash(curl -s --max-time 45 \"https://portfolio-beige-rho-51.vercel.app/en\" -o /private/tmp/claude-501/-Users-macbookpro-Downloads-Portfolio-Ron-Raksmey-main/c8c330b2-04a9-4d0e-99c7-0b5d6ae3c183/scratchpad/prod-en.html -w \"status:%{http_code} size:%{size_download}\\\\n\")",
+      "Bash(perl -pi -e \"s/\\(date '\\\\d{4}-01-01', false, false, false, now\\\\\\(\\\\\\)\\)\\\\\\)/\\\\$1, now\\(\\)\\)/\" dev-fixture.sql)",
+      "Bash(node ./.tmp-nav.mjs)",
+      "Bash(node ./.tmp-hero.mjs after)",
+      "Bash(perl -pi -e 's/name: \"project_live_click\"/name: \"project_live_link_click\"/' src/components/public/featured-case-study.tsx src/components/public/project-ecosystem.tsx)",
+      "Bash(curl -s --max-time 90 http://localhost:3000/en)",
+      "Bash(perl -0pi -e 's/\\(      productCaption: \"Design, engineering and the systems underneath\",\\\\n\\)/$1      skillCount: \"{count} capabilities\",\\\\n/' src/i18n/messages/en.ts)",
+      "Bash(perl -0pi -e 's/\\(      productCaption: \"ការរចនា វិស្វកម្ម និងប្រព័ន្ធនៅពីក្រោម\",\\\\n\\)/$1      skillCount: \"សមត្ថភាព {count}\",\\\\n/' src/i18n/messages/km.ts)",
+      "Bash(awk 'NR>=660 && /^export function|^\\\\/\\\\/ ──/ {print NR\": \"$0}' src/components/public/home-sections.tsx)",
+      "Bash(node ./.tmp-shots.mjs after)",
+      "Bash(node ./.tmp-sec.mjs en 1440)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

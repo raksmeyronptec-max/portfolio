@@ -62,6 +62,102 @@ export function primaryNav(locale: Locale, t: Dictionary): NavItem[] {
   ];
 }
 
+/**
+ * A header entry: either a direct link or a labelled group of them.
+ *
+ * `items` is the discriminant — a group has one, a link does not.
+ */
+export type NavGroup = {
+  key: string;
+  label: string;
+  icon: IconName;
+  items: NavItem[];
+};
+
+export type NavEntry = NavItem | NavGroup;
+
+export function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return "items" in entry;
+}
+
+/**
+ * Header navigation, grouped.
+ *
+ * `primaryNav()` above is still the flat sitemap the footer renders — every
+ * destination, one level, no interaction required. This is the *header's* view
+ * of the same routes, and it exists because seven top-level links did not fit:
+ * at 1280px with Khmer labels the bar ran into the utilities, and seven equally
+ * weighted links communicate no hierarchy anyway.
+ *
+ * Four entries, two of them groups. The grouping is by what a visitor is
+ * looking for rather than by content type:
+ *
+ *   Work        what was built — the products and the books
+ *   Background  what backs it up — roles, study, credentials, the record
+ *   About       who it is
+ *   Contact     how to start
+ *
+ * Resume stays out of this and remains its own header button: it is the one
+ * action an employer arrives wanting, and burying it one level down would be a
+ * regression.
+ */
+export function headerNav(locale: Locale, t: Dictionary): NavEntry[] {
+  return [
+    {
+      key: "work",
+      label: t.nav.groups.work,
+      icon: "layers",
+      items: [
+        {
+          key: "projects",
+          href: localePath(locale, "projects"),
+          label: t.nav.projects,
+          icon: "layers",
+        },
+        {
+          key: "publications",
+          href: localePath(locale, "publications"),
+          label: t.nav.publications,
+          icon: "book",
+        },
+      ],
+    },
+    {
+      key: "background",
+      label: t.nav.groups.background,
+      icon: "briefcase",
+      items: [
+        {
+          key: "experience",
+          href: localePath(locale, "experience"),
+          label: t.nav.experience,
+          icon: "briefcase",
+        },
+        {
+          key: "education",
+          href: localePath(locale, "education"),
+          label: t.nav.education,
+          icon: "graduation",
+        },
+        {
+          key: "certificates",
+          href: localePath(locale, "certificates"),
+          label: t.nav.certificates,
+          icon: "award",
+        },
+        {
+          key: "journey",
+          href: localePath(locale, "journey"),
+          label: t.nav.journey,
+          icon: "mapPin",
+        },
+      ],
+    },
+    { key: "about", href: localePath(locale, "about"), label: t.nav.about, icon: "user" },
+    { key: "contact", href: localePath(locale, "contact"), label: t.nav.contact, icon: "mail" },
+  ];
+}
+
 /** Secondary links, surfaced in the footer and the mobile drawer. */
 export function secondaryNav(locale: Locale, t: Dictionary): NavItem[] {
   return [

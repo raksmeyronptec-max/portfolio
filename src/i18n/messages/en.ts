@@ -50,6 +50,15 @@ export const en = {
     resume: "Resume",
     contact: "Contact",
     downloadResume: "Download Resume",
+    /*
+     * Header group labels. Deliberately not content-type names ("Portfolio",
+     * "Credentials"): they name what a visitor is looking for, which is the
+     * only reason to group links rather than list them.
+     */
+    groups: {
+      work: "Work",
+      background: "Background",
+    },
   },
 
   home: {
@@ -89,6 +98,60 @@ export const en = {
       speaks: "Speaks",
       portraitAlt: "Portrait of Ron Raksmey",
       scrollCue: "Scroll to explore",
+      /* The two role chips on the portrait. Two, deliberately — the point is
+         that one person does both, which a longer list dilutes. */
+      roles: {
+        educator: "Educator",
+        builder: "Product builder",
+      },
+    },
+
+    /*
+     * Featured case study. The beat labels are the homepage's own framing —
+     * "Approach" rather than the CMS field name "Solution" — because three
+     * numbered acts read as a story, and `caseStudySections()` labels are
+     * written for a reference page where each heading stands alone.
+     */
+    caseStudy: {
+      eyebrow: "Featured case study",
+      problem: "The problem",
+      approach: "The approach",
+      outcome: "What it does now",
+      role: "Role",
+      organisation: "Organisation",
+      year: "Year",
+      category: "Category",
+      whatItDoes: "Key features",
+      builtWith: "Built with",
+      readCaseStudy: "Read the full case study",
+      visitProject: "Visit {name}",
+    },
+
+    /*
+     * Project ecosystem. The relationship lines are claims about how the three
+     * platforms fit together, so they say only what is observable from the
+     * outside: what each one is for, and which one supplies which.
+     */
+    ecosystem: {
+      eyebrow: "How the platforms fit together",
+      heading: "Three products, one system",
+      body: "Each platform solves its own problem, and each one is more useful because the other two exist. Together they cover the teaching, the material and the infrastructure underneath both.",
+      visit: "Visit site",
+    },
+
+    /*
+     * Dual identity. Only the column headings live here — the skills are CMS
+     * rows and the statement is the owner's own biography, because a claim
+     * about what someone does should not be authored in a translation file.
+     */
+    dualIdentity: {
+      eyebrow: "Two practices",
+      heading: "The classroom sets the requirements. The engineering ships them.",
+      educationLabel: "Education practice",
+      educationCaption: "Teaching, mathematics and academic work",
+      productLabel: "Product practice",
+      productCaption: "Design, engineering and the systems underneath",
+      skillCount: "{count} capabilities",
     },
 
     about: {

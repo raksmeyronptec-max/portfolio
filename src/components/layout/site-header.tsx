@@ -4,7 +4,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { DesktopNav } from "@/components/nav/desktop-nav";
 import { LanguageSwitcher } from "@/components/nav/language-switcher";
 import { MobileNav } from "@/components/nav/mobile-nav";
-import { primaryNav, secondaryNav } from "@/components/nav/nav-items";
+import { headerNav, secondaryNav } from "@/components/nav/nav-items";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { HeaderScrollSync } from "./header-shell";
 import { getDictionary } from "@/i18n/dictionary";
@@ -29,7 +29,7 @@ import { localePath, type Locale } from "@/i18n/config";
  */
 export function SiteHeader({ locale }: { locale: Locale }) {
   const t = getDictionary(locale);
-  const primary = primaryNav(locale, t);
+  const primary = headerNav(locale, t);
   const secondary = secondaryNav(locale, t);
   const resumeHref = localePath(locale, "resume");
 

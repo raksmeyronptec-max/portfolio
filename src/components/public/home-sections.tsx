@@ -53,14 +53,12 @@ export function Hero({
   settings,
   profile,
   languages,
-  socialLinks,
 }: {
   locale: Locale;
   t: Dictionary;
   settings: SiteSettings;
   profile: OwnerProfile | null;
   languages: SpokenLanguage[];
-  socialLinks: SocialLink[];
 }) {
   // CMS content wins; the dictionary only supplies a floor so the hero is never
   // empty on a fresh install.
@@ -128,53 +126,94 @@ export function Hero({
 
       <div className="container-content">
         <div
-          className="grid items-center gap-12 pb-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-24"
-          // Clears the transparent fixed header without a magic number.
-          style={{ paddingTop: "calc(var(--header-height) + clamp(2.5rem, 6vw, 5rem))" }}
+          className="grid items-center gap-10 pb-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14 lg:pb-20"
+          // Clears the transparent fixed header without a magic number. Tighter
+          // than before: the whole point of this pass is that the statement and
+          // both actions fit above the fold on a 1280×800 laptop, and the old
+          // 5rem top padding alone cost a sixth of that budget.
+          style={{ paddingTop: "calc(var(--header-height) + clamp(1.75rem, 4vw, 3.25rem))" }}
         >
           {/* ── Copy ─────────────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-7">
-            <Reveal className="flex flex-col gap-3">
-              <p className="text-eyebrow font-semibold uppercase text-accent">
-                {t.home.hero.greeting}
+          <div className="flex flex-col gap-6">
+            {/* ── Identity lockup ──────────────────────────────────────────
+                The name is a signature, not the headline.
+
+                It used to be the <h1>, at `--text-hero` — 6.5rem at full size,
+                which pushed the positioning statement and every call to action
+                below the fold on a laptop. A visitor who already clicked
+                through to a personal site does not need the name at 104px;
+                they need to know what the person does. So the name keeps a
+                strong, deliberate treatment at a fraction of the size, and the
+                statement takes the heading.
+
+                Nothing is lost for SEO: the name is still the <title>, the
+                Person schema's `name`, the header wordmark and the footer. */}
+            <Reveal className="flex flex-col gap-2">
+              <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent">
+                {t.home.hero.eyebrow}
               </p>
 
-              {/* extrabold, matching the reference's h1: it asks for Syne 900,
-                  which clamps to the family's 800 ceiling. */}
-              <h1 className="text-hero font-extrabold">{displayName}</h1>
+              <p className="flex items-center gap-3">
+                <span className="text-h3 font-bold tracking-[-0.02em] text-foreground">
+                  {displayName}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="h-px flex-1 bg-gradient-to-r from-border-strong to-transparent"
+                />
+              </p>
             </Reveal>
 
+            {/* ── The positioning statement, as the page's one <h1> ───────── */}
             <Reveal delay={80} className="flex flex-col gap-4">
-              {/*
-                The positioning statement. If the CMS carries a hero headline it
-                is used verbatim; otherwise the two-line dictionary version is
-                shown. Either way this is an ordinary paragraph, not a second
-                <h1>.
-              */}
               {headline ? (
-                <p className="max-w-[22ch] text-display font-semibold text-foreground">
+                <h1 className="max-w-[19ch] text-h1 font-bold text-balance">
                   {headline}
-                </p>
+                </h1>
               ) : (
-                <p className="max-w-[22ch] text-display font-semibold text-foreground">
+                <h1 className="max-w-[19ch] text-h1 font-bold text-balance">
                   <span className="block">{t.home.hero.roleLine1}</span>
                   <span className="block text-foreground-muted">
                     {t.home.hero.roleLine2}
                   </span>
-                </p>
+                </h1>
               )}
 
-              <p className="max-w-[54ch] text-body-lg text-foreground-muted">
+              <p className="max-w-[52ch] text-body text-foreground-muted">
                 {subheadline}
               </p>
             </Reveal>
 
-            {/* ── "I build …" ────────────────────────────────────────────── */}
-            <Reveal delay={140}>
-              <p className="flex flex-wrap items-baseline gap-x-3 text-h3 font-semibold">
-                <span className="text-foreground-muted">{t.home.hero.buildsLabel}</span>
-                <RotatingWords words={builds} />
-              </p>
+            {/* ── Actions ─────────────────────────────────────────────────── */}
+            <Reveal delay={140} className="flex flex-wrap items-center gap-3">
+              <ButtonLink
+                href={localePath(locale, "projects")}
+                variant="accent"
+                size="lg"
+                iconEnd="arrowRight"
+                className="group rounded-(--radius-full) px-6"
+              >
+                {t.home.hero.exploreWork}
+              </ButtonLink>
+
+              <ButtonLink
+                href={localePath(locale, "resume")}
+                variant="outline"
+                size="lg"
+                iconStart="download"
+                className="rounded-(--radius-full) px-6"
+              >
+                {t.home.hero.downloadResume}
+              </ButtonLink>
+
+              <ButtonLink
+                href={localePath(locale, "contact")}
+                variant="ghost"
+                size="lg"
+                className="rounded-(--radius-full) px-4"
+              >
+                {t.home.hero.contactMe}
+              </ButtonLink>
             </Reveal>
 
             {/* ── Status line ─────────────────────────────────────────────── */}
@@ -206,71 +245,30 @@ export function Hero({
               ) : null}
             </Reveal>
 
-            {/* ── Actions ─────────────────────────────────────────────────── */}
-            <Reveal delay={260} className="flex flex-wrap items-center gap-3">
-              <ButtonLink
-                href={localePath(locale, "projects")}
-                variant="accent"
-                size="lg"
-                iconEnd="arrowRight"
-                className="group rounded-(--radius-full) px-6"
-              >
-                {t.home.hero.exploreWork}
-              </ButtonLink>
-
-              <ButtonLink
-                href={localePath(locale, "resume")}
-                variant="outline"
-                size="lg"
-                iconStart="download"
-                className="rounded-(--radius-full) px-6"
-              >
-                {t.home.hero.downloadResume}
-              </ButtonLink>
-
-              <ButtonLink
-                href={localePath(locale, "contact")}
-                variant="ghost"
-                size="lg"
-                iconStart="mail"
-                className="rounded-(--radius-full) px-5"
-              >
-                {t.home.hero.contactMe}
-              </ButtonLink>
+            {/* ── "I build …" ─────────────────────────────────────────────
+                Demoted from a h3-sized line to a quiet one-line strap. It is a
+                nice touch, not a headline, and at the old size it competed with
+                the statement directly above it. */}
+            <Reveal delay={260}>
+              <p className="flex flex-wrap items-baseline gap-x-2 text-small text-foreground-subtle">
+                <span>{t.home.hero.buildsLabel}</span>
+                <RotatingWords words={builds} />
+              </p>
             </Reveal>
-
-            {/* ── Social ──────────────────────────────────────────────────── */}
-            {socialLinks.length > 0 ? (
-              <Reveal delay={320}>
-                <ul className="flex flex-wrap items-center gap-2">
-                  {socialLinks.map((link) => (
-                    <li key={link.id}>
-                      <OutboundLink
-                        href={link.url}
-                        newTabHint={t.a11y.opensInNewTab}
-                        event={{
-                          name: "social_link_click",
-                          locale,
-                          properties: { url: link.url, platform: link.platform },
-                        }}
-                        className="inline-flex size-11 items-center justify-center rounded-(--radius-full) border border-border bg-surface text-foreground-muted transition-colors duration-200 hover:border-border-interactive hover:bg-surface-muted hover:text-foreground"
-                      >
-                        <Icon name={toIconName(link.icon, "globe")} size={18} />
-                        <span className="sr-only">{link.label}</span>
-                      </OutboundLink>
-                    </li>
-                  ))}
-                </ul>
-              </Reveal>
-            ) : null}
           </div>
 
           {/* ── Portrait ─────────────────────────────────────────────────────
-              Not a plain square card, per the brief. The portrait sits in a
-              squircle with a gradient ring, over its own glow, with a soft
-              accent blob behind one corner. */}
-          <Reveal delay={160} className="order-first lg:order-none">
-            <div className="relative mx-auto w-full max-w-[26rem]">
+              One composition with the copy rather than a card parked beside it:
+              the ring picks up the same gradient as the section decoration, the
+              role chips sit on the frame, and the whole thing is grounded into
+              the ink band by a scrim rather than ending on a hard edge.
+
+              `lg:order-none` without `order-first` — on mobile the copy now
+              comes first. It used to be portrait-first, which meant a phone
+              visitor scrolled past a photograph to reach what the site is
+              about. */}
+          <Reveal delay={160}>
+            <div className="relative mx-auto w-full max-w-[24rem]">
               {/* Glow directly behind the portrait. */}
               <div
                 aria-hidden="true"
@@ -306,22 +304,91 @@ export function Hero({
                     The single `priority` image on the page. `fill` inside a
                     fixed aspect-ratio box reserves the space before the file
                     arrives, so this cannot contribute to layout shift.
+
+                    The `saturate` step is the first of three that tame the
+                    studio green — see the masked blend and the scrims below.
+                    All of it is a display treatment: the stored asset is
+                    untouched, so replacing the photograph with one shot on a
+                    neutral background needs no code change.
                   */}
                   <Image
                     src={portrait}
                     alt={profile?.displayName ?? t.home.hero.portraitAlt}
                     fill
-                    sizes="(min-width: 1024px) 26rem, (min-width: 640px) 60vw, 88vw"
+                    sizes="(min-width: 1024px) 24rem, (min-width: 640px) 60vw, 88vw"
                     priority
-                    className="object-cover object-top"
+                    className="object-cover object-top [filter:saturate(0.3)_contrast(1.06)_brightness(0.97)]"
+                  />
+
+                  {/*
+                    Why a flat desaturation rather than something cleverer.
+
+                    Two sharper approaches were tried and both failed on this
+                    photograph. A `mix-blend-mode: color` wash recolours the
+                    whole frame, face included. Masking that wash to spare the
+                    face left a bright green halo exactly on the mask's
+                    transition and turned the suit blue — the subject's
+                    shoulders reach the frame edge, so no ellipse separates
+                    "person" from "backdrop" here.
+
+                    Dropping saturation to 0.3 takes the chroma-key green down
+                    to a dark neutral that the scrims below finish off, and it
+                    does so uniformly, so there is no seam to notice. Skin keeps
+                    its warmth relative to the rest of the frame because
+                    everything else has lost more.
+                  */}
+
+                  {/*
+                    Indigo wash on `soft-light`: lights the frame from the same
+                    direction as the section around it, so the portrait belongs
+                    to the ink band rather than sitting on top of it.
+                  */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 mix-blend-soft-light"
+                    style={{
+                      background:
+                        "linear-gradient(165deg, rgb(var(--glow-primary) / 0.9), rgb(var(--glow-secondary) / 0.5) 60%, transparent)",
+                    }}
+                  />
+
+                  {/*
+                    Vignette, doing most of the remaining work: the backdrop is
+                    brightest at the corners, which is where this is darkest.
+                  */}
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "radial-gradient(105% 78% at 50% 30%, transparent 28%, rgb(8 10 18 / 0.82) 100%)",
+                    }}
                   />
 
                   {/* Grounds the portrait into the dark band instead of ending
                       at a hard edge. */}
                   <div
                     aria-hidden="true"
-                    className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent"
+                    className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[rgb(8_10_18)] via-[rgb(8_10_18_/_0.55)] to-transparent"
                   />
+
+                  {/* ── Role indicators ───────────────────────────────────
+                      Two, not four. The brief warns against overloading the
+                      portrait with floating badges, and these two are the pair
+                      that actually needs saying together — the whole
+                      proposition is that one person does both. */}
+                  <ul className="absolute inset-x-4 bottom-4 flex flex-wrap gap-1.5">
+                    {[t.home.hero.roles.educator, t.home.hero.roles.builder].map(
+                      (role) => (
+                        <li
+                          key={role}
+                          className="rounded-(--radius-full) border border-white/15 bg-white/10 px-2.5 py-1 text-[0.75rem] font-medium text-white backdrop-blur-sm"
+                        >
+                          {role}
+                        </li>
+                      ),
+                    )}
+                  </ul>
                 </div>
               </div>
             </div>
@@ -587,118 +654,6 @@ export function LivePlatformsFallback({
         ))}
       </ul>
     </div>
-  );
-}
-
-// ── About preview ───────────────────────════════════════════════════════════
-
-/**
- * Asymmetric about block: story on the left, a short fact list on the right.
- *
- * Replaces v2's four large bordered capability cards, which the brief singled
- * out. Facts come from the CMS where they exist and are simply dropped when
- * they do not — none of them is invented.
- */
-export function AboutPreview({
-  locale,
-  t,
-  settings,
-  profile,
-  languages,
-}: {
-  locale: Locale;
-  t: Dictionary;
-  settings: SiteSettings;
-  profile: OwnerProfile | null;
-  languages: SpokenLanguage[];
-}) {
-  const story = profile?.bio ?? settings.positioning ?? t.home.about.body;
-  const location = settings.location ?? profile?.location ?? null;
-
-  const facts = [
-    location ? { key: "location", label: t.home.about.locationLabel, value: location } : null,
-    languages.length > 0
-      ? {
-          key: "languages",
-          label: t.home.about.languagesLabel,
-          value: languages.map((language) => language.name).join(" · "),
-        }
-      : null,
-    settings.availabilityStatus
-      ? { key: "focus", label: t.home.about.focusHeading, value: settings.availabilityStatus }
-      : null,
-  ].filter((fact): fact is { key: string; label: string; value: string } => fact !== null);
-
-  return (
-    <section aria-labelledby="about-preview-heading" className="decorated section-y">
-      <div
-        aria-hidden="true"
-        className="glow"
-        style={
-          {
-            "--glow-x": "12%",
-            "--glow-y": "30%",
-            "--glow-size": "42%",
-            "--glow-color": "var(--glow-secondary)",
-            "--glow-alpha": "0.1",
-          } as object
-        }
-      />
-
-      <div className="container-content grid gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:gap-20">
-        <Reveal className="flex flex-col gap-6">
-          <SectionHead
-            id="about-preview-heading"
-            eyebrow={t.home.about.eyebrow}
-            title={t.home.about.heading}
-            watermark="01"
-          />
-
-          {/* The profile view returns bio already resolved for this locale, so
-              no `lang` override is needed here. */}
-          <p className="max-w-[60ch] text-body-lg leading-relaxed text-foreground-muted">
-            {story}
-          </p>
-
-          <div>
-            <Link
-              href={localePath(locale, "about")}
-              className="group inline-flex items-center gap-2 text-body font-semibold text-primary"
-            >
-              {t.home.about.readMore}
-              <Icon name="arrowRight" size={17} className="travel" />
-            </Link>
-          </div>
-        </Reveal>
-
-        {facts.length > 0 ? (
-          <Reveal delay={120} className="lg:pt-4">
-            {/*
-              The heading sits *outside* the <dl>. A definition list may only
-              directly contain dt, dd, div, script or template — a <p> in there
-              is invalid markup, and axe flags it as a serious violation.
-            */}
-            <p className="mb-5 text-eyebrow font-semibold uppercase text-foreground-subtle">
-              {t.home.about.factsHeading}
-            </p>
-
-            <dl className="flex flex-col">
-              {facts.map((fact) => (
-                <div
-                  key={fact.key}
-                  className="flex flex-col gap-1 border-t border-border py-4 first-of-type:border-t-0 first-of-type:pt-0"
-                >
-                  <dt className="text-[0.8125rem] font-medium uppercase tracking-wide text-foreground-subtle">
-                    {fact.label}
-                  </dt>
-                  <dd className="text-body font-medium text-foreground">{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </Reveal>
-        ) : null}
-      </div>
-    </section>
   );
 }
 
