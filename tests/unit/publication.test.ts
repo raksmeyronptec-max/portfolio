@@ -12,6 +12,7 @@ import {
   publicationChapterSchema,
   publicationErrorLabels,
   publicationPublishBlockers,
+  publicationPublishWarnings,
   publicationMediaSchema,
   publicationSchema,
   publicationVersionSchema,
@@ -827,5 +828,92 @@ describe("LaTeX production details", () => {
     expect(
       parse({ typesetWithLatex: false, latexEngine: null, documentClass: "" }).success,
     ).toBe(true);
+  });
+});
+
+/*
+ * Settings that render nothing, silently.
+ *
+ * These are warnings rather than blockers: the page still works without a
+ * preview. But the owner should not have to compare a setting that says "the
+ * whole PDF is readable in the browser" against a page that offers no control,
+ * with nothing anywhere explaining the difference.
+ */
+describe("publicationPublishWarnings", () => {
+  const complete = {
+    hasCover: true,
+    hasKhmerTitle: true,
+    hasEnglishSummary: true,
+    hasChapters: true,
+    pageCount: 37,
+    previewPolicy: "sample_pages" as const,
+    activeVersionPublished: true,
+    sourcePolicy: "private" as const,
+    hasSourceArchive: false,
+  };
+
+  it("says nothing when everything is in place", () => {
+    expect(publicationPublishWarnings(complete)).toEqual([]);
+  });
+
+  it.each(["full", "first_pages"] as const)(
+    "warns that a %s preview will not render off a draft edition",
+    (previewPolicy) => {
+      expect(
+        publicationPublishWarnings({
+          ...complete,
+          previewPolicy,
+          activeVersionPublished: false,
+        }),
+      ).toContain("previewWillNotRender");
+    },
+  );
+
+  it("does not warn about a preview that needs no PDF", () => {
+    expect(
+      publicationPublishWarnings({
+        ...complete,
+        previewPolicy: "sample_pages",
+        activeVersionPublished: false,
+      }),
+    ).not.toContain("previewWillNotRender");
+  });
+
+  it("warns when the source policy offers an archive there is none of", () => {
+    for (const sourcePolicy of ["public", "on_request"] as const) {
+      expect(
+        publicationPublishWarnings({ ...complete, sourcePolicy, hasSourceArchive: false }),
+      ).toContain("sourcePolicyWithoutArchive");
+    }
+  });
+
+  it("stays quiet when the source is private, which promises nothing", () => {
+    expect(
+      publicationPublishWarnings({
+        ...complete,
+        sourcePolicy: "private",
+        hasSourceArchive: false,
+      }),
+    ).not.toContain("sourcePolicyWithoutArchive");
+  });
+
+  it("has a readable label for every warning it can emit", () => {
+    const emitted = new Set([
+      ...publicationPublishWarnings({
+        hasCover: false,
+        hasKhmerTitle: false,
+        hasEnglishSummary: false,
+        hasChapters: false,
+        pageCount: null,
+        previewPolicy: "full",
+        activeVersionPublished: false,
+        sourcePolicy: "public",
+        hasSourceArchive: false,
+      }),
+    ]);
+
+    for (const code of emitted) {
+      expect(publicationErrorLabels[code], `missing label for ${code}`).toBeTruthy();
+    }
   });
 });

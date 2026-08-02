@@ -727,6 +727,10 @@ export function publicationPublishWarnings(input: {
   hasEnglishSummary: boolean;
   hasChapters: boolean;
   pageCount: number | null;
+  previewPolicy: PreviewPolicy;
+  activeVersionPublished: boolean;
+  sourcePolicy: SourcePolicy;
+  hasSourceArchive: boolean;
 }): string[] {
   const warnings: string[] = [];
   if (!input.hasCover) warnings.push("noCover");
@@ -734,6 +738,33 @@ export function publicationPublishWarnings(input: {
   if (!input.hasEnglishSummary) warnings.push("noEnglishSummary");
   if (!input.hasChapters) warnings.push("noChapters");
   if (input.pageCount === null) warnings.push("noPageCount");
+
+  /*
+   * A preview that will not appear.
+   *
+   * The publish gate blocks a *download* promised by a draft edition, because a
+   * button that 404s is worse than none. A preview fails more quietly: the
+   * reader control simply does not render, and the owner is left comparing a
+   * setting that says "the whole PDF is readable in the browser" against a page
+   * that offers nothing. A warning rather than a blocker — the page is still
+   * perfectly usable without the preview.
+   */
+  if (
+    (input.previewPolicy === "full" || input.previewPolicy === "first_pages") &&
+    !input.activeVersionPublished
+  ) {
+    warnings.push("previewWillNotRender");
+  }
+
+  // Same shape for the source archive: a policy that offers a file there is none
+  // of renders nothing, with no error anywhere.
+  if (
+    (input.sourcePolicy === "public" || input.sourcePolicy === "on_request") &&
+    !input.hasSourceArchive
+  ) {
+    warnings.push("sourcePolicyWithoutArchive");
+  }
+
   return warnings;
 }
 
@@ -1133,6 +1164,10 @@ export const publicationErrorLabels: Record<string, string> = {
   noEnglishSummary: "There is no English summary for the listing card.",
   noChapters: "No table of contents has been added.",
   noPageCount: "The page count is unknown.",
+  previewWillNotRender:
+    "The preview will not appear: the active edition is still a draft, so the public page cannot see its PDF. Set the edition's status to Published.",
+  sourcePolicyWithoutArchive:
+    "The LaTeX source policy offers an archive, but no source archive is attached to the active edition.",
 
   // Editions
   versionLabelRequired: "Give this edition a label, for example “First edition”.",

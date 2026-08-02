@@ -173,7 +173,8 @@
       "Bash(curl -s -D- -o /dev/null http://127.0.0.1:3000/en/publications)",
       "Bash(curl -s http://127.0.0.1:3000/en/publications)",
       "Bash(lsof -ti:3000)",
-      "Bash(xargs kill -9)"
+      "Bash(xargs kill -9)",
+      "Bash(curl -s -o /tmp/pub.html -w 'status %{http_code}\\\\n' https://portfolio-beige-rho-51.vercel.app/km/publications/mathematics-examination-collection --max-time 40)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

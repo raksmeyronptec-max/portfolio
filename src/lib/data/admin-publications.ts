@@ -614,6 +614,10 @@ export async function getAdminPublication(id: string): Promise<AdminPublication 
       hasEnglishSummary: Boolean(englishTranslation?.shortSummary?.trim()),
       hasChapters: chapters.length > 0,
       pageCount: (raw.page_count as number | null) ?? null,
+      previewPolicy: raw.preview_policy as PreviewPolicy,
+      activeVersionPublished: activeVersion?.status === "published",
+      sourcePolicy: raw.source_policy as SourcePolicy,
+      hasSourceArchive: Boolean(activeVersion?.source),
     }),
   };
 }
