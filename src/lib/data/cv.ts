@@ -10,6 +10,7 @@ import {
   type ExperiencePhoto,
   type ExperiencePhotoRow,
 } from "@/lib/content/experience-media";
+import { tagKey } from "@/lib/content/experience-taxonomy";
 import {
   pickLocalized,
   resolveTranslation,
@@ -136,7 +137,14 @@ export type ExperienceEntry = {
   startedOn: string | null;
   endedOn: string | null;
   isCurrent: boolean;
-  tags: Array<{ id: string; label: string }>;
+  /**
+   * `slug` and `labelEn` are carried alongside the localised `label` so the
+   * page can group and de-duplicate tags identically in both locales. Almost
+   * every tag on this site has `label_km = null`, so matching on the rendered
+   * label would work by accident today and diverge the moment a Khmer label is
+   * added. See `experience-taxonomy.ts`.
+   */
+  tags: Array<{ id: string; slug: string; label: string; labelEn: string }>;
   contentLocale: Locale | null;
   /**
    * Photographs cleared for publication.
@@ -146,6 +154,12 @@ export type ExperienceEntry = {
    */
   cover: ExperiencePhoto | null;
   gallery: ExperiencePhoto[];
+  /**
+   * The editor's own ordering. The Experience page sorts chronologically from
+   * the years its entries evidence and uses this only to break a tie — but it
+   * has to be able to reach it to do that.
+   */
+  sortOrder: number;
 };
 
 export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]> {
@@ -193,6 +207,8 @@ export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]>
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((tag) => ({
           id: tag.id,
+          slug: tagKey(tag.label_en),
+          labelEn: tag.label_en,
           label: pickLocalized(locale, tag.label_en, tag.label_km) ?? tag.label_en,
         }));
 
@@ -238,6 +254,7 @@ export async function getExperiences(locale: Locale): Promise<ExperienceEntry[]>
         contentLocale: actualLocale,
         cover,
         gallery,
+        sortOrder: row.sort_order,
       };
     });
   } catch {

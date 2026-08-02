@@ -96,6 +96,12 @@
     --ink-900: #0c0f1a;
     --ink-950: #080a12;
 
+    /* Violet. Two stops rather than a ramp — it has exactly one job, which is
+       to mark practicum placements apart from the two tracks without
+       introducing a third track colour. */
+    --violet-300: #bda4f7;
+    --violet-500: #6d45c6;
+
     --red-100: #fde8e6;
     --red-500: #d1453b;
     --red-600: #b3352d;
@@ -200,6 +206,37 @@
     --identity-gold-rgb: var(--glow-accent);
     --identity-cyan-rgb: var(--glow-secondary);
     --identity-indigo-rgb: var(--glow-primary);
+
+    /* ── Experience roles ─────────────────────────────────────────────────
+       Semantic names for the Experience page's two tracks and its category
+       marks, so no component hard-codes "amber means teaching".
+
+       Repeated in `[data-theme="dark"]` and `[data-scheme="ink"]` for the same
+       reason the identity aliases above are — a `var()` value is substituted
+       against the scope that *declares* it, not the scope that reads it.
+
+       Roles, kept deliberately narrow. These colour a category label, a rail
+       marker, a one-pixel top edge and a selected filter. They never colour a
+       card, a surface or body text.
+         education   academic gold
+         product     cyan
+         practicum   soft violet, a mark within the education track
+         current     the accessible green, only ever beside the words that
+                     already say a role is current
+
+       Each value is picked to clear 4.5:1 *as text on its own 15% tint* — the
+       `.experience-chip` case — not merely on the page background. The lighter
+       stops of the same ramps (amber-500, cyan-600) read as more obviously
+       "gold" and "cyan" but land at 2.4:1 and 3.5:1 there, which is why they
+       are not used here. */
+    --experience-education: var(--amber-700);
+    --experience-product: var(--cyan-700);
+    --experience-practicum: var(--violet-500);
+    --experience-mathematics: var(--iris-700);
+    --experience-current: var(--success);
+    /* iris-700, not the mid stop: the Education page sets chip *text* in this
+       role, and iris-500 on its own 15% tint reads at 3.18:1. */
+    --experience-connection: var(--iris-700);
 
     --shadow-xs: 0 1px 2px 0 rgb(12 15 26 / 0.04);
     --shadow-sm: 0 1px 3px 0 rgb(12 15 26 / 0.06), 0 1px 2px -1px rgb(12 15 26 / 0.05);
@@ -337,6 +374,14 @@
     --identity-cyan-rgb: var(--glow-secondary);
     --identity-indigo-rgb: var(--glow-primary);
 
+    /* Experience roles — see the note in :root for why these are repeated. */
+    --experience-education: var(--amber-300);
+    --experience-product: var(--cyan-300);
+    --experience-practicum: var(--violet-300);
+    --experience-mathematics: var(--iris-300);
+    --experience-current: var(--success);
+    --experience-connection: var(--iris-400);
+
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45);
     --shadow-md: 0 6px 16px -6px rgb(0 0 0 / 0.55);
@@ -419,6 +464,14 @@
     --identity-gold-rgb: var(--glow-accent);
     --identity-cyan-rgb: var(--glow-secondary);
     --identity-indigo-rgb: var(--glow-primary);
+
+    /* Experience roles — see the note in :root for why these are repeated. */
+    --experience-education: var(--amber-300);
+    --experience-product: var(--cyan-300);
+    --experience-practicum: var(--violet-300);
+    --experience-mathematics: var(--iris-300);
+    --experience-current: var(--success);
+    --experience-connection: var(--iris-400);
 
     --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45);
@@ -1213,6 +1266,93 @@
   .link-underline[data-active="true"] {
     background-size: 100% 2px;
   }
+
+  /* ── Experience page ────────────────────────────────────────────────────
+     Everything below is scoped to the Experience timeline and its filters.
+
+     ── Why the filter is CSS and not React state ─────────────────────────
+     Filtering in state would remove the unselected entries from the rendered
+     HTML. That HTML is the page: it is what a crawler indexes, what a reader
+     with a failed bundle sees, and what `Ctrl+F` searches. So every entry is
+     always server-rendered, and the filter only changes one attribute on their
+     container. `display: none` is the right hiding mechanism here precisely
+     because it *does* remove the entry from the accessibility tree and the
+     focus order — a filtered-out entry should not be reachable by tab. */
+
+  /* The matching rules themselves live in `@layer utilities` below — a Tailwind
+     `display` utility on the same element would otherwise win the cascade,
+     because a later layer beats an earlier one whatever the specificity, and
+     every entry carries `grid`. */
+
+  /* The rail. A hairline, not a gutter: it sits at the marker's centre on
+     narrow screens and moves to the middle of the two tracks at `lg`. Masked
+     at both ends so it fades rather than stopping abruptly against the
+     section padding. */
+  .experience-rail {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 5px;
+    width: 1px;
+    background: var(--border-strong);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 3rem,
+      #000 calc(100% - 3rem),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 3rem,
+      #000 calc(100% - 3rem),
+      transparent
+    );
+  }
+
+  @media (width >= 64rem) {
+    .experience-rail {
+      inset-inline-start: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Category and track marks. `color-mix` keeps one declaration per role
+     instead of a light, a dark and an ink variant of every tint. */
+  .experience-mark {
+    color: var(--mark-color, var(--foreground-muted));
+  }
+
+  .experience-chip {
+    background: color-mix(in oklab, var(--mark-color) 15%, transparent);
+    color: var(--mark-color);
+    border-color: color-mix(in oklab, var(--mark-color) 34%, transparent);
+  }
+
+  /* ── Progressive disclosure ─────────────────────────────────────────────
+     Built on `<details>`, which supplies the button semantics, `aria-expanded`
+     and the control/panel association natively — and, unlike a React
+     accordion, keeps the full text in the server-rendered HTML where it stays
+     indexable and findable with the browser's own search. */
+  .experience-details > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .experience-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .experience-details[open] > summary .experience-details__chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .experience-details__chevron {
+      transition: transform 200ms ease;
+    }
+  }
+
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1276,6 +1416,28 @@
   :lang(km) .brand-wordmark {
     letter-spacing: normal;
     line-height: var(--leading-heading-khmer);
+  }
+
+  /* ── Experience filters ────────────────────────────────────────────────
+     Here rather than in `@layer components` for the same cascade reason as the
+     Khmer overrides above: every timeline entry carries Tailwind's `grid`
+     utility, and a utility-layer `display` beats a component-layer one no
+     matter how specific the selector. This is the one rule on the page that has
+     to win outright.
+
+     `display: none` and not `visibility` or opacity — a filtered-out entry has
+     to leave the focus order and the accessibility tree, not merely stop being
+     visible. The entries stay in the server-rendered HTML either way, which is
+     the whole reason filtering happens in CSS rather than in React state. */
+  .experience-entries[data-filter="education"]
+    [data-facets]:not([data-facets~="education"]),
+  .experience-entries[data-filter="practicum"]
+    [data-facets]:not([data-facets~="practicum"]),
+  .experience-entries[data-filter="product"]
+    [data-facets]:not([data-facets~="product"]),
+  .experience-entries[data-filter="mathematics"]
+    [data-facets]:not([data-facets~="mathematics"]) {
+    display: none;
   }
 }
 

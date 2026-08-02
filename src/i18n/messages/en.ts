@@ -474,9 +474,114 @@ export const en = {
 
   experience: {
     title: "Experience",
-    description: "Teaching practice, student-teacher training and product work.",
+    description:
+      "Teaching practice, teaching practicums, mathematics tutoring and the full-stack education products they inform.",
     current: "Current",
     emptyState: "Experience entries will appear here once published.",
+
+    /*
+     * ── The Experience page ──────────────────────────────────────────────
+     * The page makes one argument — that the classroom work and the
+     * engineering work are the same line of work — so the chrome below is
+     * written to carry it rather than to label sections generically.
+     *
+     * Nothing here states a fact about the owner's history. Every date,
+     * count, role and organisation comes from the CMS; these strings only
+     * name what the reader is looking at.
+     */
+    hero: {
+      eyebrow: "Experience · Education × Technology",
+      headline: "From classroom practice to digital education systems.",
+      lede: "Teaching, mathematics and product engineering are one line of work here. Time in real classrooms is where the requirements come from; building the systems is how they get answered.",
+      explore: "Explore experience",
+      projects: "View projects",
+      /* Accessible name for the path diagram, which is otherwise decorative. */
+      pathLabel: "How the two practices connect, step by step",
+      path: {
+        teaching: "Teaching practice",
+        observation: "Classroom observation",
+        research: "Product research",
+        engineering: "UX and engineering",
+        systems: "Education systems",
+      },
+    },
+
+    /*
+     * The summary strip. Every value is computed from the entries actually
+     * published — a span is the earliest year on a track, a count is a count.
+     * An item whose value cannot be computed is not rendered at all, which is
+     * why there is no "0" or "—" wording to translate.
+     */
+    summary: {
+      label: "Experience at a glance",
+      educationSpan: "Education practice",
+      productSpan: "Product engineering",
+      entries: "Selected experiences",
+      products: "Products built",
+    },
+
+    tracks: {
+      eyebrow: "Two practices",
+      heading: "Two paths, one purpose",
+      /* Named in text, not only by colour and column position. */
+      education: {
+        label: "Education practice",
+        statement:
+          "Learning how pupils learn, how teachers work and how a classroom actually runs.",
+      },
+      product: {
+        label: "Product engineering",
+        statement:
+          "Turning educational and academic-resource problems into reliable digital systems.",
+      },
+      connection:
+        "I design education products from classroom experience — not from technology alone.",
+      evidence: "Evidenced by",
+    },
+
+    filters: {
+      label: "Filter experience",
+      all: "All",
+      education: "Education",
+      practicum: "Practicum",
+      product: "Product",
+      mathematics: "Mathematics",
+      /* Announced politely after a filter changes; focus does not move. */
+      result: "{count} experience shown",
+      resultPlural: "{count} experiences shown",
+    },
+
+    timeline: {
+      eyebrow: "Chronology",
+      heading: "The work, in the order it happened",
+      description:
+        "Education practice on one side, product engineering on the other. Ordered by the years the entries themselves evidence.",
+      /* Accessible name for the ordered list. */
+      listLabel: "Experience timeline, earliest first",
+      /*
+       * Used when an entry evidences no year at all. It says the date is not
+       * yet established rather than printing a guessed one.
+       */
+      undated: "Date to be confirmed",
+    },
+
+    status: {
+      currentRole: "Current role",
+      currentPracticum: "Current practicum",
+    },
+
+    card: {
+      contributions: "Selected contributions",
+      skills: "Skills and focus areas",
+      viewFull: "View full experience",
+      about: "About this role",
+      allContributions: "What I did",
+      relatedProjects: "Products built in this role",
+      viewProject: "View project",
+      visitLive: "Visit live site",
+      organisation: "Organisation website",
+    },
+
     kind: {
       teaching: "Teaching",
       practicum: "Practicum",
@@ -498,6 +603,14 @@ export const en = {
     photos: {
       view: "View photos",
       viewAll: "View all photos",
+      /*
+       * The standard wording. "View 3 photos" states the count before the
+       * click, so the control is honest about what it opens — and it removes
+       * the old inconsistency where the same action read "View photos" under
+       * three images and "View all photos" above.
+       */
+      viewCount: "View {count} photo",
+      viewCountPlural: "View {count} photos",
       galleryTitle: "Photo gallery — {entry}",
       previous: "Previous photo",
       next: "Next photo",
@@ -505,11 +618,91 @@ export const en = {
       position: "Photo {current} of {total}",
       openPhoto: "Open photo: {caption}",
     },
+
+    /*
+     * Canonical names for tags the CMS spells more than one way. Resolved
+     * through the dictionary rather than a table of English strings, so an
+     * aliased tag is still translated. See `experience-taxonomy.ts`.
+     */
+    tagAliases: {
+      teachingPracticum: "Teaching Practicum",
+      programme12Plus4: "12+4 Programme",
+      uxUiDesign: "UX/UI Design",
+      privateTutoring: "Private Tutoring",
+    },
+
+    /*
+     * The evidence map. It replaces a skills list: a capability is worth
+     * stating only when something real can be pointed at, so a theme that
+     * collects no roles, products or publications is never rendered.
+     */
+    evidence: {
+      eyebrow: "Evidence",
+      heading: "Skills, and the work that demonstrates them",
+      description:
+        "No self-assessed scores. Each theme lists the roles, products and publications that evidence it.",
+      themeListLabel: "Themes",
+      evidenceFor: "Evidence for {theme}",
+      itemCount: "{count} item",
+      itemCountPlural: "{count} items",
+      kinds: {
+        experience: "Experience",
+        project: "Project",
+        publication: "Publication",
+      },
+    },
+
+    themes: {
+      mathematics: {
+        label: "Mathematics",
+        description:
+          "Teaching, tutoring and writing mathematics for primary and upper-secondary learners.",
+      },
+      lessonPlanning: {
+        label: "Lesson planning",
+        description:
+          "Preparing structured lessons, teaching materials and learning sequences.",
+      },
+      classroomPractice: {
+        label: "Classroom practice",
+        description:
+          "Observation, classroom management and learner assessment in primary schools.",
+      },
+      learnerSupport: {
+        label: "Learner support",
+        description:
+          "Individual and small-group support for pupils, in class and in tutoring.",
+      },
+      productDesign: {
+        label: "Product and UX design",
+        description:
+          "Research, information architecture and interface design for education tools.",
+      },
+      engineering: {
+        label: "Full-stack engineering",
+        description:
+          "Next.js, Supabase and PostgreSQL, with accessibility and technical SEO throughout.",
+      },
+      academicSystems: {
+        label: "Academic systems",
+        description:
+          "Digital libraries, academic repositories and the file infrastructure behind them.",
+      },
+    },
+
+    cta: {
+      eyebrow: "Where this leads",
+      heading: "Classroom experience shapes how I design digital products.",
+      body: "Explore the platforms I have built for teachers, students and academic institutions.",
+      projects: "View selected projects",
+      contact: "Contact me",
+    },
   },
 
   education: {
     title: "Education",
-    description: "Teacher education, mathematics study and school qualifications.",
+    description:
+      "Two degrees in parallel — primary teacher education and applied mathematics — with the school qualifications that led to them.",
     emptyState: "Education entries will appear here once published.",
     qualification: "Qualification",
     fieldOfStudy: "Field of study",
@@ -517,6 +710,147 @@ export const en = {
     grade: "Result",
     gradeScale: "Scale",
     current: "In progress",
+
+    /*
+     * ── The Education page ───────────────────────────────────────────────
+     * The page argues that two parallel degrees serve one mission, so the
+     * chrome carries that argument. Nothing below states a fact about the
+     * owner's record — institutions, dates, grades and schedules all come
+     * from the CMS; these strings only name what the reader is looking at.
+     */
+    hero: {
+      eyebrow: "Education · Teaching × Mathematics",
+      headline: "Two academic paths shaping one purpose: better education.",
+      lede: "I study primary teacher education on weekdays and applied mathematics at the weekend — classroom practice on one side, mathematical reasoning on the other, both feeding the same work in teaching and education technology.",
+      explore: "Explore my studies",
+      publications: "View publications",
+      pathLabel: "How the two degrees converge",
+      pathTeacher: "Teacher education",
+      pathTeacherDetail: "Pedagogy and classroom practice",
+      pathMathematics: "Applied mathematics",
+      pathMathematicsDetail: "Reasoning, analysis and structure",
+      pathMission: "Better learning experiences",
+    },
+
+    status: {
+      inProgress: "In progress",
+      /* One standardised range for an in-progress degree with a stated end.
+         The word "Expected" is load-bearing: without it the range reads as a
+         completed qualification. */
+      expectedRange: "{start}—Expected {end}",
+      expectedCompletion: "Expected completion: {year}",
+    },
+
+    spotlight: {
+      eyebrow: "Current studies",
+      heading: "Two degrees, one educational mission",
+      /* Named in text, never only by colour or column position. */
+      teacherLabel: "Teacher education",
+      mathematicsLabel: "Applied mathematics",
+      connection:
+        "Pedagogy helps me understand how people learn. Mathematics strengthens how I reason, explain and solve problems.",
+      focusHeading: "Current focus",
+      viewDetails: "View study details",
+      aboutHeading: "About this programme",
+      progressHeading: "Where the programme stands",
+      institutionLink: "Institution website",
+    },
+
+    week: {
+      heading: "One academic week, two institutions",
+      description:
+        "The two programmes share a week rather than a campus: teacher education on weekdays, mathematics at the weekend.",
+      weekdays: "Weekdays",
+      weekend: "Weekend",
+      /* Two-letter markers for the seven-day strip. The full day names appear
+         in the accessible summary and the stacked mobile rows. */
+      days: {
+        mon: "Mon",
+        tue: "Tue",
+        wed: "Wed",
+        thu: "Thu",
+        fri: "Fri",
+        sat: "Sat",
+        sun: "Sun",
+      },
+    },
+
+    topics: {
+      pedagogy: "Pedagogy",
+      lessonPlanning: "Lesson planning",
+      assessment: "Learner assessment",
+      classroomPractice: "Classroom practice",
+      educationalResearch: "Educational research",
+      reasoning: "Mathematical reasoning",
+      algebra: "Algebra",
+      geometry: "Geometry",
+      analysis: "Analysis",
+    },
+
+    /*
+     * The convergence map: what each degree develops, what they meet in, and
+     * where that combination is actually applied. Every application names a
+     * real record — a practicum, a publication, a product — so the section
+     * links to evidence rather than asserting outcomes.
+     */
+    convergence: {
+      eyebrow: "Where they meet",
+      heading: "What I study, and where it goes",
+      description:
+        "The two programmes converge in mathematics education — and that convergence is applied through real teaching, writing and products.",
+      convergesInto: "Mathematics education",
+      appliedThrough: "Applied through",
+      applications: {
+        practice: {
+          label: "Classroom teaching",
+          detail: "Practicums and tutoring apply pedagogy with real learners.",
+        },
+        publications: {
+          label: "Mathematics publications",
+          detail: "Books and exam collections written and typeset for learners.",
+        },
+        teacherTools: {
+          label: "Teacher tools",
+          detail: "Product work shaped by how teachers actually plan and assess.",
+        },
+        repositories: {
+          label: "Academic repositories",
+          detail: "Library systems for organising and reaching study material.",
+        },
+      },
+    },
+
+    fieldwork: {
+      eyebrow: "Fieldwork",
+      heading: "Applying teacher education beyond the lecture room",
+      partOf: "Part of",
+      viewStory: "View the full story",
+    },
+
+    milestone: {
+      eyebrow: "National academic milestone",
+      gradeHeading: "Overall grade",
+      /* The scale sits beside the grade — "A" alone is meaningless without
+         knowing the scale that awarded it. */
+    },
+
+    timeline: {
+      eyebrow: "The route here",
+      heading: "Earlier education, and what comes next",
+      listLabel: "Education milestones, earliest first",
+      expectedMarker: "Expected",
+      started: "Began {programme}",
+      expected: "Expected completion of {programme}",
+    },
+
+    cta: {
+      eyebrow: "Where this leads",
+      heading: "Study becomes teaching, writing and products.",
+      body: "See how these two degrees are applied — in classrooms, in published mathematics and in the platforms I build.",
+      experience: "View experience",
+      publications: "View publications",
+    },
+
     kind: {
       high_school: "High school",
       teacher_education: "Teacher education",

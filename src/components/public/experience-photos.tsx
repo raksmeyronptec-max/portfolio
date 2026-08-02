@@ -4,10 +4,11 @@ import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
-import { interpolate } from "@/i18n/dictionary";
+import { interpolate, plural } from "@/i18n/dictionary";
 import { localeMeta, type Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/messages/en";
 import type { ExperiencePhoto } from "@/lib/content/experience-media";
+import { formatNumeral } from "@/lib/content/experience-period";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -58,6 +59,18 @@ export function ExperiencePhotos({
   const all = [cover, ...gallery];
   const inlineThumbnails = gallery.slice(0, INLINE_THUMBNAIL_LIMIT);
   const hiddenCount = gallery.length - inlineThumbnails.length;
+
+  /*
+   * One wording for the gallery action, everywhere, with the count in it.
+   * `plural` resolves to the same string in Khmer, which has no grammatical
+   * plural — the distinction only exists for English.
+   */
+  const galleryLabel = plural(
+    all.length,
+    t.experience.photos.viewCount,
+    t.experience.photos.viewCountPlural,
+    { count: formatNumeral(all.length, locale) },
+  );
 
   return (
     <div className="flex flex-col gap-3 pt-1">
@@ -166,7 +179,7 @@ export function ExperiencePhotos({
                 )}
               >
                 <span aria-hidden="true">+{hiddenCount}</span>
-                <span className="sr-only">{t.experience.photos.viewAll}</span>
+                <span className="sr-only">{galleryLabel}</span>
               </button>
             </li>
           ) : null}
@@ -176,10 +189,15 @@ export function ExperiencePhotos({
       {/*
         A text control in addition to the thumbnails.
 
-        The thumbnails are buttons and are perfectly reachable, but "View all
-        photos" states the affordance in words — which is what a screen-reader
+        The thumbnails are buttons and are perfectly reachable, but a named
+        control states the affordance in words — which is what a screen-reader
         user scanning by control name, and anyone who does not read a small
         square as clickable, actually needs.
+
+        The wording is always "View {n} photos". It used to switch between
+        "View photos" and "View all photos" depending on the count, which made
+        the same action read two different ways on one page and never said how
+        many were behind it.
       */}
       {gallery.length > 0 ? (
         <div>
@@ -194,9 +212,7 @@ export function ExperiencePhotos({
             )}
           >
             <Icon name="image" size={15} />
-            {gallery.length + 1 > 2
-              ? t.experience.photos.viewAll
-              : t.experience.photos.view}
+            {galleryLabel}
           </button>
         </div>
       ) : null}
@@ -359,9 +375,14 @@ function PhotoLightbox({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, step]);
 
+  /*
+   * Counters in the reader's own numerals. A Khmer page that renders its dates
+   * as ២០២៤ and its photo counter as "1 of 3" is mixing two numbering systems
+   * in one interface.
+   */
   const position = interpolate(t.experience.photos.position, {
-    current: (index ?? 0) + 1,
-    total: count,
+    current: formatNumeral((index ?? 0) + 1, locale),
+    total: formatNumeral(count, locale),
   });
 
   return (
@@ -498,8 +519,8 @@ function PhotoLightbox({
                 type="button"
                 onClick={() => onIndexChange(photoIndex)}
                 aria-label={interpolate(t.experience.photos.position, {
-                  current: photoIndex + 1,
-                  total: count,
+                  current: formatNumeral(photoIndex + 1, locale),
+                  total: formatNumeral(count, locale),
                 })}
                 aria-current={photoIndex === index ? "true" : undefined}
                 className={cn(
