@@ -171,7 +171,18 @@ export async function GET(
          * has nothing to act on. This is the header that makes serving a PDF
          * `inline` from our own origin a reasonable thing to do.
          */
-        "Content-Security-Policy": "sandbox; default-src 'none'; object-src 'none'",
+        /*
+         * Mirrors the rule in next.config.ts, which is the one that actually
+         * reaches the browser — a `headers()` entry there overrides whatever a
+         * route handler sets. Stated here too so this file is readable on its
+         * own and a future reader is not left wondering what protects it.
+         *
+         * `allow-scripts` without `allow-same-origin`: the built-in PDF viewer
+         * is script-driven, and an opaque origin keeps those scripts away from
+         * our cookies and DOM.
+         */
+        "Content-Security-Policy":
+          "default-src 'none'; object-src 'none'; frame-ancestors 'self'; sandbox allow-scripts",
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "SAMEORIGIN",
         /*

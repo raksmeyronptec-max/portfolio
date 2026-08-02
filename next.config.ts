@@ -236,6 +236,49 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        /*
+         * The publication preview is the one response on this site that is meant
+         * to be framed.
+         *
+         * `securityHeaders` sends `frame-ancestors 'none'` and
+         * `X-Frame-Options: DENY` to every path, which is right for every page
+         * — and it silently broke the in-page PDF reader, because the browser
+         * refused to render a document that forbids being framed. The symptom
+         * was a blank frame with a broken-document glyph and nothing in any log.
+         *
+         * These rules come after the catch-all, so they win for this path only.
+         * What they relax is narrow and deliberate:
+         *
+         *   frame-ancestors 'self'  — our own reader may frame it. Nobody else
+         *                             can, so this is not clickjacking surface.
+         *   sandbox allow-scripts   — the browser's built-in PDF viewer is
+         *                             script-driven; a bare `sandbox` renders
+         *                             nothing. Crucially there is no
+         *                             `allow-same-origin`, so the document sits
+         *                             in an opaque origin and its scripts can
+         *                             reach neither our cookies nor our DOM.
+         *
+         * Everything else stays shut: no navigation, no forms, no popups, and
+         * `default-src 'none'` means the document cannot fetch anything at all.
+         */
+        source: "/api/publications/:slug/preview",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'none'",
+              "object-src 'none'",
+              "frame-ancestors 'self'",
+              "sandbox allow-scripts",
+            ].join("; "),
+          },
+        ],
+      },
+      {
         // Legacy v1 assets kept at their original paths under public/. Next.js
         // already sets immutable caching for its own fingerprinted output in
         // /_next/static, so that path is deliberately left alone — overriding it
