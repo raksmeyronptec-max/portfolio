@@ -47,33 +47,52 @@ test.describe("locale routing", () => {
 });
 
 test.describe("navigation", () => {
+  /*
+   * The header groups its links behind two disclosures ("Work", "Background")
+   * — see the note in nav-items.ts for why seven flat links did not survive
+   * 1280px with Khmer labels. These tests therefore model what a visitor
+   * actually does: open the group, then follow the link. They used to click a
+   * flat "Projects" link that deliberately no longer exists at the top level.
+   */
   test("the primary nav reaches every main section", async ({ page }) => {
-    await page.goto("/en");
-
-    for (const [name, pattern] of [
-      ["Projects", /\/en\/projects$/],
-      ["Certificates", /\/en\/certificates$/],
-      ["Experience", /\/en\/experience$/],
-      ["About", /\/en\/about$/],
-      ["Contact", /\/en\/contact$/],
+    for (const [group, name, pattern] of [
+      ["Work", "Projects", /\/en\/projects$/],
+      ["Work", "Publications", /\/en\/publications$/],
+      ["Background", "Experience", /\/en\/experience$/],
+      ["Background", "Education", /\/en\/education$/],
+      ["Background", "Certificates", /\/en\/certificates$/],
+      [null, "About", /\/en\/about$/],
+      [null, "Contact", /\/en\/contact$/],
     ] as const) {
       await page.goto("/en");
-      await page
-        .getByRole("navigation", { name: /main navigation/i })
-        .getByRole("link", { name })
-        .click();
+      const nav = page.getByRole("navigation", { name: /main navigation/i });
+
+      if (group) {
+        await nav.getByRole("button", { name: group, exact: true }).click();
+      }
+      await nav.getByRole("link", { name, exact: true }).click();
       await expect(page).toHaveURL(pattern);
     }
   });
 
   test("the active page is marked with aria-current", async ({ page }) => {
     await page.goto("/en/projects");
+    const nav = page.getByRole("navigation", { name: /main navigation/i });
 
-    const active = page
-      .getByRole("navigation", { name: /main navigation/i })
-      .getByRole("link", { name: "Projects" });
+    /*
+     * Two assertions, because the active state lives in two places by design:
+     * the closed group's trigger is marked so the header says where you are
+     * without opening anything, and the child link inside carries the real
+     * `aria-current` for assistive technology.
+     */
+    await expect(
+      nav.getByRole("button", { name: "Work", exact: true }),
+    ).toHaveAttribute("data-active", "true");
 
-    await expect(active).toHaveAttribute("aria-current", "page");
+    await nav.getByRole("button", { name: "Work", exact: true }).click();
+    await expect(
+      nav.getByRole("link", { name: "Projects", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   test("the skip link targets the whole main region", async ({ page }) => {

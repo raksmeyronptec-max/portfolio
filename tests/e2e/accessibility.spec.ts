@@ -88,22 +88,41 @@ test.describe("keyboard operability", () => {
   test("the whole header is reachable by keyboard", async ({ page }) => {
     await page.goto("/en");
 
-    const reached: string[] = [];
-
-    // Walk the first 20 tab stops and record what we land on.
-    for (let index = 0; index < 20; index += 1) {
-      await page.keyboard.press("Tab");
-      const description = await page.evaluate(() => {
+    const describeFocus = () =>
+      page.evaluate(() => {
         const element = document.activeElement;
         if (!element) return "none";
         return `${element.tagName.toLowerCase()}:${element.getAttribute("aria-label") ?? element.textContent?.trim().slice(0, 30) ?? ""}`;
       });
-      reached.push(description);
-    }
 
-    // The skip link must be first, and the nav must be reachable.
-    expect(reached[0]?.toLowerCase()).toContain("skip");
-    expect(reached.join("|").toLowerCase()).toContain("projects");
+    // The skip link must be the first tab stop.
+    await page.keyboard.press("Tab");
+    expect((await describeFocus()).toLowerCase()).toContain("skip");
+
+    /*
+     * The section links live behind the "Work"/"Background" disclosures, so
+     * keyboard reachability means: Tab lands on the group trigger, Enter opens
+     * it, and the next Tab enters the links. That is the path this walks —
+     * the old version expected a flat "Projects" link that the grouped header
+     * deliberately no longer has.
+     */
+    const reached: string[] = [];
+    for (let index = 0; index < 10; index += 1) {
+      await page.keyboard.press("Tab");
+      const description = await describeFocus();
+      reached.push(description);
+      if (description === "button:Work") break;
+    }
+    expect(reached[reached.length - 1]).toBe("button:Work");
+
+    await page.keyboard.press("Enter");
+    // Focus stays on the trigger; the panel's links are the next tab stops.
+    await page.keyboard.press("Tab");
+    expect((await describeFocus()).toLowerCase()).toContain("projects");
+
+    // Escape closes the disclosure and returns focus to the trigger.
+    await page.keyboard.press("Escape");
+    expect(await describeFocus()).toBe("button:Work");
   });
 
   test("focus is visible on every interactive element", async ({ page }) => {

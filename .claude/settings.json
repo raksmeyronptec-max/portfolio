@@ -191,7 +191,14 @@
       "Bash(perl -0pi -e 's/\\(      productCaption: \"ការរចនា វិស្វកម្ម និងប្រព័ន្ធនៅពីក្រោម\",\\\\n\\)/$1      skillCount: \"សមត្ថភាព {count}\",\\\\n/' src/i18n/messages/km.ts)",
       "Bash(awk 'NR>=660 && /^export function|^\\\\/\\\\/ ──/ {print NR\": \"$0}' src/components/public/home-sections.tsx)",
       "Bash(node ./.tmp-shots.mjs after)",
-      "Bash(node ./.tmp-sec.mjs en 1440)"
+      "Bash(node ./.tmp-sec.mjs en 1440)",
+      "Bash(curl -s http://127.0.0.1:3004/en/experience)",
+      "Bash(curl -s http://127.0.0.1:3004/km/experience)",
+      "Bash(TAG=edu-base node .tmp-shot.mjs)",
+      "Bash(curl -s http://127.0.0.1:3002/en/education)",
+      "Bash(curl -s http://127.0.0.1:3002/km/education)",
+      "Bash(curl -s http://127.0.0.1:3002/en/journey/ptom-plp-fieldwork-kakoh-primary-school)",
+      "Bash(curl -s http://127.0.0.1:3002/en/experience)"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"

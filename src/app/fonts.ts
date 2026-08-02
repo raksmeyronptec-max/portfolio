@@ -42,9 +42,18 @@ import { DM_Sans, Hanuman, JetBrains_Mono, Syne } from "next/font/google";
 /**
  * Body / UI face. Variable, so the whole 400–700 range the app uses costs one
  * file rather than four.
+ *
+ * `latin` only. The site's languages are English and Khmer; auditing every UI
+ * string found no latin-ext code point anywhere, so the second subset was a
+ * ~35 KB preload spent on glyphs that never render. The hero paragraph is the
+ * mobile LCP element and its paint waits on the font swap, which makes every
+ * preloaded font byte part of the LCP critical path — trimming here is a
+ * measured LCP fix, not tidiness. If CMS content ever needs a latin-ext glyph
+ * (a "José", a "Đặng"), it falls through the stack to a system face rather
+ * than disappearing, and this is the line to revisit.
  */
 export const dmSans = DM_Sans({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   display: "swap",
   variable: "--font-latin",
   preload: true,
@@ -54,12 +63,19 @@ export const dmSans = DM_Sans({
  * Display face for headings.
  *
  * Syne is what gives the reference its personality — the tight, heavy headline
- * look. Weights limited to those actually used: 600 for small headings, 700 and
- * 800 for display sizes.
+ * look.
+ *
+ * One weight, 700, because that is the only weight anything renders: every
+ * heading rule in globals.css resolved to 700 (the comment there explains why
+ * 640 became 700), the wordmark and watermark are 700, and nothing requests
+ * 600 or 800. The two unused files were ~36 KB of preload on the LCP critical
+ * path — see the DM Sans note above. If a design change genuinely introduces
+ * another Syne weight, add it here at the same time or the browser will
+ * synthesise it.
  */
 export const syne = Syne({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["700"],
   display: "swap",
   variable: "--font-display",
   preload: true,
