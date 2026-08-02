@@ -9,6 +9,7 @@ import { checkPermission } from "@/lib/auth/guards";
 import { writeAuditLog } from "@/lib/audit/log";
 import { visitorHash } from "@/lib/analytics/visitor";
 import { isLocale } from "@/i18n/config";
+import { contentDispositionAttachment } from "@/lib/media/validate";
 import {
   resolvePublicationAccess,
   type PdfDownloadPolicy,
@@ -308,9 +309,7 @@ export async function GET(
       }
     }
 
-    const filename = sanitizeFilename(
-      asset.original_filename || `${publication.slug}-${slot}`,
-    );
+    const filename = asset.original_filename || `${publication.slug}-${slot}.pdf`;
 
     return new NextResponse(file, {
       status: 200,
@@ -327,7 +326,7 @@ export async function GET(
          * route that serves the same bytes to a sandboxed viewer; a link
          * somebody shares should download rather than execute.
          */
-        "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        "Content-Disposition": contentDispositionAttachment(filename),
         // Private and short-lived. The active edition can change at any time,
         // and a shared CDN must never hold a publication file — the whole point
         // of routing it through here is that access is decided per request.
@@ -336,7 +335,13 @@ export async function GET(
         "X-Robots-Tag": "noindex, nofollow",
       },
     });
-  } catch {
+  } catch (error) {
+    /*
+     * Logged, never returned. The message can name a storage path or a bucket,
+     * and this endpoint answers anonymous callers — so the operator gets the
+     * detail from the function logs and the caller gets a bare 500.
+     */
+    console.error("[publications/download]", error);
     return deny(500, "Unexpected error.");
   }
 }
@@ -370,21 +375,4 @@ async function recordFailure(
   } catch {
     // Deliberately ignored.
   }
-}
-
-/**
- * Strip anything that could break the header or traverse a path.
- *
- * A filename arrives from the media library, which an editor controls, so it is
- * not fully trusted for use in a response header.
- */
-function sanitizeFilename(name: string): string {
-  return (
-    name
-      .replace(/[/\\]/g, "-")
-      .replace(/[\u0000-\u001f\u007f"]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120) || "publication"
-  );
 }

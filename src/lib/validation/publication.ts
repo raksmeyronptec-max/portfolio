@@ -694,6 +694,15 @@ export function publicationPublishBlockers(input: {
   pdfDownloadPolicy: PdfDownloadPolicy;
   hasActiveVersion: boolean;
   activeVersionHasPdf: boolean;
+  /**
+   * Whether the active edition is itself published.
+   *
+   * Necessary as well as `activeVersionHasPdf`: the public page reads
+   * `public_publication_versions`, which filters out an unpublished edition, so
+   * a draft edition renders no download button however complete it looks in the
+   * admin. Migration 0028 refuses this at the database too.
+   */
+  activeVersionPublished: boolean;
 }): string[] {
   const blockers: string[] = [];
 
@@ -702,11 +711,10 @@ export function publicationPublishBlockers(input: {
   if (input.privacyStatus === "rejected") blockers.push("privacyRejected");
   if (!input.hasEnglishTitle) blockers.push("missingEnglishTitle");
 
-  if (
-    (input.pdfDownloadPolicy === "public" || input.pdfDownloadPolicy === "signed") &&
-    !input.activeVersionHasPdf
-  ) {
-    blockers.push(input.hasActiveVersion ? "activeVersionHasNoPdf" : "noActiveVersion");
+  if (input.pdfDownloadPolicy === "public" || input.pdfDownloadPolicy === "signed") {
+    if (!input.hasActiveVersion) blockers.push("noActiveVersion");
+    else if (!input.activeVersionHasPdf) blockers.push("activeVersionHasNoPdf");
+    else if (!input.activeVersionPublished) blockers.push("activeVersionNotPublished");
   }
 
   return blockers;
@@ -1116,6 +1124,8 @@ export const publicationErrorLabels: Record<string, string> = {
     "No edition is active, so there is no file to download. Create an edition and activate it.",
   activeVersionHasNoPdf:
     "The active edition has no PDF, but the download policy offers one.",
+  activeVersionNotPublished:
+    "The active edition is still a draft, so no download button would appear. Set its status to Published in the Editions panel.",
 
   // Warnings
   noCover: "There is no cover image.",

@@ -102,6 +102,28 @@ export async function attachPublicationMedia(
       return fromPostgresError(error);
     }
 
+    /*
+     * A cover lives in two places, and both have to move together.
+     *
+     * `publication_media` carries the attachment — the caption and alt-text
+     * overrides — while `publications.cover_media_id` is what the public reader
+     * selects and what the publish trigger checks for public visibility. Setting
+     * only the attachment would produce a cover the admin can see and the site
+     * cannot, which is exactly the kind of "it says it worked" failure this
+     * feature has to avoid.
+     *
+     * Done here rather than in the component so it holds for every caller.
+     */
+    if (data.role === "cover") {
+      const { error: coverError } = await supabase
+        .from("publications")
+        .update({ cover_media_id: data.mediaAssetId, updated_by: auth.session.userId })
+        .eq("id", data.publicationId)
+        .is("deleted_at", null);
+
+      if (coverError) return fromPostgresError(coverError);
+    }
+
     await writeAuditLog({
       action:
         data.role === "cover"
@@ -205,8 +227,23 @@ export async function detachPublicationMedia(id: string): Promise<ActionResult<v
 
     if (error) return fromPostgresError(error);
 
+    // The other half of the pair — see `attachPublicationMedia`. Leaving
+    // `cover_media_id` set would keep the cover on the public page after the
+    // admin had removed it, which is the more dangerous direction of the two.
+    if (attachment.role === "cover") {
+      const { error: coverError } = await supabase
+        .from("publications")
+        .update({ cover_media_id: null, updated_by: auth.session.userId })
+        .eq("id", attachment.publication_id);
+
+      if (coverError) return fromPostgresError(coverError);
+    }
+
     await writeAuditLog({
-      action: "publication.sample_pages_changed",
+      action:
+        attachment.role === "cover"
+          ? "publication.cover_changed"
+          : "publication.sample_pages_changed",
       actor: auth.session,
       entityType: "publication",
       entityId: attachment.publication_id,

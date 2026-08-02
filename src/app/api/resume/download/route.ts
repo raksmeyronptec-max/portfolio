@@ -7,6 +7,7 @@ import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { visitorHash } from "@/lib/analytics/visitor";
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+import { contentDispositionAttachment } from "@/lib/media/validate";
 
 /**
  * Resume download.
@@ -108,9 +109,8 @@ export async function GET(request: NextRequest) {
       // Deliberately ignored.
     }
 
-    const filename = sanitizeFilename(
-      chosen.asset.original_filename || `resume-${chosen.locale}.pdf`,
-    );
+    const filename =
+      chosen.asset.original_filename || `resume-${chosen.locale}.pdf`;
 
     return new NextResponse(file, {
       status: 200,
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
         "Content-Length": String(file.byteLength),
         // `attachment` with a quoted, sanitised filename. RFC 5987 form is added
         // so non-ASCII names survive.
-        "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+        "Content-Disposition": contentDispositionAttachment(filename),
         // Private and short-lived: the active version can change at any time, and
         // a CDN must not pin an old resume.
         "Cache-Control": "private, max-age=0, must-revalidate",
@@ -132,21 +132,4 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Unexpected error." }, { status: 500 });
   }
-}
-
-/**
- * Strip anything that could break the header or traverse a path.
- *
- * A filename arrives from the media library, which an editor controls, so it is
- * not fully trusted for use in a response header.
- */
-function sanitizeFilename(name: string): string {
-  return (
-    name
-      .replace(/[/\\]/g, "-")
-      .replace(/[\u0000-\u001f\u007f"]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120) || "resume.pdf"
-  );
 }

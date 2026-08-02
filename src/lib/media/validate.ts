@@ -514,6 +514,42 @@ export function displayFilename(filename: string): string {
   return cleaned || "file";
 }
 
+/**
+ * A `Content-Disposition` value that can carry a Khmer filename.
+ *
+ * HTTP header values are ByteStrings: every character must fit in a byte. Since
+ * `original_filename` started keeping the author's real name, passing it
+ * straight into `filename="…"` throws
+ *
+ *   TypeError: Cannot convert argument to a ByteString because the character at
+ *   index 22 has a value of 6047 which is greater than 255
+ *
+ * — which is a 500 on the download route, for exactly the files this feature
+ * exists to serve.
+ *
+ * RFC 6266 answers this with two parameters: an ASCII `filename` that old or
+ * strict clients use, and a percent-encoded `filename*` that every current
+ * browser prefers. So the reader gets the Khmer name, and nothing throws.
+ */
+export function contentDispositionAttachment(filename: string): string {
+  // The percent-encoded form. `encodeURIComponent` leaves !'()* alone, and a
+  // quote or backslash in the ASCII fallback would terminate it early.
+  const encoded = encodeURIComponent(filename);
+
+  /*
+   * The ASCII fallback. Non-Latin scripts reduce to nothing here, which is why
+   * it falls through to a generic name rather than an empty `filename=""` —
+   * a client that ignores `filename*` still needs something to save as.
+   */
+  const ascii =
+    filename
+      .replace(/[^\x20-\x7e]/g, "")
+      .replace(/["\\]/g, "")
+      .trim() || "download";
+
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
+}
+
 /** Storage key: `<scope>/<yyyy>/<mm>/<random>-<safe-name>`. */
 export function buildStoragePath(scope: string, filename: string): string {
   const now = new Date();

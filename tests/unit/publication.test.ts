@@ -421,6 +421,7 @@ describe("publicationPublishBlockers", () => {
     pdfDownloadPolicy: "none" as const,
     hasActiveVersion: true,
     activeVersionHasPdf: true,
+    activeVersionPublished: true,
   };
 
   it("reports nothing when everything is in place", () => {
@@ -449,12 +450,42 @@ describe("publicationPublishBlockers", () => {
     ).toContain("activeVersionHasNoPdf");
   });
 
+  /*
+   * The gap that shipped: the gate read publication_versions directly and the
+   * public page reads public_publication_versions, which filters out an
+   * unpublished edition. A publication could pass the gate and still render no
+   * download button, with nothing logged.
+   */
+  it("blocks when the active edition is complete but still a draft", () => {
+    expect(
+      publicationPublishBlockers({
+        ...ready,
+        pdfDownloadPolicy: "public",
+        activeVersionPublished: false,
+      }),
+    ).toContain("activeVersionNotPublished");
+  });
+
+  it("reports one reason at a time, most fundamental first", () => {
+    // No edition at all should not also complain that it has no PDF.
+    const none = publicationPublishBlockers({
+      ...ready,
+      pdfDownloadPolicy: "public",
+      hasActiveVersion: false,
+      activeVersionHasPdf: false,
+      activeVersionPublished: false,
+    });
+    expect(none).toContain("noActiveVersion");
+    expect(none).not.toContain("activeVersionHasNoPdf");
+  });
+
   it("does not complain about a missing PDF when nothing is offered", () => {
     expect(
       publicationPublishBlockers({
         ...ready,
         pdfDownloadPolicy: "none",
         activeVersionHasPdf: false,
+        activeVersionPublished: false,
       }),
     ).toEqual([]);
   });
@@ -468,12 +499,18 @@ describe("publicationPublishBlockers", () => {
         pdfDownloadPolicy: "public",
         hasActiveVersion: false,
         activeVersionHasPdf: false,
+        activeVersionPublished: false,
       }),
       ...publicationPublishBlockers({ ...ready, privacyStatus: "rejected" }),
       ...publicationPublishBlockers({
         ...ready,
         pdfDownloadPolicy: "signed",
         activeVersionHasPdf: false,
+      }),
+      ...publicationPublishBlockers({
+        ...ready,
+        pdfDownloadPolicy: "public",
+        activeVersionPublished: false,
       }),
     ]);
 

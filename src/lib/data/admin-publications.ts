@@ -2,7 +2,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { MEDIA_COLUMNS, type MediaAsset } from "@/lib/content/media";
+import { MEDIA_COLUMNS, publicStorageUrl, type MediaAsset } from "@/lib/content/media";
 import { locales, type Locale } from "@/i18n/config";
 import {
   publicationPublishBlockers,
@@ -324,17 +324,20 @@ export async function getAdminPublications(
     .filter((id): id is string => Boolean(id));
 
   const pdfByVersion = new Map<string, boolean>();
+  const publishedByVersion = new Map<string, boolean>();
   if (activeIds.length > 0) {
     const { data: versions } = await supabase
       .from("publication_versions")
-      .select("id, pdf_media_id")
+      .select("id, pdf_media_id, status")
       .in("id", activeIds);
 
     for (const version of (versions ?? []) as Array<{
       id: string;
       pdf_media_id: string | null;
+      status: string;
     }>) {
       pdfByVersion.set(version.id, version.pdf_media_id !== null);
+      publishedByVersion.set(version.id, version.status === "published");
     }
   }
 
@@ -375,6 +378,8 @@ export async function getAdminPublications(
         pdfDownloadPolicy: row.pdf_download_policy,
         hasActiveVersion: row.active_version_id !== null,
         activeVersionHasPdf: activeHasPdf,
+        activeVersionPublished:
+          publishedByVersion.get(row.active_version_id ?? "") ?? false,
       }),
     };
   });
@@ -601,6 +606,7 @@ export async function getAdminPublication(id: string): Promise<AdminPublication 
       pdfDownloadPolicy: raw.pdf_download_policy as PdfDownloadPolicy,
       hasActiveVersion: Boolean(raw.active_version_id),
       activeVersionHasPdf: Boolean(activeVersion?.pdf),
+      activeVersionPublished: activeVersion?.status === "published",
     }),
     warnings: publicationPublishWarnings({
       hasCover: Boolean(raw.cover_media_id),
@@ -928,4 +934,87 @@ export async function getPublicationFileOptions(
     .limit(200);
 
   return ((data ?? []) as NonNullable<FileRow>[]).map((row) => toFile(row)!);
+}
+
+/** All three slots' options in one round trip, for the files manager. */
+export async function getPublicationFileLibrary(): Promise<{
+  pdf: AdminPublicationFile[];
+  original: AdminPublicationFile[];
+  source: AdminPublicationFile[];
+}> {
+  const [pdf, original, source] = await Promise.all([
+    getPublicationFileOptions("publication_pdf"),
+    getPublicationFileOptions("publication_original"),
+    getPublicationFileOptions("publication_source"),
+  ]);
+  return { pdf, original, source };
+}
+
+export type PublicationImageOption = {
+  id: string;
+  filename: string;
+  kind: string;
+  thumbnailSrc: string | null;
+  altTextEn: string | null;
+  width: number | null;
+  height: number | null;
+};
+
+/**
+ * Public images that can serve as a cover or a sample page.
+ *
+ * Publication kinds sort first because they are what the owner just uploaded,
+ * but every public image stays selectable — a diagram already in the library is
+ * a legitimate sample illustration, and forcing a duplicate upload would put the
+ * same bytes in the bucket twice. Same reasoning as `listAttachableMedia()`.
+ *
+ * PDFs are excluded: `resolveImage()` cannot render one, so offering it would
+ * produce an attachment that renders as a gap.
+ */
+export async function getPublicationImageOptions(): Promise<PublicationImageOption[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("media_assets")
+    .select(
+      "id, original_filename, kind, bucket_id, storage_path, storage_provider, thumbnail_path, card_path, alt_text_en, width, height",
+    )
+    .eq("visibility", "public")
+    .is("deleted_at", null)
+    .neq("mime_type", "application/pdf")
+    .order("created_at", { ascending: false })
+    .limit(300);
+
+  return ((data ?? []) as unknown as Array<{
+    id: string;
+    original_filename: string;
+    kind: string;
+    bucket_id: string;
+    storage_path: string;
+    storage_provider: "supabase" | "r2";
+    thumbnail_path: string | null;
+    card_path: string | null;
+    alt_text_en: string | null;
+    width: number | null;
+    height: number | null;
+  }>)
+    .map((asset) => ({
+      id: asset.id,
+      filename: asset.original_filename,
+      kind: asset.kind,
+      thumbnailSrc: publicStorageUrl(
+        asset.bucket_id,
+        asset.thumbnail_path ?? asset.card_path ?? asset.storage_path,
+        asset.storage_provider,
+      ),
+      altTextEn: asset.alt_text_en,
+      width: asset.width,
+      height: asset.height,
+    }))
+    .sort((a, b) => {
+      const rank = (kind: string) =>
+        kind === "publication_cover" ? 0 : kind === "publication_page" ? 1 : 2;
+      return rank(a.kind) - rank(b.kind);
+    });
 }

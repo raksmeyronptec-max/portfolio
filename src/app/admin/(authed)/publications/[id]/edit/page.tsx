@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminBackLink } from "@/components/admin/admin-nav";
 import { AdminPageBody, AdminPageHeader } from "@/components/admin/admin-shell";
+import { PublicationFilesManager } from "@/components/admin/publication-files-manager";
 import { PublicationForm } from "@/components/admin/publication-form";
 import { PublicationPrivacyReview } from "@/components/admin/publication-privacy-review";
 import { StatusBadge } from "@/components/admin/status-badge";
-import { Badge, Card, CardBody } from "@/components/ui/primitives";
-import { Icon } from "@/components/ui/icon";
+import { Badge } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
 import { requirePermission } from "@/lib/auth/guards";
 import { permissions } from "@/lib/auth/roles";
-import { getAdminPublication, getPublicationTypeOptions } from "@/lib/data/admin-publications";
+import {
+  getAdminPublication,
+  getPublicationFileLibrary,
+  getPublicationImageOptions,
+  getPublicationTypeOptions,
+} from "@/lib/data/admin-publications";
 import { publicationErrorLabels } from "@/lib/validation/publication";
-import { formatBytes } from "@/lib/media/validate";
 
 export const metadata: Metadata = { title: "Edit publication" };
 export const dynamic = "force-dynamic";
@@ -35,9 +38,11 @@ export default async function EditPublicationPage({
   const { id } = await params;
   const session = await requirePermission("viewAdmin", `/admin/publications/${id}/edit`);
 
-  const [publication, types] = await Promise.all([
+  const [publication, types, images, fileLibrary] = await Promise.all([
     getAdminPublication(id),
     getPublicationTypeOptions(),
+    getPublicationImageOptions(),
+    getPublicationFileLibrary(),
   ]);
 
   if (!publication) notFound();
@@ -100,72 +105,17 @@ export default async function EditPublicationPage({
             </Notice>
           ) : null}
 
-          {/* ── Editions and their files ──────────────────────────────────── */}
-          <Card>
-            <CardBody className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-body font-semibold text-foreground">Editions</h2>
-                <span className="text-small text-foreground-subtle">
-                  {publication.versions.length} recorded
-                </span>
-              </div>
-
-              {publication.versions.length === 0 ? (
-                <p className="text-small text-foreground-muted">
-                  No editions yet. An edition carries the three files: the
-                  public-safe PDF, the private archival original, and the LaTeX
-                  source archive.
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {publication.versions.map((version) => (
-                    <li
-                      key={version.id}
-                      className="flex flex-col gap-1.5 rounded-(--radius-md) border border-border p-3"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-foreground">
-                          {version.versionLabel}
-                        </span>
-                        {version.isActive ? (
-                          <Badge tone="success">Active</Badge>
-                        ) : null}
-                        <StatusBadge status={version.status} />
-                        {version.publicationYear ? (
-                          <span className="text-small tabular-nums text-foreground-subtle">
-                            {version.publicationYear}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {/*
-                        The three slots, always all three, so an empty one is
-                        visible as a gap rather than as an absence. The archival
-                        original in particular is the file nobody notices is
-                        missing until they need it.
-                      */}
-                      <dl className="grid gap-1.5 text-[0.8125rem] sm:grid-cols-3">
-                        <FileSlot label="Public PDF" file={version.pdf} />
-                        <FileSlot label="Archival original" file={version.original} />
-                        <FileSlot label="LaTeX source" file={version.source} />
-                      </dl>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <p className="text-[0.75rem] text-foreground-subtle">
-                Files are uploaded through the{" "}
-                <Link href="/admin/media" className="underline">
-                  media library
-                </Link>{" "}
-                with the matching kind — “Publication PDF”, “Publication original”
-                or “Publication LaTeX source”. All three are stored privately and
-                are served only through the download route, which checks this
-                publication’s policy first.
-              </p>
-            </CardBody>
-          </Card>
+          {/* ── Cover, editions and sample pages ──────────────────────────── */}
+          <PublicationFilesManager
+            publicationId={publication.id}
+            versions={publication.versions}
+            media={publication.media}
+            images={images}
+            fileLibrary={fileLibrary}
+            canEdit={canEdit}
+            canPublish={permissions.publishContent(session.role)}
+            canDelete={isOwner}
+          />
 
           {/* ── Privacy review ────────────────────────────────────────────── */}
           <PublicationPrivacyReview
@@ -187,38 +137,5 @@ export default async function EditPublicationPage({
         </div>
       </AdminPageBody>
     </>
-  );
-}
-
-function FileSlot({
-  label,
-  file,
-}: {
-  label: string;
-  file: { filename: string; sizeBytes: number; visibility: string } | null;
-}) {
-  return (
-    <div className="flex flex-col">
-      <dt className="text-foreground-subtle">{label}</dt>
-      <dd className="flex items-center gap-1.5 text-foreground">
-        {file ? (
-          <>
-            <Icon
-              name={file.visibility === "private" ? "lock" : "globe"}
-              size={13}
-              aria-hidden
-            />
-            <span className="min-w-0 truncate" title={file.filename}>
-              {file.filename}
-            </span>
-            <span className="shrink-0 text-foreground-subtle">
-              ({formatBytes(file.sizeBytes)})
-            </span>
-          </>
-        ) : (
-          <span className="text-foreground-subtle">Not attached</span>
-        )}
-      </dd>
-    </div>
   );
 }
