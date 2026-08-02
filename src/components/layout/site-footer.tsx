@@ -69,7 +69,14 @@ export function SiteFooter({
           <div className="flex max-w-[38ch] flex-col gap-4">
             <div className="flex items-center gap-2.5">
               <BrandMark gradientId="brand-footer" size={32} />
-              <p className="text-h4 font-semibold">{settings.siteName}</p>
+              {/* Matches the header wordmark's face — see the note in
+                  brand.tsx. `text-h4` is a size token only, and a <p> does not
+                  pick up the display stack the way a heading element does, so
+                  without `font-display` the same brand name rendered in two
+                  different typefaces at opposite ends of the page. */}
+              <p className="brand-wordmark font-display text-h4 font-bold tracking-[-0.02em]">
+                {settings.siteName}
+              </p>
             </div>
 
             <p className="text-small text-foreground-muted">

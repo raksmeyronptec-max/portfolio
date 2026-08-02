@@ -143,9 +143,28 @@ export function Brand({
       </span>
 
       <span className="flex min-w-0 flex-col leading-none">
+        {/*
+          `font-display` (Syne) rather than the interface sans.
+
+          The wordmark is the one piece of interface text that is really a
+          heading — it is the brand, not a label — so it should be set in the
+          same face as "PTEC Digital Library" and every other display line on
+          the site. Using DM Sans here made the header read as a nav item that
+          happened to be bold.
+
+          Khmer needs no special case: Syne carries no Khmer glyphs, so
+          "រុន រស្មី" falls through the display stack to Hanuman automatically
+          while Latin keeps Syne. That fallback ordering is the whole mechanism
+          described in the font-stack note in globals.css.
+        */}
         <span
           className={cn(
-            "truncate text-[1.125rem] font-semibold tracking-[-0.015em] text-foreground",
+            // Syne is a wider face than the interface sans it replaced, and at
+            // 320px that pushed "Ron Raksmey" 4px past its box — the truncate
+            // below rendered it as "Ron Raksm…", which is not an acceptable
+            // way to show someone's name. One step down below `sm` recovers
+            // enough width to spell it in full at every supported size.
+            "brand-wordmark truncate font-display text-[1rem] font-bold tracking-[-0.02em] text-foreground sm:text-[1.125rem]",
             "transition-colors duration-200 group-hover:text-(--identity-gold)",
           )}
         >

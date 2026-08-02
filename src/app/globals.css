@@ -1267,6 +1267,16 @@
     letter-spacing: normal;
     text-transform: none;
   }
+
+  /* The brand wordmark is set in the display face with tight Latin tracking.
+     Syne carries no Khmer glyphs, so "រុន រស្មី" already falls through the
+     display stack to Hanuman on its own — but the negative tracking does not
+     fall through with it, and it collides Khmer clusters exactly as it does in
+     a heading. Same correction, same reason. */
+  :lang(km) .brand-wordmark {
+    letter-spacing: normal;
+    line-height: var(--leading-heading-khmer);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
