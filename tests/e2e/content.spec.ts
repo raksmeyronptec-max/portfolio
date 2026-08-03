@@ -90,11 +90,23 @@ test.describe("certificates", () => {
   test("category chips filter via the URL", async ({ page }) => {
     await page.goto("/en/certificates");
 
-    const chips = page.getByRole("navigation", { name: /filters/i }).getByRole("link");
-    if ((await chips.count()) > 1) {
-      await chips.nth(1).click();
-      await expect(page).toHaveURL(/\?category=/);
-    }
+    /*
+     * Selected by destination rather than by position. This used to click the
+     * second link in the filters nav and assume it was a category — an
+     * assumption that broke the moment the nav gained a verification facet, and
+     * that was always describing the markup rather than the behaviour under
+     * test.
+     */
+    const categoryChips = page
+      .getByRole("navigation", { name: /filters/i })
+      .getByRole("link")
+      .and(page.locator('a[href*="category="]'));
+
+    const count = await categoryChips.count();
+    test.skip(count === 0, "No categories hold a published credential here.");
+
+    await categoryChips.first().click();
+    await expect(page).toHaveURL(/\?category=/);
   });
 });
 

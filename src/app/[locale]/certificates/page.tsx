@@ -16,7 +16,10 @@ import { getSeoOverride, getSiteCounts } from "@/lib/data/site";
 import {
   getCertificateCategories,
   getCertificateFacets,
+  isCertificateSort,
+  isCredentialVerification,
   listCertificates,
+  type CertificateSort,
 } from "@/lib/data/certificates";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { JsonLd, breadcrumbSchema, graph, itemListSchema } from "@/lib/seo/jsonld";
@@ -60,6 +63,13 @@ export default async function CertificatesPage({
 
   const t = getDictionary(locale);
 
+  const search = (single(query.q) ?? "").trim();
+  const verificationParam = single(query.verification) ?? "";
+  const verification = isCredentialVerification(verificationParam)
+    ? verificationParam
+    : undefined;
+  const sortParam = single(query.sort) ?? "";
+  const sort: CertificateSort = isCertificateSort(sortParam) ? sortParam : "newest";
   const category = single(query.category) ?? "";
   const issuer = single(query.issuer) ?? "";
   const yearParam = Number.parseInt(single(query.year) ?? "", 10);
@@ -68,9 +78,12 @@ export default async function CertificatesPage({
 
   const [result, categories, facets, counts] = await Promise.all([
     listCertificates(locale, {
+      search: search || undefined,
       category: category || undefined,
       issuer: issuer || undefined,
       year,
+      verification,
+      sort,
       page,
       perPage: 12,
     }),
@@ -86,7 +99,7 @@ export default async function CertificatesPage({
     t.certificates.resultCountPlural,
   );
 
-  const hasFilters = Boolean(category || issuer || year);
+  const hasFilters = Boolean(search || category || issuer || year || verification);
 
   /*
    * Progressive filtering, per the brief. Eleven category buttons above an
@@ -98,15 +111,30 @@ export default async function CertificatesPage({
    */
   const publishedTotal = counts.publishedCertificates ?? 0;
   const showCategoryChips = publishedTotal >= 9 || hasFilters;
+  /*
+   * Search appears earlier than the category chips. Chips are only worth their
+   * space once there are enough credentials to be worth narrowing, but a
+   * visitor looking for one credential by name benefits from a search box as
+   * soon as the collection stops fitting on one screen.
+   */
+  const showSearch = publishedTotal >= 6 || hasFilters;
   const showSecondaryFacets = publishedTotal > 20 || hasFilters;
 
-  // Only offer a category chip when it can actually return something.
-  const availableCategories = categories.filter((item) =>
-    result.total > 0 || category === item.slug
-      ? true
-      : // Keep all categories visible when nothing is filtered, so the taxonomy
-        // is discoverable even before credentials are added.
-        !hasFilters,
+  /*
+   * Only categories that hold something.
+   *
+   * The old rule kept every category visible "so the taxonomy is discoverable",
+   * which in practice meant twelve chips above ten credentials, most of them
+   * leading to an empty result. A filter that returns nothing is not
+   * discoverability, it is a dead end — and the taxonomy is the admin's concern,
+   * not a visitor's.
+   *
+   * The currently-selected category is always kept, so a visitor who filters
+   * down to a category and then narrows further by search does not watch the
+   * chip they are standing on disappear.
+   */
+  const availableCategories = categories.filter(
+    (item) => item.count > 0 || category === item.slug,
   );
 
   const structuredData = graph([
@@ -128,10 +156,15 @@ export default async function CertificatesPage({
 
   function buildHref(overrides: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
-    const merged = { category, issuer, year, ...overrides };
+    const merged = { q: search, category, issuer, year, verification, sort, ...overrides };
+    if (merged.q) params.set("q", String(merged.q));
     if (merged.category) params.set("category", String(merged.category));
     if (merged.issuer) params.set("issuer", String(merged.issuer));
     if (merged.year) params.set("year", String(merged.year));
+    if (merged.verification) params.set("verification", String(merged.verification));
+    // "newest" is the default, so it stays out of the URL — a shared link should
+    // not carry state the visitor never chose.
+    if (merged.sort && merged.sort !== "newest") params.set("sort", String(merged.sort));
     const qs = params.toString();
     return `${localePath(locale, "certificates")}${qs ? `?${qs}` : ""}`;
   }
@@ -178,6 +211,87 @@ export default async function CertificatesPage({
             Sized from the unfiltered total so filtering down does not make the
             controls vanish, and always shown when a filter is already active so
             a visitor arriving on a filtered URL can get back out. */}
+        {/* ── Search and sort ────────────────────────────────────────────────
+            A plain GET form, so search works with JavaScript unavailable and a
+            result is a real, shareable, indexable URL. The sort control submits
+            the same form, which is why it carries the current query as hidden
+            fields rather than reconstructing them. */}
+        {showSearch ? (
+          <form
+            method="get"
+            action={localePath(locale, "certificates")}
+            role="search"
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          >
+            {/* The other facets ride along so searching does not silently drop
+                a category the visitor already chose. */}
+            {category ? <input type="hidden" name="category" value={category} /> : null}
+            {issuer ? <input type="hidden" name="issuer" value={issuer} /> : null}
+            {year ? <input type="hidden" name="year" value={String(year)} /> : null}
+            {verification ? (
+              <input type="hidden" name="verification" value={verification} />
+            ) : null}
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <label htmlFor="certificate-search" className="text-small font-medium">
+                {t.certificates.searchLabel}
+              </label>
+              <div className="relative">
+                <Icon
+                  name="search"
+                  size={17}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted"
+                />
+                <input
+                  id="certificate-search"
+                  type="search"
+                  name="q"
+                  defaultValue={search}
+                  placeholder={t.certificates.searchPlaceholder}
+                  className="min-h-11 w-full rounded-(--radius-md) border border-border-strong bg-surface pl-10 pr-3 text-base"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="certificate-sort" className="text-small font-medium">
+                {t.certificates.sortLabel}
+              </label>
+              <select
+                id="certificate-sort"
+                name="sort"
+                defaultValue={sort}
+                className="min-h-11 rounded-(--radius-md) border border-border-strong bg-surface px-3 text-base"
+              >
+                {(["newest", "oldest", "title", "verification"] as const).map(
+                  (option) => (
+                    <option key={option} value={option}>
+                      {t.certificates.sort[option]}
+                    </option>
+                  ),
+                )}
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center justify-center rounded-(--radius-md) border border-border-strong bg-surface px-4 text-small font-medium hover:bg-surface-muted"
+            >
+              {t.certificates.searchSubmit}
+            </button>
+
+            {hasFilters ? (
+              <Link
+                href={localePath(locale, "certificates")}
+                className="inline-flex min-h-11 items-center justify-center rounded-(--radius-md) px-3 text-small font-medium text-foreground-muted underline decoration-border-strong underline-offset-4 hover:text-foreground"
+              >
+                {t.certificates.resetFilters}
+              </Link>
+            ) : null}
+          </form>
+        ) : null}
+
         {showCategoryChips ? (
           <nav aria-label={t.a11y.filters} className="flex flex-col gap-4">
             {/* Bleeds to the viewport edge while scrolling so no chip is left
@@ -194,9 +308,39 @@ export default async function CertificatesPage({
                   active={category === item.slug}
                 >
                   {item.name}
+                  {/* The count is supporting detail, not part of the label, so
+                      it is dimmed and follows the name rather than competing
+                      with it. */}
+                  <span className="ml-1.5 text-foreground-subtle">{item.count}</span>
                 </FilterChip>
               ))}
             </div>
+
+            {/* Verification is a first-class facet, not a secondary one: "which
+                of these can actually be checked?" is the question a recruiter
+                or an institution asks first. */}
+            {publishedTotal >= 9 || verification ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[0.8125rem] font-medium text-foreground-subtle">
+                  {t.certificates.filterVerification}
+                </span>
+                <FilterChip
+                  href={buildHref({ verification: undefined })}
+                  active={!verification}
+                >
+                  {t.certificates.allVerifications}
+                </FilterChip>
+                {facets.verifications.map((value) => (
+                  <FilterChip
+                    key={value}
+                    href={buildHref({ verification: value })}
+                    active={verification === value}
+                  >
+                    {t.certificates.verification[value]}
+                  </FilterChip>
+                ))}
+              </div>
+            ) : null}
 
             {showSecondaryFacets && (facets.years.length > 1 || facets.issuers.length > 1) ? (
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border pt-4">
@@ -261,6 +405,8 @@ export default async function CertificatesPage({
             <EmptyState
               icon="award"
               title={t.certificates.noResults}
+              // A dead end is not a helpful empty state: say what to try next.
+              description={t.certificates.noResultsHint}
               actions={
                 <ButtonLink
                   href={localePath(locale, "certificates")}

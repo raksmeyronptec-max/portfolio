@@ -8,7 +8,7 @@ import {
   resolveTranslation,
   type TranslationRow,
 } from "@/lib/content/translation";
-import type { Locale } from "@/i18n/config";
+import { localeMeta, type Locale } from "@/i18n/config";
 
 /**
  * Public certificate queries.
@@ -215,13 +215,40 @@ export async function getFeaturedCertificates(
 
 // ── Certificate list ────────────────────────────────────────────────────────
 
+/** Ceiling on the rows a search scans. See the note at the `range` call. */
+const SEARCH_SCAN_CAP = 200;
+
+export type CertificateSort =
+  | "newest"
+  | "oldest"
+  | "title"
+  | "verification";
+
 export type CertificateFilters = {
   search?: string;
   category?: string;
   issuer?: string;
   year?: number;
+  verification?: CredentialVerification;
+  sort?: CertificateSort;
   page?: number;
   perPage?: number;
+};
+
+/**
+ * Verification states ordered by how much they actually establish.
+ *
+ * Used by the `verification` sort. Deliberately explicit rather than the enum's
+ * declaration order, so reordering the enum for any other reason cannot silently
+ * change what a visitor sees first.
+ */
+const VERIFICATION_RANK: Record<CredentialVerification, number> = {
+  verified_by_issuer: 0,
+  verification_link_available: 1,
+  manually_reviewed: 2,
+  awaiting_verification: 3,
+  issuer_verification_unavailable: 4,
+  unverified: 5,
 };
 
 export type CertificateListResult = {
@@ -256,12 +283,31 @@ export async function listCertificates(
       ? `${CARD_SELECT},category_filter:certificate_categories!inner(slug)`
       : CARD_SELECT;
 
-    let query = supabase
-      .from("certificates")
-      .select(select, { count: "exact" })
-      .order("featured", { ascending: false })
-      .order("issued_on", { ascending: false, nullsFirst: false })
-      .order("sort_order", { ascending: true });
+    let query = supabase.from("certificates").select(select, { count: "exact" });
+
+    /*
+     * Featured first is the default only for the default sort. When a visitor
+     * has asked for "oldest" or "A–Z", promoting featured entries above the
+     * order they requested silently ignores the request.
+     */
+    const sort = filters.sort ?? "newest";
+    if (sort === "newest") {
+      query = query
+        .order("featured", { ascending: false })
+        .order("issued_on", { ascending: false, nullsFirst: false })
+        .order("sort_order", { ascending: true });
+    } else if (sort === "oldest") {
+      query = query.order("issued_on", { ascending: true, nullsFirst: false });
+    } else if (sort === "verification") {
+      // Ordered in the database by the enum's own order, then refined in memory
+      // by VERIFICATION_RANK so the ranking is the documented one.
+      query = query
+        .order("verification_status", { ascending: true })
+        .order("issued_on", { ascending: false, nullsFirst: false });
+    } else {
+      // Title lives in the translation table, so it is sorted in memory below.
+      query = query.order("issued_on", { ascending: false, nullsFirst: false });
+    }
 
     if (filters.category) {
       query = query.eq("category_filter.slug", filters.category);
@@ -274,9 +320,21 @@ export async function listCertificates(
         .gte("issued_on", `${filters.year}-01-01`)
         .lte("issued_on", `${filters.year}-12-31`);
     }
+    if (filters.verification) {
+      query = query.eq("verification_status", filters.verification);
+    }
 
-    const from = (page - 1) * perPage;
-    const { data, error, count } = await query.range(from, from + perPage - 1);
+    /*
+     * A search has to see every candidate row, not one page of them, because the
+     * matching happens after the fetch. The cap keeps that bounded: past it the
+     * search would need to move into the database, and the cap is the signal
+     * that the time has come rather than a silently truncated result.
+     */
+    const searching = Boolean(filters.search?.trim());
+    const from = searching ? 0 : (page - 1) * perPage;
+    const to = searching ? SEARCH_SCAN_CAP - 1 : from + perPage - 1;
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error || !data) return empty;
 
@@ -285,8 +343,51 @@ export async function listCertificates(
     );
     let total = count ?? items.length;
 
-    // Same rationale as the project search: the searchable text lives in the
-    // translation table and the collection is small.
+    /*
+     * Two sorts finish in memory.
+     *
+     * `title` because the title lives in the translation table and is resolved
+     * per locale, so the database cannot order by the string a visitor actually
+     * reads. `localeCompare` with the active locale is what makes Khmer titles
+     * sort as a Khmer reader expects rather than by code point.
+     *
+     * `verification` because the database can only order by the enum's
+     * declaration order, and the ranking a visitor should see is "how much does
+     * this actually establish" — which is VERIFICATION_RANK, stated once and
+     * independent of how the enum happens to be declared.
+     *
+     * Both are only correct across the whole result set on a single page, which
+     * is the case here: the collection is bounded and the page size is 12. A
+     * larger collection would need this pushed into the query.
+     */
+    if (sort === "title") {
+      items = items
+        .slice()
+        .sort((a, b) => a.title.localeCompare(b.title, localeMeta[locale].intlLocale));
+    } else if (sort === "verification") {
+      items = items
+        .slice()
+        .sort(
+          (a, b) =>
+            VERIFICATION_RANK[a.verificationStatus] -
+            VERIFICATION_RANK[b.verificationStatus],
+        );
+    }
+
+    /*
+     * Search runs in memory, and the query above deliberately fetched an
+     * unpaginated page when a term is present — see `searching` below.
+     *
+     * It used to run here on the already-paginated slice, which meant a search
+     * only ever examined the twelve rows the current page happened to hold. With
+     * ten published credentials that was invisible; it would have surfaced as
+     * "search finds nothing on page 2" the moment the collection grew.
+     *
+     * The text being searched lives in the translation table, so a SQL filter
+     * would need an OR across an embedded resource and a top-level column, which
+     * PostgREST cannot express. The collection is bounded (see SEARCH_SCAN_CAP)
+     * and this only runs when someone actually types, so the trade is worth it.
+     */
     const term = filters.search?.trim().toLowerCase();
     if (term) {
       items = items.filter((item) =>
@@ -297,6 +398,10 @@ export async function listCertificates(
           .includes(term),
       );
       total = items.length;
+
+      // Paginate after filtering, not before.
+      const start = (page - 1) * perPage;
+      items = items.slice(start, start + perPage);
     }
 
     return {
@@ -428,25 +533,53 @@ export async function getPublishedCertificateSlugs(): Promise<
 
 // ── Filter options ──────────────────────────────────────────────────────────
 
+/**
+ * Categories, each carrying how many published credentials it actually holds.
+ *
+ * The count is the point. The page previously offered all twelve categories as
+ * filter chips regardless of whether any of them could return a result, so a
+ * visitor was invited to filter by "Competition" and "Volunteer Certificate"
+ * when the collection contained neither — twelve buttons, most of them dead
+ * ends, above a grid of ten credentials.
+ *
+ * Counting here rather than in the page keeps the number and the label together:
+ * a hardcoded count is a number that goes stale the first time a credential is
+ * published, and the brief was explicit that counts must come from the data.
+ */
 export async function getCertificateCategories(
   locale: Locale,
-): Promise<Array<{ id: string; slug: string; name: string; icon: string | null }>> {
+): Promise<
+  Array<{ id: string; slug: string; name: string; icon: string | null; count: number }>
+> {
   if (!isSupabaseConfigured()) return [];
 
   try {
     const supabase = await createSupabasePublicClient();
-    const { data, error } = await supabase
-      .from("certificate_categories")
-      .select("id, slug, name_en, name_km, icon, sort_order")
-      .order("sort_order", { ascending: true });
+
+    const [{ data, error }, { data: published }] = await Promise.all([
+      supabase
+        .from("certificate_categories")
+        .select("id, slug, name_en, name_km, icon, sort_order")
+        .order("sort_order", { ascending: true }),
+      // RLS restricts this to published, non-deleted rows, so the tally is the
+      // public count without needing to restate the visibility rule here.
+      supabase.from("certificates").select("category_id"),
+    ]);
 
     if (error || !data) return [];
+
+    const counts = new Map<string, number>();
+    for (const row of published ?? []) {
+      if (!row.category_id) continue;
+      counts.set(row.category_id, (counts.get(row.category_id) ?? 0) + 1);
+    }
 
     return data.map((row) => ({
       id: row.id,
       slug: row.slug,
       name: pickLocalized(locale, row.name_en, row.name_km) ?? row.slug,
       icon: row.icon,
+      count: counts.get(row.id) ?? 0,
     }));
   } catch {
     return [];
@@ -457,16 +590,18 @@ export async function getCertificateCategories(
 export async function getCertificateFacets(): Promise<{
   issuers: string[];
   years: number[];
+  verifications: CredentialVerification[];
 }> {
-  if (!isSupabaseConfigured()) return { issuers: [], years: [] };
+  const empty = { issuers: [], years: [], verifications: [] };
+  if (!isSupabaseConfigured()) return empty;
 
   try {
     const supabase = await createSupabasePublicClient();
     const { data, error } = await supabase
       .from("certificates")
-      .select("issuer_en, issued_on");
+      .select("issuer_en, issued_on, verification_status");
 
-    if (error || !data) return { issuers: [], years: [] };
+    if (error || !data) return empty;
 
     const issuers = [...new Set(data.map((row) => row.issuer_en))].sort((a, b) =>
       a.localeCompare(b),
@@ -480,8 +615,31 @@ export async function getCertificateFacets(): Promise<{
       ),
     ].sort((a, b) => b - a);
 
-    return { issuers, years };
+    /*
+     * Only states that actually occur. Offering "Verified by issuer" as a filter
+     * when nothing is verified sends a visitor to an empty result and implies
+     * the collection contains something it does not.
+     */
+    const verifications = [
+      ...new Set(
+        data.map((row) => row.verification_status as CredentialVerification),
+      ),
+    ].sort((a, b) => VERIFICATION_RANK[a] - VERIFICATION_RANK[b]);
+
+    return { issuers, years, verifications };
   } catch {
-    return { issuers: [], years: [] };
+    return empty;
   }
+}
+
+/** Narrow a query-string value to a verification state. */
+export function isCredentialVerification(
+  value: string,
+): value is CredentialVerification {
+  return value in VERIFICATION_RANK;
+}
+
+/** Narrow a query-string value to a sort option. */
+export function isCertificateSort(value: string): value is CertificateSort {
+  return ["newest", "oldest", "title", "verification"].includes(value);
 }
