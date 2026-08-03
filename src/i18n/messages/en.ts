@@ -414,6 +414,21 @@ export const en = {
       "Certificates and academic credentials are added here after personal identifiers have been removed.",
     /* Short enough to sit inline beside a shield icon rather than in a banner. */
     privacyShort: "Public previews have sensitive personal information removed.",
+    overviewHeading: "About this collection",
+    overviewPublished: "published credentials",
+    overviewEstablished: "verified by the issuer or reviewed before publication",
+    overviewNotEstablished: "awaiting verification, or issued without an online check",
+    trust: {
+      privacyTitle: "Privacy-safe previews",
+      privacyBody:
+        "Personal identifiers are removed from the public copy of every document.",
+      verificationTitle: "Verification clarity",
+      verificationBody:
+        "Each credential shows the verification that actually exists for it, and how to check.",
+      accessTitle: "Controlled access",
+      accessBody:
+        "Documents are downloadable only when the public copy is safe to distribute.",
+    },
     showFilters: "Filter certificates",
     searchSubmit: "Search",
     clearSearch: "Clear search",

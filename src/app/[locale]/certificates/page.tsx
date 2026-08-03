@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/states";
 import { PageHeader } from "@/components/layout/page-header";
 import { Reveal } from "@/components/motion/reveal";
 import { CertificateCard } from "@/components/public/certificate-card";
+import { CredentialOverview } from "@/components/public/credential-overview";
 import { getDictionary, plural } from "@/i18n/dictionary";
 import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
@@ -16,6 +17,7 @@ import { getSeoOverride, getSiteCounts } from "@/lib/data/site";
 import {
   getCertificateCategories,
   getCertificateFacets,
+  getCertificateOverview,
   getFeaturedCertificates,
   isCertificateSort,
   isCredentialVerification,
@@ -77,7 +79,7 @@ export default async function CertificatesPage({
   const year = Number.isFinite(yearParam) ? yearParam : undefined;
   const page = toPositiveInt(single(query.page), 1);
 
-  const [result, categories, facets, counts, featured] = await Promise.all([
+  const [result, categories, facets, counts, featured, overview] = await Promise.all([
     listCertificates(locale, {
       search: search || undefined,
       category: category || undefined,
@@ -98,6 +100,7 @@ export default async function CertificatesPage({
      * cannot disagree about membership.
      */
     getFeaturedCertificates(locale),
+    getCertificateOverview(),
   ]);
 
   const featuredSlugs = new Set(featured.map((item) => item.slug));
@@ -220,6 +223,13 @@ export default async function CertificatesPage({
             Sized from the unfiltered total so filtering down does not make the
             controls vanish, and always shown when a filter is already active so
             a visitor arriving on a filtered URL can get back out. */}
+        {/*
+          The overview sits above the controls: it says what the collection is
+          and what the previews guarantee, which is context a visitor needs
+          before deciding what to filter for — not a footnote after it.
+        */}
+        <CredentialOverview overview={overview} t={t} />
+
         {/* ── Search and sort ────────────────────────────────────────────────
             A plain GET form, so search works with JavaScript unavailable and a
             result is a real, shareable, indexable URL. The sort control submits

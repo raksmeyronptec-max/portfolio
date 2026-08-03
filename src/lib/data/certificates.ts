@@ -605,6 +605,66 @@ export async function getCertificateCategories(
   }
 }
 
+/**
+ * Counts for the collection overview, derived from the published rows.
+ *
+ * ── Why these three numbers and not "10 verified credentials" ──────────────
+ * The obvious summary line for a credential collection is a count of verified
+ * ones, and it is the line this page must not print: none of the ten published
+ * credentials currently has a working issuer verification route, so any figure
+ * described as "verified" would be zero — or, if the old conflated status field
+ * were used, ten, which is worse.
+ *
+ * So the split is honest and self-explaining: how many are published, how many
+ * have been established as genuine by some route, and how many have not. The
+ * third number is not a failure count. Most of these are Cambodian school and
+ * university documents whose issuers run no online verification service at all,
+ * and saying so plainly is more credible than a green badge that means nothing.
+ *
+ * Everything is counted from the same RLS-constrained query the listing uses, so
+ * the figures cannot drift from what a visitor can actually browse to.
+ */
+export type CertificateOverview = {
+  published: number;
+  /** Verified by the issuer, or reviewed by hand before publication. */
+  established: number;
+  /** Awaiting verification, or issued by a body offering no way to check. */
+  notEstablished: number;
+};
+
+export async function getCertificateOverview(): Promise<CertificateOverview> {
+  const empty: CertificateOverview = {
+    published: 0,
+    established: 0,
+    notEstablished: 0,
+  };
+
+  if (!isSupabaseConfigured()) return empty;
+
+  try {
+    const supabase = await createSupabasePublicClient();
+    const { data, error } = await supabase
+      .from("certificates")
+      .select("verification_status");
+
+    if (error || !data) return empty;
+
+    const established = data.filter((row) =>
+      ["verified_by_issuer", "manually_reviewed"].includes(
+        row.verification_status as string,
+      ),
+    ).length;
+
+    return {
+      published: data.length,
+      established,
+      notEstablished: data.length - established,
+    };
+  } catch {
+    return empty;
+  }
+}
+
 /** Issuers and years that actually occur in published credentials. */
 export async function getCertificateFacets(): Promise<{
   issuers: string[];
