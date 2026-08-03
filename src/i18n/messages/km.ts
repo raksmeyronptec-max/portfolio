@@ -387,6 +387,9 @@ export const km: Dictionary = {
     relatedProjects: "គម្រោងពាក់ព័ន្ធ",
     relatedEducation: "ការអប់រំពាក់ព័ន្ធ",
     backToCertificates: "វិញ្ញាបនបត្រទាំងអស់",
+    credentialNavigation: "ការរុករកវិញ្ញាបនបត្រ",
+    previousCredential: "វិញ្ញាបនបត្រមុន",
+    nextCredential: "វិញ្ញាបនបត្របន្ទាប់",
     previewAlt: "ការបង្ហាញរបស់ {title}",
     previewNote:
       "រូបភាពបង្ហាញគឺជាច្បាប់ចម្លងដែលបានលាក់ព័ត៌មាន។ ព័ត៌មានសម្គាល់ខ្លួនត្រូវបានដកចេញមុនការផ្សព្វផ្សាយ។",

@@ -16,6 +16,7 @@ import { getSeoOverride, getSiteCounts } from "@/lib/data/site";
 import {
   getCertificateCategories,
   getCertificateFacets,
+  getFeaturedCertificates,
   isCertificateSort,
   isCredentialVerification,
   listCertificates,
@@ -76,7 +77,7 @@ export default async function CertificatesPage({
   const year = Number.isFinite(yearParam) ? yearParam : undefined;
   const page = toPositiveInt(single(query.page), 1);
 
-  const [result, categories, facets, counts] = await Promise.all([
+  const [result, categories, facets, counts, featured] = await Promise.all([
     listCertificates(locale, {
       search: search || undefined,
       category: category || undefined,
@@ -91,7 +92,15 @@ export default async function CertificatesPage({
     getCertificateFacets(),
     // The *unfiltered* published total, used to size the filter chrome.
     getSiteCounts(),
+    /*
+     * The capped featured set, used only to decide which cards may wear the
+     * badge. Read once here so the badge and any featured treatment elsewhere
+     * cannot disagree about membership.
+     */
+    getFeaturedCertificates(locale),
   ]);
+
+  const featuredSlugs = new Set(featured.map((item) => item.slug));
 
   const resultLabel = plural(
     result.total,
@@ -440,6 +449,7 @@ export default async function CertificatesPage({
                     locale={locale}
                     t={t}
                     headingLevel={2}
+                    showFeaturedBadge={featuredSlugs.has(certificate.slug)}
                   />
                 </Reveal>
               </li>

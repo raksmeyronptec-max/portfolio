@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils/cn";
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Breadcrumbs, pagination and tabs. All server-rendered — none of these needs
@@ -380,5 +380,89 @@ export function Td({
     >
       {children}
     </td>
+  );
+}
+
+/**
+ * Previous / next navigation between sibling records.
+ *
+ * Extracted because this is the third copy: the journey story page had a local
+ * `NeighbourLink`, the publication page had the same markup written inline, and
+ * credentials needed it too. Three is where duplication stops being cheaper than
+ * a shared component.
+ *
+ * Either side may be absent — the first and last records have only one
+ * neighbour — and the grid keeps "next" hard right in that case by rendering an
+ * empty cell rather than letting a lone link slide across.
+ */
+export function NeighbourNav({
+  label,
+  previous,
+  next,
+  className,
+}: {
+  /** Accessible name for the nav landmark, e.g. "Credential navigation". */
+  label: string;
+  previous?: { href: string; label: string; title: string } | null;
+  next?: { href: string; label: string; title: string } | null;
+  className?: string;
+}) {
+  if (!previous && !next) return null;
+
+  return (
+    <nav
+      aria-label={label}
+      className={cn(
+        "grid gap-3 border-t border-border pt-6 sm:grid-cols-2",
+        className,
+      )}
+    >
+      {previous ? (
+        <NeighbourLink {...previous} icon="arrowLeft" />
+      ) : (
+        // Holds the column so a lone "next" stays right-aligned.
+        <span aria-hidden="true" />
+      )}
+
+      {next ? <NeighbourLink {...next} icon="arrowRight" alignEnd /> : null}
+    </nav>
+  );
+}
+
+function NeighbourLink({
+  href,
+  label,
+  title,
+  icon,
+  alignEnd = false,
+}: {
+  href: string;
+  label: string;
+  title: string;
+  icon: IconName;
+  alignEnd?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group flex flex-col gap-1 rounded-(--radius-md) p-3 transition-colors",
+        "hover:bg-surface-muted",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--ring)",
+        alignEnd ? "sm:items-end sm:text-right" : "",
+      )}
+    >
+      <span className="flex items-center gap-1.5 text-[0.75rem] uppercase tracking-[0.06em] text-foreground-subtle">
+        {!alignEnd ? <Icon name={icon} size={13} aria-hidden="true" /> : null}
+        {label}
+        {alignEnd ? <Icon name={icon} size={13} aria-hidden="true" /> : null}
+      </span>
+      {/*
+        The title is the link's accessible name together with the label above it,
+        which is what makes "Previous — Bac II Certificate" readable in a screen
+        reader's link list rather than a page full of "Previous".
+      */}
+      <span className="text-small font-medium text-balance">{title}</span>
+    </Link>
   );
 }

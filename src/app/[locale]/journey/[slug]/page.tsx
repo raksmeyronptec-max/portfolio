@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { NeighbourNav } from "@/components/ui/navigation";
+
 import { Icon, type IconName } from "@/components/ui/icon";
 import { PageHeader } from "@/components/layout/page-header";
 import { JourneyGallery } from "@/components/public/journey-gallery";
@@ -355,33 +357,27 @@ export default async function JourneyStoryPage({
         ) : null}
 
         {/* ── Previous / next ────────────────────────────────────────────── */}
-        {previous || next ? (
-          <nav
-            aria-label={t.journey.storyNavigation}
-            className="grid gap-3 border-t border-border pt-6 sm:grid-cols-2"
-          >
-            {previous ? (
-              <NeighbourLink
-                href={localePath(locale, `journey/${previous.slug}`)}
-                label={t.journey.previousStory}
-                title={previous.title}
-                icon="arrowLeft"
-              />
-            ) : (
-              <span />
-            )}
-
-            {next ? (
-              <NeighbourLink
-                href={localePath(locale, `journey/${next.slug}`)}
-                label={t.journey.nextStory}
-                title={next.title}
-                icon="arrowRight"
-                alignEnd
-              />
-            ) : null}
-          </nav>
-        ) : null}
+        <NeighbourNav
+          label={t.journey.storyNavigation}
+          previous={
+            previous
+              ? {
+                  href: localePath(locale, `journey/${previous.slug}`),
+                  label: t.journey.previousStory,
+                  title: previous.title,
+                }
+              : null
+          }
+          next={
+            next
+              ? {
+                  href: localePath(locale, `journey/${next.slug}`),
+                  label: t.journey.nextStory,
+                  title: next.title,
+                }
+              : null
+          }
+        />
 
         <p>
           <Link
@@ -528,35 +524,3 @@ function JourneyRelationLink({
 
 // ── Neighbour navigation ────────────────────────────────────────────────────
 
-function NeighbourLink({
-  href,
-  label,
-  title,
-  icon,
-  alignEnd = false,
-}: {
-  href: string;
-  label: string;
-  title: string;
-  icon: IconName;
-  alignEnd?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group flex flex-col gap-1 rounded-(--radius-md) p-3 transition-colors",
-        "hover:bg-surface-muted",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--ring)",
-        alignEnd ? "sm:items-end sm:text-right" : "",
-      )}
-    >
-      <span className="flex items-center gap-1.5 text-[0.75rem] uppercase tracking-[0.06em] text-foreground-subtle">
-        {!alignEnd ? <Icon name={icon} size={13} /> : null}
-        {label}
-        {alignEnd ? <Icon name={icon} size={13} /> : null}
-      </span>
-      <span className="text-small font-medium text-balance">{title}</span>
-    </Link>
-  );
-}

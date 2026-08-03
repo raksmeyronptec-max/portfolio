@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { ButtonLink } from "@/components/ui/button";
-import { Breadcrumbs } from "@/components/ui/navigation";
+import { Breadcrumbs, NeighbourNav } from "@/components/ui/navigation";
 import {
   Badge,
   Card,
@@ -29,6 +29,7 @@ import { publicStorageUrl, resolveImage } from "@/lib/content/media";
 import { langAttribute } from "@/lib/content/translation";
 import {
   getCertificateBySlug,
+  getCertificateNeighbours,
   getPublishedCertificateSlugs,
 } from "@/lib/data/certificates";
 import { buildPageMetadata, truncateDescription } from "@/lib/seo/metadata";
@@ -98,9 +99,14 @@ export default async function CertificateDetailPage({
    * credential; the ceremony photographs live on the story and must never stand
    * in for the document itself.
    */
-  const journeyStories = (await getJourneyStoriesByRelation("certificate", locale))[
-    certificate.id
-  ];
+  const [journeyStoriesByCertificate, neighbours] = await Promise.all([
+    getJourneyStoriesByRelation("certificate", locale),
+    // Ordered exactly as the listing is, so "next" means the card that followed
+    // the one the visitor clicked.
+    getCertificateNeighbours(slug, locale),
+  ]);
+
+  const journeyStories = journeyStoriesByCertificate[certificate.id];
 
   // Only ever the redacted preview: `resolveImage` returns null for any private
   // asset, and the original's id is not even selected by the query.
@@ -378,8 +384,35 @@ export default async function CertificateDetailPage({
               </CardBody>
             </Card>
 
-            <div className="flex flex-wrap gap-3">
+            {/* ── Previous / next ───────────────────────────────────────────
+              Sits above "All certificates" so the two ways out are together:
+              step sideways through the collection, or leave it. */}
+            <NeighbourNav
+              label={t.certificates.credentialNavigation}
+              previous={
+                neighbours.previous
+                  ? {
+                      href: localePath(
+                        locale,
+                        `certificates/${neighbours.previous.slug}`,
+                      ),
+                      label: t.certificates.previousCredential,
+                      title: neighbours.previous.title,
+                    }
+                  : null
+              }
+              next={
+                neighbours.next
+                  ? {
+                      href: localePath(locale, `certificates/${neighbours.next.slug}`),
+                      label: t.certificates.nextCredential,
+                      title: neighbours.next.title,
+                    }
+                  : null
+              }
+            />
 
+            <div className="flex flex-wrap gap-3">
               <ButtonLink
                 href={localePath(locale, "certificates")}
                 variant="outline"

@@ -188,11 +188,25 @@ function toCard(row: RawCertificateRow, locale: Locale): CertificateCardData {
   };
 }
 
-// ── Featured certificates (homepage) ────────────────────────────────────────
+// ── Featured certificates ───────────────────────────────────────────────────
+
+/**
+ * How many credentials may carry the featured treatment.
+ *
+ * Eight of the ten published credentials are flagged `featured`, which makes the
+ * flag say nothing: a badge on almost everything is a badge on nothing.
+ *
+ * The cap is applied when reading rather than by clearing the owner's flags,
+ * because *which* credentials matter most is an editorial judgement that belongs
+ * to them. This only limits how many can shout at once, and the order below —
+ * `sort_order` then newest — is the lever they already have for choosing which.
+ */
+export const FEATURED_LIMIT = 3;
+
 
 export async function getFeaturedCertificates(
   locale: Locale,
-  limit = 4,
+  limit: number = FEATURED_LIMIT,
 ): Promise<CertificateCardData[]> {
   if (!isSupabaseConfigured()) return [];
 
@@ -630,6 +644,41 @@ export async function getCertificateFacets(): Promise<{
   } catch {
     return empty;
   }
+}
+
+/**
+ * The credentials either side of this one.
+ *
+ * Ordered exactly as the default listing is — featured first, then newest — so
+ * "next" means the card that followed the one the visitor clicked. Ordering
+ * these by anything else produces navigation that disagrees with the page the
+ * visitor just came from, which reads as a bug even when each page is
+ * internally consistent.
+ *
+ * Draft and deleted credentials cannot appear: the query is RLS-constrained, so
+ * an unpublished neighbour is simply not in the list rather than being a link
+ * that 404s.
+ */
+export async function getCertificateNeighbours(
+  slug: string,
+  locale: Locale,
+): Promise<{
+  previous: CertificateCardData | null;
+  next: CertificateCardData | null;
+}> {
+  const none = { previous: null, next: null };
+
+  // One page wide enough to hold the whole published collection. If it ever
+  // stops being, this returns no neighbours at the boundary rather than wrong
+  // ones.
+  const { items } = await listCertificates(locale, { perPage: 48 });
+  const index = items.findIndex((item) => item.slug === slug);
+  if (index === -1) return none;
+
+  return {
+    previous: items[index - 1] ?? null,
+    next: items[index + 1] ?? null,
+  };
 }
 
 /** Narrow a query-string value to a verification state. */

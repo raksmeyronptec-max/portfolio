@@ -23,11 +23,21 @@ export function CertificateCard({
   locale,
   t,
   headingLevel = 3,
+  showFeaturedBadge,
 }: {
   certificate: CertificateCardData;
   locale: Locale;
   t: Dictionary;
   headingLevel?: 2 | 3 | 4;
+  /**
+   * Whether to show the featured badge.
+   *
+   * Separate from `certificate.featured` because the flag and the treatment are
+   * different things: eight of ten published credentials carry the flag, and a
+   * badge on almost everything is a badge on nothing. The listing passes the
+   * capped set; the raw flag remains the owner's editorial signal.
+   */
+  showFeaturedBadge?: boolean;
 }) {
   const preview = resolveImage(certificate.preview, locale, "card");
   const href = localePath(locale, `certificates/${certificate.slug}`);
@@ -76,7 +86,7 @@ export function CertificateCard({
           {t.certificates.redactedPreview}
         </span>
 
-        {certificate.featured ? (
+        {(showFeaturedBadge ?? certificate.featured) ? (
           <span className="absolute left-2.5 top-2.5">
             <Badge tone="accent" icon="star">
               {t.common.featured}

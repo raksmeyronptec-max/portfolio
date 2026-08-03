@@ -443,6 +443,9 @@ export const en = {
     relatedProjects: "Related projects",
     relatedEducation: "Related education",
     backToCertificates: "All certificates",
+    credentialNavigation: "Credential navigation",
+    previousCredential: "Previous credential",
+    nextCredential: "Next credential",
     previewAlt: "Preview of {title}",
     previewNote:
       "Previews are redacted copies. Personal identifiers are removed before publication.",
