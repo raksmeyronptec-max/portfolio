@@ -170,9 +170,20 @@ export function usableAltText(value: string | null | undefined): string {
   const isAscii = /^[\x20-\x7E]+$/.test(alt);
   if (!isAscii) return alt;
 
+  /*
+   * `[\w.()\[\]-]` rather than `[\w.-]`, because brackets are ordinary
+   * filename characters and excluding them left a hole worth exactly one real
+   * defect: the live certificates page announced a credential preview as
+   * "ptec_certificate_(21-11-2024)". The parentheses failed the character
+   * class, the string was judged prose, and a screen-reader user got the
+   * filename read out. Same string without the brackets was correctly blanked.
+   *
+   * Still no whitespace in the class: a value with spaces is prose, and "Report
+   * (final)" must keep passing.
+   */
   const looksLikeFilename =
     /\.(png|jpe?g|webp|avif|gif|svg|heic|pdf)$/i.test(alt) ||
-    (/^[\w.-]+$/.test(alt) && /[_-]/.test(alt));
+    (/^[\w.()[\]-]+$/.test(alt) && /[_-]/.test(alt));
 
   return looksLikeFilename ? "" : alt;
 }

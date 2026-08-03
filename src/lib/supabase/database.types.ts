@@ -366,14 +366,20 @@ export type Database = {
           privacy_review_note: string | null
           privacy_reviewed_at: string | null
           privacy_reviewed_by: string | null
+          public_credential_id: string | null
           published_at: string | null
           review_note: string | null
+          show_credential_id: boolean
+          show_exact_score: boolean
           slug: string
           sort_order: number
           status: Database["public"]["Enums"]["publication_status"]
           updated_at: string
           updated_by: string | null
+          validity_status: Database["public"]["Enums"]["credential_validity"]
+          verification_status: Database["public"]["Enums"]["credential_verification"]
           verification_url: string | null
+          verified_on: string | null
         }
         Insert: {
           allow_public_download?: boolean
@@ -399,14 +405,20 @@ export type Database = {
           privacy_review_note?: string | null
           privacy_reviewed_at?: string | null
           privacy_reviewed_by?: string | null
+          public_credential_id?: string | null
           published_at?: string | null
           review_note?: string | null
+          show_credential_id?: boolean
+          show_exact_score?: boolean
           slug: string
           sort_order?: number
           status?: Database["public"]["Enums"]["publication_status"]
           updated_at?: string
           updated_by?: string | null
+          validity_status?: Database["public"]["Enums"]["credential_validity"]
+          verification_status?: Database["public"]["Enums"]["credential_verification"]
           verification_url?: string | null
+          verified_on?: string | null
         }
         Update: {
           allow_public_download?: boolean
@@ -432,14 +444,20 @@ export type Database = {
           privacy_review_note?: string | null
           privacy_reviewed_at?: string | null
           privacy_reviewed_by?: string | null
+          public_credential_id?: string | null
           published_at?: string | null
           review_note?: string | null
+          show_credential_id?: boolean
+          show_exact_score?: boolean
           slug?: string
           sort_order?: number
           status?: Database["public"]["Enums"]["publication_status"]
           updated_at?: string
           updated_by?: string | null
+          validity_status?: Database["public"]["Enums"]["credential_validity"]
+          verification_status?: Database["public"]["Enums"]["credential_verification"]
           verification_url?: string | null
+          verified_on?: string | null
         }
         Relationships: [
           {
@@ -3405,7 +3423,6 @@ export type Database = {
         Row: {
           allow_public_download: boolean | null
           category_id: string | null
-          credential_id: string | null
           credential_status:
             | Database["public"]["Enums"]["credential_status"]
             | null
@@ -3418,15 +3435,23 @@ export type Database = {
           issuer_url: string | null
           og_image_media_id: string | null
           preview_media_id: string | null
+          public_credential_id: string | null
           published_at: string | null
+          show_exact_score: boolean | null
           slug: string | null
           sort_order: number | null
+          validity_status:
+            | Database["public"]["Enums"]["credential_validity"]
+            | null
+          verification_status:
+            | Database["public"]["Enums"]["credential_verification"]
+            | null
           verification_url: string | null
+          verified_on: string | null
         }
         Insert: {
           allow_public_download?: boolean | null
           category_id?: string | null
-          credential_id?: string | null
           credential_status?:
             | Database["public"]["Enums"]["credential_status"]
             | null
@@ -3439,15 +3464,23 @@ export type Database = {
           issuer_url?: string | null
           og_image_media_id?: string | null
           preview_media_id?: string | null
+          public_credential_id?: string | null
           published_at?: string | null
+          show_exact_score?: boolean | null
           slug?: string | null
           sort_order?: number | null
+          validity_status?:
+            | Database["public"]["Enums"]["credential_validity"]
+            | null
+          verification_status?:
+            | Database["public"]["Enums"]["credential_verification"]
+            | null
           verification_url?: string | null
+          verified_on?: string | null
         }
         Update: {
           allow_public_download?: boolean | null
           category_id?: string | null
-          credential_id?: string | null
           credential_status?:
             | Database["public"]["Enums"]["credential_status"]
             | null
@@ -3460,10 +3493,19 @@ export type Database = {
           issuer_url?: string | null
           og_image_media_id?: string | null
           preview_media_id?: string | null
+          public_credential_id?: string | null
           published_at?: string | null
+          show_exact_score?: boolean | null
           slug?: string | null
           sort_order?: number | null
+          validity_status?:
+            | Database["public"]["Enums"]["credential_validity"]
+            | null
+          verification_status?:
+            | Database["public"]["Enums"]["credential_verification"]
+            | null
           verification_url?: string | null
+          verified_on?: string | null
         }
         Relationships: [
           {
@@ -3677,6 +3719,19 @@ export type Database = {
       admin_role: "owner" | "editor" | "viewer"
       content_locale: "en" | "km"
       credential_status: "active" | "expired" | "revoked" | "unverified"
+      credential_validity:
+        | "valid"
+        | "no_expiry"
+        | "expired"
+        | "revoked"
+        | "unknown"
+      credential_verification:
+        | "verified_by_issuer"
+        | "verification_link_available"
+        | "manually_reviewed"
+        | "awaiting_verification"
+        | "issuer_verification_unavailable"
+        | "unverified"
       file_visibility: "public" | "private"
       media_kind:
         | "project_cover"
@@ -4384,6 +4439,21 @@ export const Constants = {
       admin_role: ["owner", "editor", "viewer"],
       content_locale: ["en", "km"],
       credential_status: ["active", "expired", "revoked", "unverified"],
+      credential_validity: [
+        "valid",
+        "no_expiry",
+        "expired",
+        "revoked",
+        "unknown",
+      ],
+      credential_verification: [
+        "verified_by_issuer",
+        "verification_link_available",
+        "manually_reviewed",
+        "awaiting_verification",
+        "issuer_verification_unavailable",
+        "unverified",
+      ],
       file_visibility: ["public", "private"],
       media_kind: [
         "project_cover",

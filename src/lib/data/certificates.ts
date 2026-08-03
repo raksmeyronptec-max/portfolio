@@ -36,6 +36,28 @@ type CertificateTranslationRow = TranslationRow & {
   seo_description: string | null;
 };
 
+/**
+ * Is the qualification still in force? Nothing to do with whether anyone has
+ * checked it is genuine — see `CredentialVerification`. Conflating the two is
+ * what produced a live site where a permanent school diploma was labelled
+ * "Active" with a green dot, which a visitor reads as "verified".
+ */
+export type CredentialValidity =
+  | "valid"
+  | "no_expiry"
+  | "expired"
+  | "revoked"
+  | "unknown";
+
+/** How well established it is that the credential is genuine, and by what route. */
+export type CredentialVerification =
+  | "verified_by_issuer"
+  | "verification_link_available"
+  | "manually_reviewed"
+  | "awaiting_verification"
+  | "issuer_verification_unavailable"
+  | "unverified";
+
 export type CertificateCardData = {
   id: string;
   slug: string;
@@ -45,7 +67,12 @@ export type CertificateCardData = {
   issuerUrl: string | null;
   issuedOn: string | null;
   expiresOn: string | null;
-  credentialId: string | null;
+  /** Only present when the owner opted in; see `public_credential_id`. */
+  publicCredentialId: string | null;
+  validityStatus: CredentialValidity;
+  verificationStatus: CredentialVerification;
+  verifiedOn: string | null;
+  showExactScore: boolean;
   verificationUrl: string | null;
   allowPublicDownload: boolean;
   preview: MediaAsset | null;
@@ -71,11 +98,19 @@ export type CertificateDetailData = CertificateCardData & {
  * Explicit column list. `original_media_id`, `privacy_review_note`,
  * `contains_sensitive_data`, `created_by` and `updated_by` are deliberately
  * absent — a public query has no business selecting them.
+ *
+ * `credential_id` is absent for a stronger reason: it is frequently an
+ * examination or serial number, and on the published Bac II record it is a
+ * 21-digit examination identifier that this query used to select and the detail
+ * page used to render. `public_credential_id` is a generated column that is NULL
+ * unless the owner explicitly opted in, so the private value is not in the
+ * result set at all rather than being fetched and then remembered about.
  */
 const CARD_SELECT = `
   id, slug, featured, credential_status, sort_order,
   issuer_en, issuer_km, issuer_url,
-  issued_on, expires_on, credential_id, verification_url,
+  issued_on, expires_on, public_credential_id, verification_url,
+  validity_status, verification_status, verified_on, show_exact_score,
   allow_public_download, published_at,
   preview:media_assets!certificates_preview_media_id_fkey(${MEDIA_COLUMNS}),
   category:certificate_categories(id, slug, name_en, name_km, icon),
@@ -92,7 +127,11 @@ type RawCertificateRow = {
   issuer_url: string | null;
   issued_on: string | null;
   expires_on: string | null;
-  credential_id: string | null;
+  public_credential_id: string | null;
+  validity_status: CredentialValidity;
+  verification_status: CredentialVerification;
+  verified_on: string | null;
+  show_exact_score: boolean;
   verification_url: string | null;
   allow_public_download: boolean;
   published_at: string | null;
@@ -124,7 +163,11 @@ function toCard(row: RawCertificateRow, locale: Locale): CertificateCardData {
     issuerUrl: row.issuer_url,
     issuedOn: row.issued_on,
     expiresOn: row.expires_on,
-    credentialId: row.credential_id,
+    publicCredentialId: row.public_credential_id,
+    validityStatus: row.validity_status,
+    verificationStatus: row.verification_status,
+    verifiedOn: row.verified_on,
+    showExactScore: row.show_exact_score,
     verificationUrl: row.verification_url,
     allowPublicDownload: row.allow_public_download,
     preview: row.preview,

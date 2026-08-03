@@ -227,6 +227,20 @@ export function certificatePublishBlockers(input: CertificateInput): string[] {
   // The text alternative to an unreadable image.
   if (!defaultTranslation.image_summary?.trim()) blockers.push("imageSummaryMissing");
 
+  /*
+   * The description is redacted too, not just the image.
+   *
+   * Every translation is checked, not only the default one: a Khmer description
+   * is just as public as an English one, and the leak that prompted this guard
+   * would have been equally bad in either language.
+   */
+  for (const translation of input.translations) {
+    const check = describesSafely(translation.image_summary);
+    if (!check.safe) {
+      blockers.push(...check.reasons.map((reason) => `description_${reason}`));
+    }
+  }
+
   if (!input.preview_media_id) blockers.push("previewMissing");
 
   if (!input.privacy_review_confirmed) blockers.push("privacyReviewMissing");
@@ -243,6 +257,14 @@ export function certificatePublishBlockers(input: CertificateInput): string[] {
 }
 
 export const certificateBlockerLabels: Record<string, string> = {
+  description_gender:
+    "The public document description states a gender. Describe the credential, not the holder.",
+  description_dateOfBirth:
+    "The public document description contains a date of birth. Remove it — it is published verbatim on the credential page.",
+  description_exactScore:
+    "The public document description contains an exact score. Publish the grade, or enable “show exact score” deliberately.",
+  description_identifier:
+    "The public document description contains a candidate, registration or serial identifier. Remove it.",
   noTranslation: "At least one language version is required.",
   titleMissing: "A title is required.",
   imageSummaryMissing:
@@ -265,4 +287,73 @@ export function collectCertificateErrors(error: z.ZodError): Record<string, stri
     if (!result[path]) result[path] = issue.message;
   }
   return result;
+}
+
+/**
+ * Does a public document description avoid the shapes that leak personal data?
+ *
+ * ── Why this exists ────────────────────────────────────────────────────────
+ * `image_summary` is the text alternative to the redacted preview, and the
+ * natural way to write one is to read the document and type what it says. That
+ * is how two published school certificates on the live site came to state the
+ * holder's gender and full date of birth, and how one of them came to publish an
+ * exact examination score to three decimals alongside per-subject grades.
+ *
+ * The preview images themselves were properly redacted. The *description* was
+ * not, because nothing was checking it — the redaction discipline applied to the
+ * image and stopped there.
+ *
+ * ── What this is and is not ────────────────────────────────────────────────
+ * A shape detector, not a classifier. It looks for a small number of patterns
+ * that are almost never legitimate in a public credential description, and it is
+ * deliberately narrow: a guard that fires on ordinary sentences gets overridden
+ * once and then ignored forever. In particular an ordinary issue date is fine —
+ * only a date attached to birth wording is flagged.
+ *
+ * It cannot catch a description that leaks something in prose it does not
+ * recognise. It is a floor, not a proof, and the human privacy checklist remains
+ * the actual review.
+ */
+export function describesSafely(
+  description: string | null | undefined,
+): { safe: boolean; reasons: string[] } {
+  const text = description?.trim();
+  if (!text) return { safe: true, reasons: [] };
+
+  const reasons: string[] = [];
+
+  // Gender, stated as an attribute of the holder. `(male,` / `, female)` /
+  // "sex: male" — not the word appearing incidentally in prose.
+  if (/[(,;:]\s*(male|female)\b|\b(gender|sex)\s*[:=]/i.test(text)) {
+    reasons.push("gender");
+  }
+
+  // Date of birth, in the wordings these documents actually use.
+  if (
+    /\bborn\b|\bdate of birth\b|\bd\.?o\.?b\.?\b|\bbirth\s*date\b|ថ្ងៃខែឆ្នាំកំណើត/i.test(
+      text,
+    )
+  ) {
+    reasons.push("dateOfBirth");
+  }
+
+  // An exact score. A grade letter is a published result; "99.734" is the
+  // examination system's internal precision and belongs behind `show_exact_score`.
+  if (/\bscore\s*[:=(]?\s*\d+\.\d+|\b\d+\.\d{2,}\b/i.test(text)) {
+    reasons.push("exactScore");
+  }
+
+  // Candidate / registration / serial identifiers, named or bare. The bare rule
+  // is a run of 8+ digits, which is an identifier in this context and never a
+  // year, a grade or a count.
+  if (
+    /\b(candidate|registration|student|serial|examination|exam)\s*(number|no\.?|id|#)/i.test(
+      text,
+    ) ||
+    /\b\d{8,}\b/.test(text)
+  ) {
+    reasons.push("identifier");
+  }
+
+  return { safe: reasons.length === 0, reasons };
 }

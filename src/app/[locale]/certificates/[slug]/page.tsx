@@ -123,7 +123,13 @@ export default async function CertificateDetailPage({
       issuerUrl: certificate.issuerUrl,
       issuedOn: certificate.issuedOn,
       expiresOn: certificate.expiresOn,
-      credentialId: certificate.credentialId,
+      /*
+        Only the opted-in identifier reaches structured data. The audit found
+        four credentials emitting schema.org `identifier`, one of them a 21-digit
+        examination number — published because the field existed, not because
+        anyone decided it should be.
+      */
+      credentialId: certificate.publicCredentialId,
       imageUrl:
         (certificate.preview
           ? publicStorageUrl(
@@ -280,7 +286,9 @@ export default async function CertificateDetailPage({
                     },
                     {
                       label: t.certificates.credentialId,
-                      value: certificate.credentialId ?? undefined,
+                      // `undefined` drops the row entirely rather than rendering
+                      // an empty definition — see MetadataList.
+                      value: certificate.publicCredentialId ?? undefined,
                     },
                     {
                       label: t.certificates.category,
