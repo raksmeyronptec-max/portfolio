@@ -390,8 +390,13 @@ export const en = {
 
   certificates: {
     title: "Certificates and academic achievements",
+    /*
+     * Not "verified credentials". None of the published credentials currently
+     * has a working issuer verification route, and describing the collection as
+     * verified is a claim the page cannot support — see the verification model.
+     */
     description:
-      "Verified credentials, academic awards and teacher-education certificates.",
+      "A privacy-safe record of academic qualifications, teacher-development learning and educational achievements.",
     searchLabel: "Search certificates",
     searchPlaceholder: "Search by title or issuer",
     filterCategory: "Category",
@@ -435,6 +440,63 @@ export const en = {
       revoked: "Revoked",
       unverified: "Awaiting verification",
     },
+
+    /*
+     * Validity and verification are two different questions, and the site used
+     * to answer both with one word. Every credential rendered as "Active" with
+     * a green dot — including permanent diplomas, a university transcript and
+     * four school commendation letters — which a visitor reads as "verified",
+     * a claim none of them supports.
+     *
+     * So: `validity` answers "is this qualification still in force?", and
+     * `verification` answers "has anyone established it is genuine, and how?".
+     * Both render as text, never as colour alone.
+     */
+    validityLabel: "Validity",
+    validity: {
+      valid: "Valid",
+      no_expiry: "No expiry",
+      expired: "Expired",
+      revoked: "Revoked",
+      unknown: "Validity unknown",
+    },
+
+    verificationLabel: "Verification",
+    verification: {
+      verified_by_issuer: "Verified by issuer",
+      verification_link_available: "Official verification available",
+      manually_reviewed: "Manually reviewed",
+      awaiting_verification: "Awaiting verification",
+      issuer_verification_unavailable: "Issuer verification unavailable",
+      unverified: "Unverified",
+    },
+
+    /*
+     * One sentence per verification state, shown on the detail page. Each says
+     * plainly what was and was not established — "manually reviewed" in
+     * particular must not be allowed to read as issuer verification.
+     */
+    verificationExplained: {
+      verified_by_issuer:
+        "The issuing organisation confirmed this credential through its own verification service.",
+      verification_link_available:
+        "The issuer provides an official verification page for this credential. Follow the link to check it at source.",
+      manually_reviewed:
+        "The credential and its redacted preview were reviewed before publication. This is not the same as verification by the issuer.",
+      awaiting_verification:
+        "This credential is published with a privacy-safe preview, but no official online verification source has been connected yet.",
+      issuer_verification_unavailable:
+        "The issuing organisation does not offer a public online verification service. This page presents a redacted portfolio record.",
+      unverified: "No verification has been carried out for this credential.",
+    },
+    verifiedOn: "Verified on",
+    verificationMethod: "Method",
+
+    /* Preview and download policy. */
+    redactedPreview: "Redacted public preview",
+    previewOnly: "Preview only",
+    previewOnlyExplained:
+      "Downloading is disabled to protect personal and credential information.",
   },
 
   resume: {

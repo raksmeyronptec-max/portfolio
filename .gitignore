@@ -65,4 +65,5 @@ yarn-error.log*
 # Feature review screenshots — kept on disk for review, too heavy for git.
 /docs/experience-photos-screenshots/
 /docs/journey-screenshots/
+/docs/certificates-screenshots/
 /docs/publications-screenshots/

@@ -12,10 +12,13 @@ import {
   CardBody,
   MetaList,
   ProseText,
-  StatusDot,
   Tag,
 } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
+import {
+  CredentialStatusPair,
+  VerificationStatus,
+} from "@/components/public/credential-status";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { JourneyStoryLinks } from "@/components/public/journey-story-links";
 import { getJourneyStoriesByRelation } from "@/lib/data/journey";
@@ -104,14 +107,6 @@ export default async function CertificateDetailPage({
   const preview = resolveImage(certificate.preview, locale, "preview");
   const contentLang = langAttribute(locale, certificate.contentLocale);
 
-  const statusTone =
-    certificate.credentialStatus === "active"
-      ? "success"
-      : certificate.credentialStatus === "unverified"
-        ? "warning"
-        : certificate.credentialStatus === "expired"
-          ? "neutral"
-          : "danger";
 
   const structuredData = graph([
     credentialSchema({
@@ -258,10 +253,12 @@ export default async function CertificateDetailPage({
                 )}
               </p>
 
-              <p className="flex items-center gap-2 text-small">
-                <StatusDot tone={statusTone} />
-                {t.certificates.status[certificate.credentialStatus]}
-              </p>
+              <CredentialStatusPair
+                verification={certificate.verificationStatus}
+                validity={certificate.validityStatus}
+                t={t}
+                className="text-small"
+              />
             </div>
 
             {certificate.description ? (
@@ -279,10 +276,19 @@ export default async function CertificateDetailPage({
                         : undefined,
                     },
                     {
-                      label: t.certificates.expiresOn,
-                      value: certificate.expiresOn
-                        ? formatDate(certificate.expiresOn, locale)
-                        : t.certificates.noExpiry,
+                      /*
+                        Validity, not a guessed expiry. This row used to print
+                        "No expiry" whenever `expires_on` was NULL, which
+                        conflates "this qualification is permanent" with "nobody
+                        recorded an expiry date" — the first is a fact about a
+                        diploma, the second is missing data.
+                      */
+                      label: t.certificates.validityLabel,
+                      value:
+                        certificate.validityStatus === "valid" &&
+                        certificate.expiresOn
+                          ? formatDate(certificate.expiresOn, locale)
+                          : t.certificates.validity[certificate.validityStatus],
                     },
                     {
                       label: t.certificates.credentialId,
@@ -312,29 +318,67 @@ export default async function CertificateDetailPage({
               </div>
             ) : null}
 
-            {/* ── Verification ──────────────────────────────────────────── */}
-            <div className="flex flex-wrap gap-3">
-              {certificate.verificationUrl ? (
-                <OutboundLink
-                  href={certificate.verificationUrl}
-                  newTabHint={t.a11y.opensInNewTab}
-                  event={{
-                    name: "certificate_verify_click",
-                    locale,
-                    entityType: "certificate",
-                    entityId: certificate.id,
-                    entitySlug: certificate.slug,
-                    properties: { url: certificate.verificationUrl },
-                  }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
-                >
-                  {t.certificates.verify}
-                </OutboundLink>
-              ) : (
-                <p className="text-small text-foreground-subtle">
-                  {t.certificates.verifyUnavailable}
+            {/* ── Verification ──────────────────────────────────────────────
+              A section rather than a lone button. The question "is this real,
+              and how would I know?" deserves an answer in words: the previous
+              treatment offered either a Verify button or the single line "No
+              online verification available", which told a reader nothing about
+              whether that was the issuer's limitation or an outstanding task.
+            */}
+            <Card>
+              <CardBody className="flex flex-col gap-3">
+                <h2 className="text-h4 font-semibold">
+                  {t.certificates.verificationLabel}
+                </h2>
+
+                <VerificationStatus
+                  status={certificate.verificationStatus}
+                  t={t}
+                  className="text-base"
+                />
+
+                <p className="max-w-[62ch] text-small text-foreground-muted">
+                  {t.certificates.verificationExplained[certificate.verificationStatus]}
                 </p>
-              )}
+
+                {/*
+                  Only rendered for a status that claims a verification happened.
+                  A database CHECK guarantees `verified_on` is present for those
+                  and absent otherwise, so this cannot print a date that was
+                  really just `updated_at`.
+                */}
+                {certificate.verifiedOn ? (
+                  <p className="text-small text-foreground-subtle">
+                    {t.certificates.verifiedOn}{" "}
+                    <time dateTime={certificate.verifiedOn}>
+                      {formatDate(certificate.verifiedOn, locale)}
+                    </time>
+                  </p>
+                ) : null}
+
+                {certificate.verificationUrl ? (
+                  <div>
+                    <OutboundLink
+                      href={certificate.verificationUrl}
+                      newTabHint={t.a11y.opensInNewTab}
+                      event={{
+                        name: "certificate_verify_click",
+                        locale,
+                        entityType: "certificate",
+                        entityId: certificate.id,
+                        entitySlug: certificate.slug,
+                        properties: { url: certificate.verificationUrl },
+                      }}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-(--radius-md) bg-primary px-4 text-base font-medium text-primary-foreground hover:bg-primary-hover"
+                    >
+                      {t.certificates.verify}
+                    </OutboundLink>
+                  </div>
+                ) : null}
+              </CardBody>
+            </Card>
+
+            <div className="flex flex-wrap gap-3">
 
               <ButtonLink
                 href={localePath(locale, "certificates")}
@@ -352,8 +396,14 @@ export default async function CertificateDetailPage({
               the database enforces with a trigger.
             */}
             {!certificate.allowPublicDownload ? (
-              <Notice tone="info" icon="lock">
-                <p>{t.certificates.downloadUnavailable}</p>
+              /*
+                States the reason, not just the absence. "This document is not
+                available for download" reads as a fault or an oversight; the
+                truth is that withholding it is the deliberate protection, and
+                saying so turns a dead end into an explanation.
+              */
+              <Notice tone="info" icon="lock" title={t.certificates.previewOnly}>
+                <p>{t.certificates.previewOnlyExplained}</p>
               </Notice>
             ) : null}
 

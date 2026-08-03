@@ -149,7 +149,14 @@ export default async function CertificatesPage({
           { label: t.nav.certificates },
         ]}
         breadcrumbLabel={t.a11y.breadcrumb}
-        watermark="✓"
+        /*
+          Not a check mark. A page-sized ✓ behind a credential collection makes
+          a verification claim about all of it, and none of the published
+          credentials currently has a working issuer verification route — the
+          per-credential states are "awaiting verification" and "issuer
+          verification unavailable". A seal is about documents, not about proof.
+        */
+        watermark="◈"
       >
         {/*
           Privacy note. Demoted from a full-width info banner to one quiet line

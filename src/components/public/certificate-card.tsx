@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Badge, Card, StatusDot } from "@/components/ui/primitives";
+import { Badge, Card } from "@/components/ui/primitives";
+import { CredentialStatusPair } from "./credential-status";
 import { Icon, toIconName } from "@/components/ui/icon";
 import { formatDate, type Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
@@ -33,15 +34,6 @@ export function CertificateCard({
   const contentLang = langAttribute(locale, certificate.contentLocale);
   const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
 
-  const statusTone =
-    certificate.credentialStatus === "active"
-      ? "success"
-      : certificate.credentialStatus === "unverified"
-        ? "warning"
-        : certificate.credentialStatus === "expired"
-          ? "neutral"
-          : "danger";
-
   return (
     <Card
       as="article"
@@ -72,6 +64,17 @@ export function CertificateCard({
             <Icon name={toIconName(certificate.category?.icon, "award")} size={30} />
           </div>
         )}
+
+        {/*
+          States what the image is, which is the honest counterpart to redacting
+          it: a visitor should know the document was altered before publication
+          rather than wonder why a seal is missing. Bottom-left, clear of the
+          document's own title and of the featured badge.
+        */}
+        <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-(--radius-full) bg-surface/90 px-2 py-0.5 text-[0.6875rem] font-medium text-foreground-muted backdrop-blur-sm">
+          <Icon name="shield" size={11} aria-hidden="true" />
+          {t.certificates.redactedPreview}
+        </span>
 
         {certificate.featured ? (
           <span className="absolute left-2.5 top-2.5">
@@ -112,11 +115,17 @@ export function CertificateCard({
             </span>
           ) : null}
 
-          {/* Status is text + a dot, never colour alone. */}
-          <span className="inline-flex items-center gap-1.5">
-            <StatusDot tone={statusTone} />
-            {t.certificates.status[certificate.credentialStatus]}
-          </span>
+          {/*
+            Verification and validity, as two separate facts. This used to be a
+            single "Active" beside a green dot on every credential — including
+            permanent diplomas and commendation letters — which reads as
+            "verified" for a claim none of them supports.
+          */}
+          <CredentialStatusPair
+            verification={certificate.verificationStatus}
+            validity={certificate.validityStatus}
+            t={t}
+          />
         </div>
       </div>
     </Card>
