@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { visitorHash } from "@/lib/analytics/visitor";
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { contentDispositionAttachment } from "@/lib/media/validate";
+import { resumeDownloadFilename } from "@/lib/content/resume-file";
 
 /**
  * Resume download.
@@ -109,8 +110,11 @@ export async function GET(request: NextRequest) {
       // Deliberately ignored.
     }
 
-    const filename =
-      chosen.asset.original_filename || `resume-${chosen.locale}.pdf`;
+    const filename = resumeDownloadFilename({
+      versionLabel: chosen.version_label,
+      locale: chosen.locale,
+      originalFilename: chosen.asset.original_filename,
+    });
 
     return new NextResponse(file, {
       status: 200,

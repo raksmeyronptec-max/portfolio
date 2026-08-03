@@ -43,9 +43,17 @@ export function ResumeDownloadButton({
     >
       <Icon name="download" size={18} />
       <span>{label}</span>
-      {/* Visible to everyone: knowing the type and size before clicking is useful
-          sighted-user information too, not just an a11y accommodation. */}
-      <span className="text-[0.8125rem] font-normal opacity-80">({fileHint})</span>
+      {/*
+        Visible to everyone: knowing the type and size before clicking is useful
+        sighted-user information too, not just an a11y accommodation.
+
+        No `opacity` here. It used to be `opacity-80`, which took 13px text
+        below 4.5:1 against the button fill and was the only accessibility
+        failure Lighthouse found on this page. Size and weight already
+        distinguish the hint from the label; dimming it as well was buying a
+        visual nicety with contrast.
+      */}
+      <span className="text-[0.8125rem] font-normal">({fileHint})</span>
     </a>
   );
 }

@@ -439,7 +439,8 @@ export const en = {
 
   resume: {
     title: "Resume",
-    description: "Read the current resume online, or download it as a PDF.",
+    description:
+      "Ron Raksmey’s experience across teaching, mathematics, product design and full-stack education technology — read it online or download the formal PDF.",
     download: "Download PDF",
     print: "Print",
     lastUpdated: "Last updated {date}",
@@ -457,6 +458,111 @@ export const en = {
       skills: "Skills",
       languages: "Languages",
       contact: "Contact",
+    },
+
+    /*
+     * ── The résumé page ──────────────────────────────────────────────────
+     * Everything below names what the reader is looking at. Every fact on
+     * the page — the roles, the dates, the grades, the file size, the
+     * availability line — comes from the CMS. No string here asserts one.
+     */
+    eyebrow: "Curriculum vitae",
+    /* Sits under the name: the identity, not a job application headline. */
+    role: "Educator · Mathematics student · Product engineer",
+    summaryHeading: "Profile",
+    /*
+     * The résumé's own summary. Deliberately not `settings.positioning`,
+     * which opens the homepage — a reader arriving from there would meet the
+     * same sentence twice. This one is written for a recruiter: what the
+     * person is, what they build, and in what context.
+     */
+    summary:
+      "Educator, mathematics student and full-stack product builder working in education technology. I combine primary-teaching practice, academic-resource architecture and software engineering to build bilingual platforms for teachers, students and academic institutions in Cambodia.",
+
+    /* ── Utility panel ─────────────────────────────────────────────────── */
+    utility: {
+      heading: "This résumé",
+      language: "Language",
+      updated: "Updated",
+      file: "File",
+      /* The version panel's own label for the document's language, which is
+         not always the page's — see `noResumeForLocale`. */
+      documentLanguage: "PDF language",
+      copyLink: "Copy page link",
+      copied: "Link copied",
+      copyFailed: "Copy failed — the link is in the address bar",
+    },
+
+    /* ── In-page navigation ────────────────────────────────────────────── */
+    nav: {
+      label: "Résumé sections",
+      overview: "Overview",
+    },
+
+    /* ── Sections ──────────────────────────────────────────────────────── */
+    capabilities: {
+      heading: "Core capabilities",
+      /* The four buckets the CMS vocabulary is grouped into. */
+      education: "Education practice",
+      product: "Product and design",
+      engineering: "Engineering",
+      quality: "Quality and delivery",
+    },
+
+    experience: {
+      heading: "Professional experience",
+      contributions: "Selected contributions",
+      evidence: "Evidence",
+      viewAll: "Full experience details",
+      current: "Current",
+    },
+
+    education: {
+      heading: "Education",
+      currentHeading: "Current study",
+      completedHeading: "Earlier qualifications",
+      viewAll: "Full education details",
+      /* Rendered beside a grade so "A" is never shown without its scale. */
+      result: "Result",
+    },
+
+    projects: {
+      heading: "Selected projects",
+      role: "Role",
+      viewProject: "Project details",
+      visitLive: "Live system",
+      viewAll: "All projects",
+    },
+
+    publications: {
+      heading: "Selected publications",
+      viewPublication: "View publication",
+      viewAll: "All publications",
+      khmer: "Khmer",
+      english: "English",
+      bilingual: "Khmer and English",
+    },
+
+    languages: {
+      heading: "Languages",
+    },
+
+    contact: {
+      heading: "Contact",
+      availability: "Availability",
+      linkedin: "LinkedIn",
+      /* A descriptive label, never the raw profile URL. */
+      linkedinDisplay: "Ron Raksmey",
+      portfolio: "Portfolio",
+      copyEmail: "Copy email address",
+      emailCopied: "Email address copied",
+      emailCopyFailed: "Copy failed — the address is shown above",
+    },
+
+    cta: {
+      heading: "Interested in my work across education, mathematics and digital products?",
+      contact: "Contact me",
+      projects: "View selected projects",
     },
   },
 

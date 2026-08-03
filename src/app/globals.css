@@ -1490,11 +1490,125 @@
     break-after: avoid;
   }
 
-  section, article {
+  /*
+     `break-inside: avoid` belongs on things that FIT on a page.
+
+     It used to sit on `section, article`, and the résumé's article is taller
+     than an A4 content box — so the browser, unable to honour the request,
+     pushed the whole document to the next page and printed a blank first one.
+     The rule now applies to individual entries, which are page-sized by
+     construction, and sections are left breakable. `.resume-entry` is the
+     opt-in class the résumé rows carry. */
+  .resume-entry,
+  figure,
+  blockquote {
     break-inside: avoid;
+  }
+
+  /*
+     …but a role entry is often a third of a page, and refusing to break three
+     of them in a row pushed this résumé from four pages to five with a mostly
+     empty last one. Long entries are allowed to flow; what actually matters —
+     that a role heading is never stranded at the foot of a page without its
+     first lines — is already guaranteed by the `break-after: avoid` on
+     headings above, plus the orphan/widow rule on the section. */
+  .resume-entry-lg {
+    break-inside: auto;
   }
 
   .section-y {
     padding-block: 0.75rem;
+  }
+
+  /* ── A4 résumé ─────────────────────────────────────────────────────────
+     Margins live on the page box rather than the container, so the browser
+     can place headers and footers correctly and every page gets the same
+     gutter. 14mm is tight enough to keep the résumé short without looking
+     cramped. */
+  @page {
+    size: A4;
+    margin: 14mm 14mm 16mm;
+  }
+
+  /* The screen shell collapses: the résumé is the document, so its own
+     container padding and max-width would only shrink the printable area —
+     and the vertical padding, being the last thing in the flow, was spilling
+     past the final page break and printing an empty trailing sheet. The
+     `@page` margin is the document's only gutter. */
+  .container-content,
+  .container-narrow,
+  .container-prose {
+    max-width: none;
+    padding: 0;
+    margin-inline: 0;
+  }
+
+  .resume-section {
+    /* A heading stranded at the foot of a page is the classic résumé print
+       fault; keeping two lines with it is enough to prevent it. */
+    orphans: 2;
+    widows: 2;
+    /* Screen spacing is generous because a screen scrolls. Paper does not, and
+       a résumé that runs to six pages is one nobody reads to the end of. */
+    gap: 0.5rem;
+  }
+
+  .resume-body {
+    gap: 1rem;
+    /* Slightly tighter than the 11pt site default. A résumé is read closely
+       and at arm's length, and the extra density is what keeps the contact
+       block on the last page of content rather than alone on a new one. */
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+
+  /* Row padding is screen breathing room; on paper it is page count. */
+  .resume-entry {
+    padding-block: 0.35rem;
+  }
+
+  /* Capability groups print as grouped inline lists, not as bordered cards —
+     four boxes of chips is a web pattern that wastes a third of a page. */
+  .resume-capability-group {
+    border: 0 !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+
+  /* The chip's box lives on the `Tag` span inside the item, so that is what
+     has to be flattened — the separator carries the grouping on paper. */
+  .resume-capability-group li,
+  .resume-capability-group li > span {
+    border: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    color: inherit;
+  }
+
+  .resume-capability-group li:not(:last-child)::after {
+    content: " · ";
+    color: #444;
+  }
+
+  /* The résumé's own grid is a screen layout — on paper the utility column is
+     gone and the content should use the full measure. */
+  .resume-layout {
+    display: block !important;
+  }
+
+  /* Print-only identity block: the ink-scoped header is hidden, so the name,
+     role and summary are re-rendered here as plain text. */
+  .resume-print-header {
+    display: block !important;
+  }
+
+  /*
+     The general rule above already appends every external URL after its label,
+     which is what makes "Live system" followable on paper. The contact block is
+     the exception: it prints its own readable value (`@Ron_Raksmey`, the email
+     address), so appending the href would print each one twice. */
+  .resume-contact a[href^="http"]::after,
+  .resume-contact a[href^="mailto"]::after {
+    content: none;
   }
 }

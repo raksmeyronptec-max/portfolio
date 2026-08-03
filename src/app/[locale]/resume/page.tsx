@@ -2,21 +2,21 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageViewTracker } from "@/components/analytics/page-view-tracker";
-import { PageHeader } from "@/components/layout/page-header";
-import { ButtonLink } from "@/components/ui/button";
-import { PrintButton } from "@/components/public/print-button";
-import { ResumeDownloadButton } from "@/components/public/resume-download";
+import { ClosingBand } from "@/components/public/closing-band";
+import { CopyButton } from "@/components/public/resume/copy-button";
+import { ResumeIdentity } from "@/components/public/resume/identity";
+import { ResumeSectionNav } from "@/components/public/resume/section-nav";
+import { ResumeUtilityPanel } from "@/components/public/resume/utility-panel";
 import {
-  Badge,
-  Card,
-  CardBody,
-  Divider,
-  MetaList,
-  ProseText,
-  SmartLink,
-  Tag,
-} from "@/components/ui/primitives";
-import { EmptyState, Notice } from "@/components/ui/states";
+  ResumeCapabilities,
+  ResumeContact,
+  ResumeEducationList,
+  ResumeExperienceList,
+  ResumeLanguages,
+  ResumeProjects,
+  ResumePublications,
+  ResumeSection,
+} from "@/components/public/resume/sections";
 import {
   formatDate,
   formatFileSize,
@@ -25,21 +25,57 @@ import {
 } from "@/i18n/dictionary";
 import {
   isLocale,
-  localeMeta,
   localePath,
   otherLocales,
   type Locale,
 } from "@/i18n/config";
-import { absoluteUrl } from "@/lib/supabase/env";
+import { absoluteUrl, siteUrl } from "@/lib/supabase/env";
 import { fileTypeLabel } from "@/lib/content/media";
 import { getSeoOverride, getSiteSettings, getSpokenLanguages } from "@/lib/data/site";
-import { getEducation, getExperiences, getCapabilityGroups } from "@/lib/data/cv";
+import { getEducation, getExperiences } from "@/lib/data/cv";
 import { getActiveResume, getAvailableResumeLocales } from "@/lib/data/resume";
 import { getFeaturedProjects } from "@/lib/data/projects";
+import { getFeaturedPublications } from "@/lib/data/publications";
+import {
+  buildResumeCapabilities,
+  buildResumeContact,
+  buildResumeEducation,
+  buildResumeExperience,
+  buildResumePublications,
+  type ResumeProjectInput,
+} from "@/lib/content/resume-view";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { JsonLd, breadcrumbSchema, graph, profilePageSchema } from "@/lib/seo/jsonld";
 
+/**
+ * The Resume page.
+ *
+ * ── Two documents, one source ──────────────────────────────────────────────
+ * A readable web résumé and a formal PDF. Both describe the same career, and
+ * the web one is assembled from the very CMS rows the Experience, Education,
+ * Projects and Publications pages use — so it cannot drift from them. What it
+ * adds is résumé framing: reverse-chronological order, four contributions per
+ * role instead of seven, and a capability summary derived from the tags those
+ * roles already carry.
+ *
+ * ── And a third rendering: paper ───────────────────────────────────────────
+ * `@media print` in globals.css turns this into an A4 document — the ink
+ * header, the utility panel and the navigation drop out, the print-only
+ * identity block appears, and external URLs are appended after their labels.
+ * Printing is never triggered automatically; `PrintButton` is a real button.
+ */
+
 export const revalidate = 300;
+
+const SECTION_IDS = {
+  profile: "resume-profile",
+  capabilities: "resume-capabilities",
+  experience: "resume-experience",
+  education: "resume-education",
+  projects: "resume-projects",
+  publications: "resume-publications",
+  contact: "resume-contact",
+} as const;
 
 export async function generateMetadata({
   params,
@@ -64,16 +100,6 @@ export async function generateMetadata({
   });
 }
 
-/**
- * Resume page.
- *
- * Serves three needs from one route:
- *  1. A readable web resume built from the same CMS data as the rest of the site,
- *     so it can never drift from the Education and Experience pages.
- *  2. A PDF download of the active resume version, counted server-side.
- *  3. A print-friendly rendering — `@media print` in globals.css hides the header,
- *     footer and controls, and expands link URLs.
- */
 export default async function ResumePage({
   params,
 }: {
@@ -85,21 +111,106 @@ export default async function ResumePage({
 
   const t = getDictionary(locale);
 
-  const [settings, resume, availableLocales, education, experiences, capabilities, languages, projects] =
-    await Promise.all([
-      getSiteSettings(locale),
-      getActiveResume(locale),
-      getAvailableResumeLocales(),
-      getEducation(locale),
-      getExperiences(locale),
-      getCapabilityGroups(locale),
-      getSpokenLanguages(locale),
-      getFeaturedProjects(locale, 6),
-    ]);
+  const [
+    settings,
+    resume,
+    availableLocales,
+    education,
+    experiences,
+    languages,
+    projects,
+    publications,
+  ] = await Promise.all([
+    getSiteSettings(locale),
+    getActiveResume(locale),
+    getAvailableResumeLocales(),
+    getEducation(locale),
+    getExperiences(locale),
+    getSpokenLanguages(locale),
+    getFeaturedProjects(locale, 3),
+    getFeaturedPublications(locale, 3),
+  ]);
 
-  const alternateLocale = otherLocales(locale).find((candidate) =>
-    availableLocales.includes(candidate),
-  );
+  const projectInputs: ResumeProjectInput[] = projects.map((project) => ({
+    id: project.id,
+    slug: project.slug,
+    title: project.title,
+    summary: project.summary,
+    liveUrl: project.liveUrl,
+    role: project.role,
+    technologies: project.technologies,
+    categories: project.categories,
+  }));
+
+  const experienceEntries = buildResumeExperience({
+    entries: experiences,
+    projects: projectInputs,
+    locale,
+    t,
+  });
+  const educationEntries = buildResumeEducation({ entries: education, locale, t });
+  const capabilities = buildResumeCapabilities({
+    experiences,
+    projects: projectInputs,
+    t,
+  });
+  const publicationEntries = buildResumePublications({
+    publications: publications.map((publication) => ({
+      id: publication.id,
+      slug: publication.slug,
+      href: publication.href,
+      title: publication.title,
+      subject: publication.subject,
+      year: publication.year,
+      contentLanguage: publication.contentLanguage,
+      typeName: publication.type?.name ?? null,
+    })),
+    locale,
+    t,
+  });
+
+  const pageUrl = absoluteUrl(localePath(locale, "resume"));
+  const contactLinks = buildResumeContact({
+    settings,
+    locale,
+    t,
+    siteUrl: siteUrl(),
+  });
+
+  /*
+   * Availability is rendered only when the owner has both flagged themselves
+   * available and written a status line. Neither is inferred: an unset flag
+   * removes the row rather than printing a guess about their circumstances.
+   */
+  const availability =
+    settings.isAvailableForWork && settings.availabilityStatus
+      ? settings.availabilityStatus
+      : null;
+
+  const alternateLocale =
+    otherLocales(locale).find((candidate) => availableLocales.includes(candidate)) ??
+    null;
+
+  const fileHint = resume
+    ? interpolate(t.a11y.fileTypeAndSize, {
+        type: fileTypeLabel(resume.asset.mime_type),
+        size: formatFileSize(resume.asset.file_size_bytes, locale),
+      })
+    : "";
+
+  const navSections = [
+    { id: SECTION_IDS.profile, label: t.resume.nav.overview },
+    { id: SECTION_IDS.capabilities, label: t.resume.capabilities.heading },
+    { id: SECTION_IDS.experience, label: t.resume.sections.experience },
+    { id: SECTION_IDS.education, label: t.resume.sections.education },
+    ...(projectInputs.length > 0
+      ? [{ id: SECTION_IDS.projects, label: t.resume.sections.projects }]
+      : []),
+    ...(publicationEntries.length > 0
+      ? [{ id: SECTION_IDS.publications, label: t.resume.publications.heading }]
+      : []),
+    { id: SECTION_IDS.contact, label: t.resume.sections.contact },
+  ];
 
   const structuredData = graph([
     breadcrumbSchema([
@@ -110,7 +221,7 @@ export default async function ResumePage({
       locale,
       path: "resume",
       name: settings.siteName,
-      description: settings.positioning,
+      description: t.resume.description,
       dateModified: resume?.updatedAt,
     }),
   ]);
@@ -120,261 +231,196 @@ export default async function ResumePage({
       <JsonLd data={structuredData} />
       <PageViewTracker locale={locale} eventName="resume_view" entityType="resume" />
 
-      {/* `data-print="hide"` is set inside PageHeader's own section via the
-          global print rules; the band itself is decoration and never printed. */}
-      <div data-print="hide">
-        <PageHeader
-          title={t.resume.title}
-          description={t.resume.description}
-          eyebrow={t.nav.resume}
-          breadcrumbs={[
-            { label: t.nav.home, href: localePath(locale) },
-            { label: t.nav.resume },
-          ]}
-          breadcrumbLabel={t.a11y.breadcrumb}
-          watermark="CV"
-        />
-      </div>
+      <ResumeIdentity
+        locale={locale}
+        t={t}
+        name={settings.siteName}
+        location={settings.location}
+        availability={availability}
+        resume={resume ? { id: resume.id, fileHint } : null}
+      />
 
-      <div className="container-narrow flex flex-col gap-8 py-14 sm:py-16">
-        <div data-print="hide" className="flex flex-col gap-6">
-          {/* ── Version + actions ───────────────────────────────────────── */}
-          {resume ? (
-            <Card>
-              <CardBody className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-foreground-muted">
-                  <Badge tone="primary">
-                    {interpolate(t.resume.currentVersion, {
-                      label: resume.versionLabel,
-                    })}
-                  </Badge>
-                  <span>
-                    {interpolate(t.resume.lastUpdated, {
-                      date: formatDate(resume.updatedAt, locale),
-                    })}
-                  </span>
-                </div>
-
-                {resume.isFallback ? (
-                  <Notice tone="info">
-                    <p>
-                      {interpolate(t.resume.noResumeForLocale, {
-                        language: localeMeta[locale].nativeName,
-                        fallback: localeMeta[resume.locale].nativeName,
-                      })}
-                    </p>
-                  </Notice>
-                ) : null}
-
-                <div className="flex flex-wrap gap-3">
-                  <ResumeDownloadButton
-                    locale={locale}
-                    resumeId={resume.id}
-                    label={t.resume.download}
-                    /* Type and size are announced with the link, so a screen-reader
-                       user knows what they are about to download. */
-                    fileHint={interpolate(t.a11y.fileTypeAndSize, {
-                      type: fileTypeLabel(resume.asset.mime_type),
-                      size: formatFileSize(resume.asset.file_size_bytes, locale),
-                    })}
-                  />
-
-                  <PrintButton label={t.resume.print} />
-
-                  {alternateLocale ? (
-                    <ButtonLink
-                      href={localePath(alternateLocale, "resume")}
-                      variant="ghost"
-                      hrefLang={localeMeta[alternateLocale].tag}
-                    >
-                      {interpolate(t.resume.viewOtherLanguage, {
-                        language: localeMeta[alternateLocale].nativeName,
-                      })}
-                    </ButtonLink>
-                  ) : null}
-                </div>
-              </CardBody>
-            </Card>
-          ) : (
-            <Notice tone="warning">
-              <p>{t.resume.noResume}</p>
-            </Notice>
-          )}
-        </div>
-
-        {/* ── Web resume ───────────────────────────────────────────────────── */}
-        <article className="flex flex-col gap-8">
-          <header className="flex flex-col gap-2">
-            <h2 className="text-h2 font-bold">{settings.siteName}</h2>
-            {settings.positioning ? (
-              <p className="text-body-lg text-foreground-muted">
-                {settings.positioning}
+      <div className="container-content py-12 sm:py-14">
+        {/*
+          Two columns on wide screens, one everywhere else. The utility panel
+          comes *after* the résumé in the DOM so a screen reader and a keyboard
+          user reach the content first; `lg:order-2` moves it to the right
+          visually without changing that order.
+        */}
+        <div className="resume-layout grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,17rem)] lg:gap-14">
+          <main className="resume-body flex min-w-0 flex-col gap-10">
+            {/* ── Print-only identity ──────────────────────────────────────
+                The ink header does not print, so the name, role and contact
+                line are re-rendered here as plain text for paper. Hidden on
+                screen, where the header above already says all of it. */}
+            <header className="resume-print-header hidden">
+              <h2 className="text-h2 font-bold">{settings.siteName}</h2>
+              <p className="text-body-lg">{t.resume.role}</p>
+              <p className="mt-1 text-small">
+                {[settings.location, settings.contactEmail]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
+            </header>
+
+            <ResumeSection id={SECTION_IDS.profile} title={t.resume.summaryHeading}>
+              <p className="max-w-[70ch] text-body text-foreground-muted">
+                {t.resume.summary}
+              </p>
+            </ResumeSection>
+
+            {capabilities.length > 0 ? (
+              <ResumeSection
+                id={SECTION_IDS.capabilities}
+                title={t.resume.capabilities.heading}
+              >
+                <ResumeCapabilities groups={capabilities} />
+              </ResumeSection>
             ) : null}
 
-            <MetaList
-              className="mt-2"
-              items={[
-                { label: t.about.locationHeading, value: settings.location ?? undefined },
-                {
-                  label: t.contact.directEmail,
-                  value: settings.contactEmail ? (
-                    <SmartLink
-                      href={`mailto:${settings.contactEmail}`}
-                      className="text-primary underline underline-offset-2"
-                    >
-                      {settings.contactEmail}
-                    </SmartLink>
-                  ) : undefined,
-                },
-                {
-                  label: t.contact.directTelegram,
-                  value: settings.telegramHandle ?? undefined,
-                },
-              ]}
-            />
-          </header>
+            {experienceEntries.length > 0 ? (
+              <ResumeSection
+                id={SECTION_IDS.experience}
+                title={t.resume.experience.heading}
+                action={{
+                  href: localePath(locale, "experience"),
+                  label: t.resume.experience.viewAll,
+                }}
+              >
+                <ResumeExperienceList t={t} entries={experienceEntries} />
+              </ResumeSection>
+            ) : null}
 
-          <Divider />
+            {educationEntries.current.length + educationEntries.completed.length >
+            0 ? (
+              <ResumeSection
+                id={SECTION_IDS.education}
+                title={t.resume.education.heading}
+                action={{
+                  href: localePath(locale, "education"),
+                  label: t.resume.education.viewAll,
+                }}
+              >
+                <ResumeEducationList
+                  t={t}
+                  current={educationEntries.current}
+                  completed={educationEntries.completed}
+                />
+              </ResumeSection>
+            ) : null}
 
-          <ResumeSection title={t.resume.sections.education}>
-            {education.length === 0 ? (
-              <EmptyState title={t.education.emptyState} />
-            ) : (
-              <ul className="flex flex-col gap-4">
-                {education.map((entry) => (
-                  <li key={entry.id} className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-semibold">{entry.institution}</p>
-                      {entry.periodLabel ? (
-                        <p className="font-mono text-[0.8125rem] text-foreground-muted">
-                          {entry.periodLabel}
-                        </p>
-                      ) : null}
-                    </div>
-                    {entry.qualification ? (
-                      <p className="text-small text-foreground-muted">
-                        {entry.qualification}
-                      </p>
-                    ) : null}
-                    {entry.gradeValue && entry.gradeScale ? (
-                      <p className="text-small">
-                        {t.education.grade}: {entry.gradeValue} — {entry.gradeScale}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </ResumeSection>
+            {projectInputs.length > 0 ? (
+              <ResumeSection
+                id={SECTION_IDS.projects}
+                title={t.resume.projects.heading}
+                action={{
+                  href: localePath(locale, "projects"),
+                  label: t.resume.projects.viewAll,
+                }}
+              >
+                <ResumeProjects locale={locale} t={t} projects={projectInputs} />
+              </ResumeSection>
+            ) : null}
 
-          <ResumeSection title={t.resume.sections.experience}>
-            {experiences.length === 0 ? (
-              <EmptyState title={t.experience.emptyState} />
-            ) : (
-              <ul className="flex flex-col gap-4">
-                {experiences.map((entry) => (
-                  <li key={entry.id} className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-semibold">{entry.roleTitle}</p>
-                      {entry.periodLabel ? (
-                        <p className="font-mono text-[0.8125rem] text-foreground-muted">
-                          {entry.periodLabel}
-                        </p>
-                      ) : null}
-                    </div>
-                    <p className="text-small text-foreground-muted">
-                      {entry.organization}
-                      {entry.location ? ` · ${entry.location}` : ""}
-                    </p>
-                    {entry.summary ? (
-                      <ProseText text={entry.summary} className="text-small" />
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </ResumeSection>
+            {publicationEntries.length > 0 ? (
+              <ResumeSection
+                id={SECTION_IDS.publications}
+                title={t.resume.publications.heading}
+                action={{
+                  href: localePath(locale, "publications"),
+                  label: t.resume.publications.viewAll,
+                }}
+              >
+                <ResumePublications publications={publicationEntries} />
+              </ResumeSection>
+            ) : null}
 
-          {projects.length > 0 ? (
-            <ResumeSection title={t.resume.sections.projects}>
-              <ul className="flex flex-col gap-3">
-                {projects.map((project) => (
-                  <li key={project.id} className="flex flex-col gap-0.5">
-                    <p className="font-semibold">
-                      <SmartLink
-                        href={localePath(locale, `projects/${project.slug}`)}
-                        className="underline decoration-transparent underline-offset-2 hover:decoration-current"
-                      >
-                        {project.title}
-                      </SmartLink>
-                    </p>
-                    {project.summary ? (
-                      <p className="text-small text-foreground-muted">
-                        {project.summary}
-                      </p>
-                    ) : null}
-                    {project.liveUrl ? (
-                      <p className="text-[0.8125rem] text-foreground-subtle">
-                        {project.liveUrl}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </ResumeSection>
-          ) : null}
+            {languages.length > 0 ? (
+              <ResumeSection
+                id="resume-languages"
+                title={t.resume.languages.heading}
+              >
+                <ResumeLanguages languages={languages} />
+              </ResumeSection>
+            ) : null}
 
-          {capabilities.length > 0 ? (
-            <ResumeSection title={t.resume.sections.skills}>
-              <div className="flex flex-col gap-4">
-                {capabilities.map((group) => (
-                  <div key={group.id} className="flex flex-col gap-2">
-                    <p className="text-small font-semibold">{group.name}</p>
-                    <ul className="flex flex-wrap gap-1.5">
-                      {group.skills.map((skill) => (
-                        <li key={skill.id}>
-                          <Tag>{skill.name}</Tag>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </ResumeSection>
-          ) : null}
+            <div className="resume-contact">
+              <ResumeSection
+                id={SECTION_IDS.contact}
+                title={t.resume.contact.heading}
+              >
+                <ResumeContact
+                  t={t}
+                  links={contactLinks}
+                  availability={availability}
+                  copySlot={
+                    settings.contactEmail ? (
+                      <CopyButton
+                        value={settings.contactEmail}
+                        label={t.resume.contact.copyEmail}
+                        copiedLabel={t.resume.contact.emailCopied}
+                        failedLabel={t.resume.contact.emailCopyFailed}
+                        className="print:hidden"
+                      />
+                    ) : null
+                  }
+                />
+              </ResumeSection>
+            </div>
+          </main>
 
-          {languages.length > 0 ? (
-            <ResumeSection title={t.resume.sections.languages}>
-              <ul className="flex flex-wrap gap-x-6 gap-y-2">
-                {languages.map((language) => (
-                  <li key={language.id} className="text-small">
-                    <span className="font-medium">{language.name}</span>
-                    <span className="text-foreground-muted"> — {language.proficiency}</span>
-                  </li>
-                ))}
-              </ul>
-            </ResumeSection>
-          ) : null}
-        </article>
+          <ResumeUtilityPanel
+            locale={locale}
+            t={t}
+            pageUrl={pageUrl}
+            alternateLocale={alternateLocale}
+            resume={
+              resume
+                ? {
+                    versionLabel: resume.versionLabel,
+                    documentLocale: resume.locale,
+                    updatedLabel: formatDate(resume.updatedAt, locale),
+                    fileLabel: `${fileTypeLabel(resume.asset.mime_type)} · ${formatFileSize(
+                      resume.asset.file_size_bytes,
+                      locale,
+                    )}`,
+                    isFallback: resume.isFallback,
+                  }
+                : null
+            }
+          >
+            <ResumeSectionNav label={t.resume.nav.label} sections={navSections} />
+          </ResumeUtilityPanel>
+        </div>
+      </div>
+
+      {/* Screen only: a printed résumé ends at the contact details, not at a
+          call to action that cannot be clicked. */}
+      {/* Screen only: a printed résumé ends at the contact details, not at a
+          call to action that cannot be clicked. */}
+      <div data-print="hide">
+        <ClosingBand
+          headingId="resume-cta-heading"
+          eyebrow={t.nav.resume}
+          heading={t.resume.cta.heading}
+          body={interpolate(t.resume.lastUpdated, {
+            date: resume ? formatDate(resume.updatedAt, locale) : "",
+          })}
+          actions={[
+            {
+              href: localePath(locale, "contact"),
+              label: t.resume.cta.contact,
+              variant: "accent",
+              iconEnd: "arrowRight",
+            },
+            {
+              href: localePath(locale, "projects"),
+              label: t.resume.cta.projects,
+              variant: "outline",
+            },
+          ]}
+        />
       </div>
     </>
-  );
-}
-
-function ResumeSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-3">
-      <h3 className="text-eyebrow font-semibold uppercase tracking-[0.08em] text-accent-subtle-foreground">
-        {title}
-      </h3>
-      {children}
-    </section>
   );
 }
