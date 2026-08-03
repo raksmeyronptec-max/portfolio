@@ -248,6 +248,7 @@ export type Database = {
       certificate_skills: {
         Row: {
           certificate_id: string
+          evidence_kind: Database["public"]["Enums"]["credential_evidence_kind"]
           id: string
           label_en: string
           label_km: string | null
@@ -255,6 +256,7 @@ export type Database = {
         }
         Insert: {
           certificate_id: string
+          evidence_kind?: Database["public"]["Enums"]["credential_evidence_kind"]
           id?: string
           label_en: string
           label_km?: string | null
@@ -262,6 +264,7 @@ export type Database = {
         }
         Update: {
           certificate_id?: string
+          evidence_kind?: Database["public"]["Enums"]["credential_evidence_kind"]
           id?: string
           label_en?: string
           label_km?: string | null
@@ -3718,6 +3721,7 @@ export type Database = {
     Enums: {
       admin_role: "owner" | "editor" | "viewer"
       content_locale: "en" | "km"
+      credential_evidence_kind: "confirms" | "related_interest"
       credential_status: "active" | "expired" | "revoked" | "unverified"
       credential_validity:
         | "valid"
@@ -4438,6 +4442,7 @@ export const Constants = {
     Enums: {
       admin_role: ["owner", "editor", "viewer"],
       content_locale: ["en", "km"],
+      credential_evidence_kind: ["confirms", "related_interest"],
       credential_status: ["active", "expired", "revoked", "unverified"],
       credential_validity: [
         "valid",

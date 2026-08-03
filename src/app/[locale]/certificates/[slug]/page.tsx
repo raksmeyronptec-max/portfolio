@@ -311,17 +311,27 @@ export default async function CertificateDetailPage({
               </CardBody>
             </Card>
 
-            {certificate.skills.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <h2 className="text-h4 font-semibold">{t.certificates.skills}</h2>
-                <ul className="flex flex-wrap gap-1.5">
-                  {certificate.skills.map((skill) => (
-                    <li key={skill.id}>
-                      <Tag>{skill.label}</Tag>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {/* ── What the credential evidences ─────────────────────────────
+              Two groups under two headings, never one list called "Skills
+              demonstrated". A one-day summit attendance certificate listed
+              under that heading invites a reader — or a CV parser — to
+              conclude the holder was assessed on the topic. What the document
+              proves and what it is merely about are different claims, so they
+              are made separately and the weaker one says so in words. */}
+            {certificate.confirms.length > 0 ? (
+              <SkillGroup
+                heading={t.certificates.confirmsHeading}
+                hint={t.certificates.confirmsHint}
+                skills={certificate.confirms}
+              />
+            ) : null}
+
+            {certificate.relatedInterests.length > 0 ? (
+              <SkillGroup
+                heading={t.certificates.relatedInterestsHeading}
+                hint={t.certificates.relatedInterestsHint}
+                skills={certificate.relatedInterests}
+              />
             ) : null}
 
             {/* ── Verification ──────────────────────────────────────────────
@@ -476,5 +486,37 @@ export default async function CertificateDetailPage({
         </div>
       </article>
     </>
+  );
+}
+
+/**
+ * One evidence group: a heading, a sentence saying how strong the claim is, and
+ * the tags.
+ *
+ * The hint is not decoration. "Related professional interests" alone still reads
+ * as a list of things the holder is good at; "It does not assess them" is the
+ * part that stops an attendance certificate implying competence.
+ */
+function SkillGroup({
+  heading,
+  hint,
+  skills,
+}: {
+  heading: string;
+  hint: string;
+  skills: Array<{ id: string; label: string }>;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-h4 font-semibold">{heading}</h2>
+      <p className="text-[0.8125rem] text-foreground-muted">{hint}</p>
+      <ul className="flex flex-wrap gap-1.5 pt-0.5">
+        {skills.map((skill) => (
+          <li key={skill.id}>
+            <Tag>{skill.label}</Tag>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

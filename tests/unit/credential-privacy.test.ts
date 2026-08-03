@@ -176,3 +176,63 @@ describe("publish gate — the description guard is actually enforced", () => {
     expect(blockers).toEqual([]);
   });
 });
+
+/**
+ * Evidence claims default to the weaker one.
+ *
+ * `confirms` asserts that the document itself evidences a skill. Getting that
+ * default wrong is how an attendance certificate comes to imply an assessed
+ * competency — so the schema, the admin's "add" action and the database column
+ * must all land on `related_interest` when nobody has said otherwise.
+ */
+describe("skill evidence — the default is the weaker claim", () => {
+  it("treats a skill with no stated evidence kind as a related interest", async () => {
+    const { certificateSchema } = await import("@/lib/validation/certificate");
+
+    const parsed = certificateSchema.safeParse({
+      slug: "a-credential",
+      status: "draft",
+      credential_status: "unverified",
+      issuer_en: "An Issuer",
+      featured: false,
+      sort_order: 0,
+      needs_review: false,
+      contains_sensitive_data: true,
+      allow_public_download: false,
+      privacy_review_confirmed: false,
+      // No `confirms` key: the shape the admin sends before anyone ticks a box.
+      skills: [{ label: "Education Technology" }],
+      translations: [{ locale: "en", title: "A credential" }],
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.skills[0]).toEqual({
+        label: "Education Technology",
+        confirms: false,
+      });
+    }
+  });
+
+  it("keeps an explicit confirms claim", async () => {
+    const { certificateSchema } = await import("@/lib/validation/certificate");
+
+    const parsed = certificateSchema.safeParse({
+      slug: "a-credential",
+      status: "draft",
+      credential_status: "unverified",
+      issuer_en: "An Issuer",
+      featured: false,
+      sort_order: 0,
+      needs_review: false,
+      contains_sensitive_data: true,
+      allow_public_download: false,
+      privacy_review_confirmed: false,
+      skills: [{ label: "Attendance", confirms: true }],
+      translations: [{ locale: "en", title: "A credential" }],
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.skills[0]?.confirms).toBe(true);
+  });
+});

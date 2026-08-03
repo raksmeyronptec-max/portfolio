@@ -436,6 +436,11 @@ export const en = {
     credentialId: "Credential ID",
     category: "Category",
     skills: "Skills demonstrated",
+    confirmsHeading: "What this credential confirms",
+    confirmsHint: "Evidenced by the document itself.",
+    relatedInterestsHeading: "Related professional interests",
+    relatedInterestsHint:
+      "Topics this credential connects to. It does not assess them.",
     verify: "Verify credential",
     verifyUnavailable: "No online verification available",
     download: "Download certificate",

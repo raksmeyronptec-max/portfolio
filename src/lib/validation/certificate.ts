@@ -127,7 +127,20 @@ export const certificateSchema = z
     needs_review: z.boolean(),
     review_note: optionalText(2000),
 
-    skills: z.array(z.string().trim().min(1).max(120)).max(30).default([]),
+    /*
+     * Each skill carries whether the document actually evidences it. See
+     * migration 0032: one flat list under "Skills demonstrated" is how an
+     * attendance certificate comes to imply an assessed competency.
+     */
+    skills: z
+      .array(
+        z.object({
+          label: z.string().trim().min(1).max(120),
+          confirms: z.boolean().default(false),
+        }),
+      )
+      .max(30)
+      .default([]),
     relatedProjectIds: z.array(z.uuid()).max(20).default([]),
 
     translations: z

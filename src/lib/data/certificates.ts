@@ -88,7 +88,16 @@ export type CertificateDetailData = CertificateCardData & {
   ogImage: MediaAsset | null;
   publishedAt: string | null;
   updatedAt: string;
-  skills: Array<{ id: string; label: string }>;
+  /**
+   * What the document itself evidences — completion, attendance, a grade.
+   *
+   * Kept separate from `relatedInterests` because merging them is how an
+   * attendance certificate comes to imply an assessed competency. See
+   * migration 0032.
+   */
+  confirms: Array<{ id: string; label: string }>;
+  /** Topics the credential connects to but does not assess. */
+  relatedInterests: Array<{ id: string; label: string }>;
   relatedProjects: Array<{ id: string; slug: string; title: string }>;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -449,7 +458,7 @@ export async function getCertificateBySlug(
         )},
          updated_at,
          og_image:media_assets!certificates_og_image_media_id_fkey(${MEDIA_COLUMNS}),
-         certificate_skills(id, label_en, label_km, sort_order),
+         certificate_skills(id, label_en, label_km, sort_order, evidence_kind),
          certificate_project_links(
            project:projects(id, slug, project_translations(locale, title))
          )`,
@@ -464,6 +473,7 @@ export async function getCertificateBySlug(
       og_image: MediaAsset | null;
       certificate_translations: CertificateTranslationRow[];
       certificate_skills: Array<{
+        evidence_kind: "confirms" | "related_interest";
         id: string;
         label_en: string;
         label_km: string | null;
@@ -490,13 +500,8 @@ export async function getCertificateBySlug(
       ogImage: row.og_image,
       publishedAt: row.published_at,
       updatedAt: row.updated_at,
-      skills: row.certificate_skills
-        .slice()
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((skill) => ({
-          id: skill.id,
-          label: pickLocalized(locale, skill.label_en, skill.label_km) ?? skill.label_en,
-        })),
+      confirms: toSkillList(row.certificate_skills, "confirms", locale),
+      relatedInterests: toSkillList(row.certificate_skills, "related_interest", locale),
       // Only published projects survive RLS, so a credential linked to a draft
       // project simply shows no link rather than a dead one.
       relatedProjects: row.certificate_project_links
@@ -679,6 +684,28 @@ export async function getCertificateNeighbours(
     previous: items[index - 1] ?? null,
     next: items[index + 1] ?? null,
   };
+}
+
+/** One evidence group, sorted and localised. */
+function toSkillList(
+  skills: Array<{
+    id: string;
+    label_en: string;
+    label_km: string | null;
+    sort_order: number;
+    evidence_kind: "confirms" | "related_interest";
+  }>,
+  kind: "confirms" | "related_interest",
+  locale: Locale,
+): Array<{ id: string; label: string }> {
+  return skills
+    .filter((skill) => skill.evidence_kind === kind)
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((skill) => ({
+      id: skill.id,
+      label: pickLocalized(locale, skill.label_en, skill.label_km) ?? skill.label_en,
+    }));
 }
 
 /** Narrow a query-string value to a verification state. */

@@ -380,6 +380,11 @@ export const km: Dictionary = {
     credentialId: "លេខសម្គាល់សញ្ញាបត្រ",
     category: "ប្រភេទ",
     skills: "ជំនាញដែលបានបញ្ជាក់",
+    confirmsHeading: "អ្វីដែលវិញ្ញាបនបត្រនេះបញ្ជាក់",
+    confirmsHint: "បញ្ជាក់ដោយឯកសារផ្ទាល់។",
+    relatedInterestsHeading: "ចំណាប់អារម្មណ៍វិជ្ជាជីវៈពាក់ព័ន្ធ",
+    relatedInterestsHint:
+      "ប្រធានបទដែលវិញ្ញាបនបត្រនេះពាក់ព័ន្ធ ប៉ុន្តែមិនបានវាយតម្លៃទេ។",
     verify: "ផ្ទៀងផ្ទាត់សញ្ញាបត្រ",
     verifyUnavailable: "គ្មានការផ្ទៀងផ្ទាត់តាមអ៊ីនធឺណិតទេ",
     download: "ទាញយកវិញ្ញាបនបត្រ",

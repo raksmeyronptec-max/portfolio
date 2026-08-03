@@ -157,7 +157,7 @@ export async function getCertificateFormValues(
       .from("certificates")
       .select(
         `*, certificate_translations(*),
-         certificate_skills(label_en, sort_order),
+         certificate_skills(label_en, sort_order, evidence_kind),
          certificate_project_links(project_id)`,
       )
       .eq("id", certificateId)
@@ -167,7 +167,11 @@ export async function getCertificateFormValues(
 
     const row = data as unknown as Record<string, unknown> & {
       certificate_translations: Array<Record<string, unknown>>;
-      certificate_skills: Array<{ label_en: string; sort_order: number }>;
+      certificate_skills: Array<{
+        label_en: string;
+        sort_order: number;
+        evidence_kind: string;
+      }>;
       certificate_project_links: Array<{ project_id: string }>;
     };
 
@@ -221,7 +225,10 @@ export async function getCertificateFormValues(
       skills: row.certificate_skills
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order)
-        .map((skill) => skill.label_en),
+        .map((skill) => ({
+          label: skill.label_en,
+          confirms: skill.evidence_kind === "confirms",
+        })),
       relatedProjectIds: row.certificate_project_links.map((link) => link.project_id),
       translations,
     };

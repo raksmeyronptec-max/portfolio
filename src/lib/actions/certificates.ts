@@ -159,13 +159,22 @@ export async function saveCertificate(
     if (data.skills.length > 0) {
       // De-duplicate: the table has a unique constraint on (certificate_id,
       // label_en) and a repeated label would otherwise fail the whole save.
-      const unique = [...new Set(data.skills.map((skill) => skill.trim()))].filter(Boolean);
+      const seen = new Set<string>();
+      const unique = data.skills
+        .map((skill) => ({ ...skill, label: skill.label.trim() }))
+        .filter((skill) => {
+          if (!skill.label || seen.has(skill.label)) return false;
+          seen.add(skill.label);
+          return true;
+        });
 
       await supabase.from("certificate_skills").insert(
-        unique.map((label, index) => ({
+        unique.map((skill, index) => ({
           certificate_id: id,
-          label_en: label,
+          label_en: skill.label,
           sort_order: index,
+          // Defaults to the weaker claim when the owner has not said otherwise.
+          evidence_kind: skill.confirms ? "confirms" : "related_interest",
         })),
       );
     }

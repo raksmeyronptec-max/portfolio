@@ -147,11 +147,16 @@ export function CertificateForm({
   function addSkill() {
     const label = skillDraft.trim();
     if (!label) return;
-    if (values.skills.includes(label)) {
+    if (values.skills.some((skill) => skill.label === label)) {
       setSkillDraft("");
       return;
     }
-    update("skills", [...values.skills, label]);
+    /*
+     * Added as a related interest, never as confirmed evidence. Promoting a
+     * skill to "the document proves this" is a claim, and a claim should be an
+     * action the owner takes rather than the default they forget to change.
+     */
+    update("skills", [...values.skills, { label, confirms: false }]);
     setSkillDraft("");
   }
 
@@ -547,28 +552,71 @@ export function CertificateForm({
               </div>
 
               {values.skills.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {values.skills.map((skill) => (
-                    <li key={skill}>
-                      <span className="inline-flex items-center gap-1.5 rounded-(--radius-sm) border border-border bg-surface px-2 py-1 text-[0.8125rem]">
-                        {skill}
-                        <button
-                          type="button"
-                          aria-label={`Remove ${skill}`}
-                          onClick={() =>
-                            update(
-                              "skills",
-                              values.skills.filter((item) => item !== skill),
-                            )
-                          }
-                          className="rounded-(--radius-xs) text-foreground-muted hover:text-danger"
-                        >
-                          <Icon name="close" size={13} />
-                        </button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="text-[0.8125rem] text-foreground-muted">
+                    Tick a skill only when the document itself evidences it —
+                    completion, attendance, a grade, a named programme. Everything
+                    else is published as a related interest, which states that the
+                    credential does not assess it.
+                  </p>
+
+                  <ul className="flex flex-col gap-1.5">
+                    {values.skills.map((skill) => (
+                      <li key={skill.label}>
+                        <span className="flex items-center gap-2 rounded-(--radius-sm) border border-border bg-surface px-2 py-1.5 text-[0.8125rem]">
+                          {/* A bare input with an aria-label: the visible text
+                              beside it already names the state, and a second
+                              visible label per row would triple the height of a
+                              list that is meant to be scanned. */}
+                          <input
+                            type="checkbox"
+                            aria-label={`${skill.label} is evidenced by the document`}
+                            checked={skill.confirms}
+                            className="size-4 shrink-0 rounded-(--radius-xs) border border-border-strong accent-(--primary)"
+                            onChange={(event) =>
+                              update(
+                                "skills",
+                                values.skills.map((item) =>
+                                  item.label === skill.label
+                                    ? { ...item, confirms: event.target.checked }
+                                    : item,
+                                ),
+                              )
+                            }
+                          />
+
+                          <span className="flex-1">{skill.label}</span>
+
+                          <span
+                            className={
+                              skill.confirms
+                                ? "text-[0.75rem] font-medium text-success-foreground"
+                                : "text-[0.75rem] text-foreground-subtle"
+                            }
+                          >
+                            {skill.confirms ? "Confirmed by document" : "Related interest"}
+                          </span>
+
+                          <button
+                            type="button"
+                            aria-label={`Remove ${skill.label}`}
+                            onClick={() =>
+                              update(
+                                "skills",
+                                values.skills.filter(
+                                  (item) => item.label !== skill.label,
+                                ),
+                              )
+                            }
+                            className="rounded-(--radius-xs) text-foreground-muted hover:text-danger"
+                          >
+                            <Icon name="close" size={13} />
+                          </button>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p className="text-small text-foreground-muted">No skills added yet.</p>
               )}
