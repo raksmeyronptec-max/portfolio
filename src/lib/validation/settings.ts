@@ -66,7 +66,6 @@ export const siteSettingsSchema = z.object({
   google_site_verification: optionalText(200),
   contact_form_enabled: z.boolean(),
   analytics_enabled: z.boolean(),
-  chat_widget_enabled: z.boolean(),
 });
 
 export const seoOverrideSchema = z.object({

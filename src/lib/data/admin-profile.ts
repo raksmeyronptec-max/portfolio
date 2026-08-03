@@ -54,6 +54,36 @@ export async function getOwnerProfileRow(
 }
 
 /**
+ * Display name of whichever profile currently holds the site-owner flag.
+ *
+ * `null` covers two different situations that the caller phrases differently: no
+ * account is flagged at all, or one is flagged but has no display name. Both mean
+ * "cannot name it", which is all the notice needs to know.
+ *
+ * Read through the RLS-constrained client. `profiles_self_read` also admits any
+ * active admin, so an owner can see this row; a caller who cannot is told nothing
+ * rather than being shown a name they have no right to.
+ */
+export async function getSiteOwnerName(): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("is_site_owner", true)
+      .limit(1)
+      .maybeSingle();
+
+    return data?.display_name?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Public image assets offerable as a portrait, each carrying the resolved public
  * URL so the form can keep `public_avatar_url` and `avatar_media_id` in step
  * without a second round trip.

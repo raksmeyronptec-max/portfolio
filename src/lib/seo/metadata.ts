@@ -161,9 +161,20 @@ export function truncateDescription(
 }
 
 /** Root metadata shared by every page. */
-export function buildRootMetadata(): Metadata {
+/**
+ * @param googleSiteVerification the Search Console token from site settings.
+ *        Optional, and omitted entirely when unset — an empty
+ *        `<meta name="google-site-verification">` is not a neutral no-op, it is a
+ *        token Google will read and reject.
+ */
+export function buildRootMetadata(
+  googleSiteVerification?: string | null,
+): Metadata {
+  const verification = googleSiteVerification?.trim();
+
   return {
     metadataBase: new URL(siteUrl()),
+    ...(verification ? { verification: { google: verification } } : {}),
     applicationName: "Ron Raksmey",
     authors: [{ name: "Ron Raksmey" }],
     creator: "Ron Raksmey",

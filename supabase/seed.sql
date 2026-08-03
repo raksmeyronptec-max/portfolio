@@ -28,7 +28,7 @@ insert into public.site_settings (
   is_available_for_work,
   location_en, location_km,
   contact_email, telegram_handle, facebook_url,
-  default_locale, contact_form_enabled, chat_widget_enabled
+  default_locale, contact_form_enabled
 ) values (
   true,
   'Ron Raksmey', 'រុន រស្មី',
@@ -46,7 +46,7 @@ insert into public.site_settings (
   'Phnom Penh, Cambodia', 'រាជធានីភ្នំពេញ ប្រទេសកម្ពុជា',
   'raksmeyron97@gmail.com', '@Ron_Raksmey',
   'https://www.facebook.com/ronraksmey',
-  'en', true, false
+  'en', true
 )
 on conflict (id) do nothing;
 

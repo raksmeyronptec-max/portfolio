@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 
 import { AdminPageBody, AdminPageHeader } from "@/components/admin/admin-shell";
+import { ClaimSiteOwnerNotice } from "@/components/admin/claim-site-owner";
 import { ProfileForm } from "@/components/admin/profile-form";
 import { Notice } from "@/components/ui/states";
 import { requirePermission } from "@/lib/auth/guards";
-import { getOwnerProfileRow, listPortraitOptions } from "@/lib/data/admin-profile";
+import {
+  getOwnerProfileRow,
+  getSiteOwnerName,
+  listPortraitOptions,
+} from "@/lib/data/admin-profile";
 
 export const metadata: Metadata = { title: "Profile" };
 export const dynamic = "force-dynamic";
@@ -21,9 +26,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminProfilePage() {
   const session = await requirePermission("manageSettings", "/admin/profile");
 
-  const [profile, portraits] = await Promise.all([
+  const [profile, portraits, siteOwnerName] = await Promise.all([
     getOwnerProfileRow(session.userId),
     listPortraitOptions(),
+    getSiteOwnerName(),
   ]);
 
   return (
@@ -37,13 +43,7 @@ export default async function AdminProfilePage() {
         {profile ? (
           <>
             {profile.is_site_owner ? null : (
-              <Notice tone="warning" icon="shield" title="Not the site-owner profile">
-                <p>
-                  Changes here update your own profile row, but the public site reads
-                  the row flagged as site owner. Ask the owner to publish these details,
-                  or have the owner flag this account instead.
-                </p>
-              </Notice>
+              <ClaimSiteOwnerNotice currentOwnerName={siteOwnerName} />
             )}
 
             <ProfileForm

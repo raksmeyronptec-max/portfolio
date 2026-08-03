@@ -49,7 +49,6 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
     google_site_verification: initial.google_site_verification ?? "",
     contact_form_enabled: Boolean(initial.contact_form_enabled ?? true),
     analytics_enabled: Boolean(initial.analytics_enabled ?? true),
-    chat_widget_enabled: Boolean(initial.chat_widget_enabled ?? false),
   }));
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -268,14 +267,6 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
             description="Cookieless, first-party, and honours Do Not Track. Turning this off stops all event recording immediately."
             checked={Boolean(values.analytics_enabled)}
             onChange={(event) => update("analytics_enabled", event.target.checked)}
-          />
-
-          <Checkbox
-            id="chat-widget-enabled"
-            label="Enable the Ask-Ron chat widget"
-            description="The legacy widget from the previous site. It is off by default and only mounts on demand, so it costs nothing while disabled."
-            checked={Boolean(values.chat_widget_enabled)}
-            onChange={(event) => update("chat_widget_enabled", event.target.checked)}
           />
         </CardBody>
       </Card>

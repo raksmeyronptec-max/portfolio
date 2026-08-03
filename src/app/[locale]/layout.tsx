@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
@@ -7,7 +8,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeScript } from "@/components/theme/theme-script";
 import { ToastProvider } from "@/components/ui/toast";
 import { getDictionary } from "@/i18n/dictionary";
-import { isLocale, localeMeta, locales, type Locale } from "@/i18n/config";
+import { defaultLocale, isLocale, localeMeta, locales, type Locale } from "@/i18n/config";
 import { getSiteSettings, getSocialLinks } from "@/lib/data/site";
 import { buildRootMetadata } from "@/lib/seo/metadata";
 import { fontVariables } from "../fonts";
@@ -27,7 +28,16 @@ import "../globals.css";
  * which is why there is no src/app/layout.tsx.
  */
 
-export const metadata = buildRootMetadata();
+/**
+ * `generateMetadata` rather than a static `metadata` export, because the Search
+ * Console verification token lives in site settings and therefore has to be
+ * fetched. Everything else here is still static; the settings read is cached per
+ * render pass and the layout body fetches the same row anyway.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings(defaultLocale);
+  return buildRootMetadata(settings.googleSiteVerification);
+}
 
 export const viewport = {
   width: "device-width",

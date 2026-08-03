@@ -2960,7 +2960,6 @@ export type Database = {
           analytics_enabled: boolean
           availability_status_en: string | null
           availability_status_km: string | null
-          chat_widget_enabled: boolean
           contact_email: string | null
           contact_form_enabled: boolean
           created_at: string
@@ -2991,7 +2990,6 @@ export type Database = {
           analytics_enabled?: boolean
           availability_status_en?: string | null
           availability_status_km?: string | null
-          chat_widget_enabled?: boolean
           contact_email?: string | null
           contact_form_enabled?: boolean
           created_at?: string
@@ -3022,7 +3020,6 @@ export type Database = {
           analytics_enabled?: boolean
           availability_status_en?: string | null
           availability_status_km?: string | null
-          chat_widget_enabled?: boolean
           contact_email?: string | null
           contact_form_enabled?: boolean
           created_at?: string
@@ -3646,6 +3643,7 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_site_owner: { Args: never; Returns: undefined }
       current_admin_role: {
         Args: never
         Returns: Database["public"]["Enums"]["admin_role"]

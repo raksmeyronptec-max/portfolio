@@ -1642,6 +1642,88 @@ begin
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+--  9e. Claiming the site-owner profile
+--
+--  `public_profile` is `where is_site_owner`, so this flag decides whose name,
+--  headline, biography and portrait the whole public site shows. It is moved by
+--  one SECURITY DEFINER function, which means the function's own check is the
+--  only thing standing between an editor and the site's public identity.
+--
+--  The application also checks, but that is not what is tested here — these run
+--  as the real roles with no application in the path at all.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+do $$
+declare
+  v_owner    uuid := '00000000-0000-4000-8000-000000000001';
+  v_viewer   uuid := '00000000-0000-4000-8000-0000000000fe';
+  v_nonadmin uuid := '00000000-0000-4000-8000-0000000000ff';
+  ok         boolean;
+  n          integer;
+begin
+  raise notice '';
+  raise notice '── 9e. Site-owner claim ────────────────────────────────';
+
+  perform pg_temp.become_postgres();
+
+  -- The two fixture users need profile rows for the claim to be able to target
+  -- them at all; without one the function refuses for a different reason and the
+  -- authorisation assertions below would pass vacuously.
+  insert into public.profiles (id, email, display_name)
+  values (v_nonadmin, 'nonadmin@localhost.test', 'RLS fixture non-admin')
+  on conflict (id) do nothing;
+  insert into public.profiles (id, email, display_name)
+  values (v_viewer, 'viewer@localhost.test', 'RLS fixture viewer')
+  on conflict (id) do nothing;
+
+  perform pg_temp.become_anon();
+  begin
+    ok := false;
+    perform public.claim_site_owner();
+  exception when others then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'anon CANNOT claim the site-owner profile');
+
+  perform pg_temp.become_user(v_nonadmin);
+  begin
+    ok := false;
+    perform public.claim_site_owner();
+  exception when others then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a logged-in non-admin CANNOT claim the site-owner profile');
+
+  -- A viewer is an admin, and still must not move the site's identity.
+  perform pg_temp.become_user(v_viewer);
+  begin
+    ok := false;
+    perform public.claim_site_owner();
+  exception when others then ok := true;
+  end;
+  perform pg_temp.assert(ok, 'a viewer CANNOT claim the site-owner profile');
+
+  perform pg_temp.become_postgres();
+  select count(*) into n from public.profiles
+   where is_site_owner and id in (v_nonadmin, v_viewer);
+  perform pg_temp.assert(n = 0, 'every refused claim left the flag untouched');
+
+  -- The owner can, and the result is exactly one flagged row: `public_profile`
+  -- selects LIMIT 1 with no ordering, so two would make the site's public
+  -- identity depend on row order.
+  perform pg_temp.become_user(v_owner);
+  perform public.claim_site_owner();
+
+  perform pg_temp.become_postgres();
+  select count(*) into n from public.profiles where is_site_owner;
+  perform pg_temp.assert(n = 1, 'exactly one profile is flagged after a claim');
+
+  select count(*) into n from public.profiles where id = v_owner and is_site_owner;
+  perform pg_temp.assert(n = 1, 'the owner CAN claim the site-owner profile');
+
+  select count(*) into n from public.public_profile;
+  perform pg_temp.assert(n = 1, 'the public_profile view resolves to that one row');
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
 --  10. RLS is enabled everywhere it must be
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -1734,6 +1816,8 @@ begin
                                      or storage_path like 'rls-gate/%';
   delete from public.contact_messages where email in ('fixture@example.com', 'anon@example.com');
   delete from public.page_views where path = '/en';
+  delete from public.profiles where id in ('00000000-0000-4000-8000-0000000000ff',
+                                           '00000000-0000-4000-8000-0000000000fe');
   delete from public.admin_roles where user_id = '00000000-0000-4000-8000-0000000000fe';
   delete from auth.users where id in ('00000000-0000-4000-8000-0000000000ff',
                                       '00000000-0000-4000-8000-0000000000fe');

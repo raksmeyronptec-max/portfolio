@@ -29,7 +29,6 @@ export type SiteSettings = {
   githubUrl: string | null;
   linkedinUrl: string | null;
   contactFormEnabled: boolean;
-  chatWidgetEnabled: boolean;
   googleSiteVerification: string | null;
   analyticsEnabled: boolean;
 };
@@ -49,7 +48,6 @@ const FALLBACK_SETTINGS: SiteSettings = {
   githubUrl: null,
   linkedinUrl: null,
   contactFormEnabled: true,
-  chatWidgetEnabled: false,
   googleSiteVerification: null,
   analyticsEnabled: true,
 };
@@ -92,7 +90,6 @@ export async function getSiteSettings(locale: Locale): Promise<SiteSettings> {
       githubUrl: data.github_url,
       linkedinUrl: data.linkedin_url,
       contactFormEnabled: data.contact_form_enabled,
-      chatWidgetEnabled: data.chat_widget_enabled,
       googleSiteVerification: data.google_site_verification,
       analyticsEnabled: data.analytics_enabled,
     };

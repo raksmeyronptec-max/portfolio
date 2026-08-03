@@ -30,6 +30,12 @@ export type AuditAction =
   | "admin.unauthorized"
   | "admin.role_changed"
   | "profile.updated"
+  /*
+   * Which account the public site takes its identity from. Worth its own verb:
+   * it changes the name, headline, biography and portrait on every public page
+   * at once, and "profile.updated" would not say that had happened.
+   */
+  | "profile.site_owner_claimed"
   | "project.created"
   | "project.updated"
   | "project.published"

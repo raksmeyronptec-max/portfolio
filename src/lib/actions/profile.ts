@@ -25,7 +25,8 @@ import {
  * The write goes through the RLS-constrained client, so `profiles_self_update`
  * is the final authority: a signed-in admin can only ever rewrite their own row,
  * and `is_site_owner` is not in the schema below and therefore cannot be
- * self-granted through this action.
+ * self-granted through this action. Moving that flag is a separate, owner-only
+ * operation — see `claimSiteOwner` at the bottom of this file.
  */
 
 export async function saveOwnerProfile(input: unknown): Promise<ActionResult<void>> {
@@ -93,6 +94,61 @@ export async function saveOwnerProfile(input: unknown): Promise<ActionResult<voi
     });
 
     revalidatePublicContent({});
+    return ok(undefined);
+  } catch {
+    return fail("server_error");
+  }
+}
+
+/**
+ * Claim the site-owner profile for the signed-in account.
+ *
+ * Fixes the trap this page could otherwise sit in indefinitely: `public_profile`
+ * is `where is_site_owner`, only the seed ever set that flag, and on a real
+ * deployment the owner's row arrives without it. Everything saved above is then
+ * written to a row the public site never reads — silently, because the pages
+ * simply fall back to site settings and still look correct.
+ *
+ * The work is done by the `claim_site_owner()` RPC rather than here. Claiming has
+ * to clear the flag on whichever row currently holds it, which `profiles_self_update`
+ * cannot express — a caller may only touch their own row — and putting the
+ * authorisation check in the database means it applies to psql and Supabase Studio
+ * too, not just to this action. The function takes no arguments: it always claims
+ * for `auth.uid()`, so it cannot be used to hand the site's identity to anyone else.
+ *
+ * The permission check here is the same one the save above uses. It is not the
+ * boundary — the RPC re-checks `is_owner()` — it just turns a refusal into a typed
+ * result the form can render instead of a raised exception.
+ */
+export async function claimSiteOwner(): Promise<ActionResult<void>> {
+  const auth = await checkPermission("manageSettings");
+  if (!auth.ok) {
+    return fail(auth.reason === "forbidden" ? "forbidden" : "unauthenticated");
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.rpc("claim_site_owner");
+
+    if (error) {
+      // 42501 is the RPC refusing a non-owner; anything else is unexpected.
+      if (error.code === "42501") return fail("forbidden");
+      return fromPostgresError(error);
+    }
+
+    await writeAuditLog({
+      action: "profile.site_owner_claimed",
+      actor: auth.session,
+      entityType: "profile",
+      entityId: auth.session.userId,
+      summary:
+        "Claimed the site-owner profile. The public site now reads this " +
+        "account's name, headline, biography and portrait.",
+    });
+
+    // Every public surface reads the owner profile, so all of them are stale.
+    revalidatePublicContent({});
+
     return ok(undefined);
   } catch {
     return fail("server_error");
