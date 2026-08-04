@@ -114,7 +114,7 @@ const isDev = process.env.NODE_ENV === "development";
  * https and re-break local sign-in, so it is only emitted when every allowed
  * origin is already https — which is the case for any real deployment.
  */
-const upgradeInsecureRequests = supabaseScheme === "https";
+const upgradeInsecureRequests = false;
 
 /**
  * Content-Security-Policy.
