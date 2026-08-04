@@ -470,6 +470,17 @@ export const en = {
     previewNote:
       "Previews are redacted copies. Personal identifiers are removed before publication.",
     documentSummary: "What this document shows",
+    viewer: {
+      open: "Open the document larger",
+      close: "Close the document viewer",
+      zoomIn: "Zoom in",
+      zoomOut: "Zoom out",
+      fit: "Fit to screen",
+      reset: "Reset zoom",
+      level: "Zoom {percent}%",
+      panHint: "Drag to move the document, or use the arrow keys.",
+      title: "Document preview — {title}",
+    },
     status: {
       active: "Active",
       expired: "Expired",

@@ -15,6 +15,7 @@ import {
   Tag,
 } from "@/components/ui/primitives";
 import { Notice } from "@/components/ui/states";
+import { CredentialDocumentViewer } from "@/components/public/credential-document-viewer";
 import {
   CredentialStatusPair,
   VerificationStatus,
@@ -204,6 +205,23 @@ export default async function CertificateDetailPage({
                 {t.certificates.previewNote}
               </figcaption>
             </figure>
+
+            {/*
+              Only offered when there is a document to open. A credential is a
+              document, and one that can only be seen at card size is a picture
+              of a document — the seal, the issuing office and the signature line
+              are the parts a reader wants and the 4:3 box cannot show.
+            */}
+            {preview ? (
+              <div>
+                <CredentialDocumentViewer
+                  src={preview.src}
+                  alt={preview.alt || certificate.title}
+                  title={certificate.title}
+                  t={t}
+                />
+              </div>
+            ) : null}
 
             {/*
               Text alternative to the scan itself. A certificate image is

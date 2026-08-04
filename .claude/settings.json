@@ -199,7 +199,9 @@
       "Bash(curl -s http://127.0.0.1:3002/km/education)",
       "Bash(curl -s http://127.0.0.1:3002/en/journey/ptom-plp-fieldwork-kakoh-primary-school)",
       "Bash(curl -s http://127.0.0.1:3002/en/experience)",
-      "Bash(curl -s -o /tmp/cv2.pdf -D - -w \"\\\\nlive: %{http_code} %{size_download}B\\\\n\" \"https://portfolio-beige-rho-51.vercel.app/api/resume/download?locale=en\")"
+      "Bash(curl -s -o /tmp/cv2.pdf -D - -w \"\\\\nlive: %{http_code} %{size_download}B\\\\n\" \"https://portfolio-beige-rho-51.vercel.app/api/resume/download?locale=en\")",
+      "Bash(curl -s \"http://127.0.0.1:3407/en/certificates\")",
+      "Bash(curl -s \"http://127.0.0.1:3407/en/certificates/qa-viewer\")"
     ],
     "additionalDirectories": [
       "/Users/macbookpro/Downloads/Portfolio-Ron-Raksmey-main/src/app/[locale]/education"
