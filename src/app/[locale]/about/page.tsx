@@ -146,7 +146,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
             <SectionHeading eyebrow={t.about.purposeEyebrow} title={t.about.purposeHeading} description={t.about.purposeDescription} id="purpose-heading" />
             <div className="mt-12 divide-y divide-border">
               {projects.map((project, index) => <div key={project.id} className="grid gap-5 py-8 md:grid-cols-[4rem_.7fr_1.3fr] md:py-10">
-                <span className="about-project-number">0{index + 1}</span><h3 className="text-h3">{project.title}</h3>
+                <span className="about-project-number">0{index + 1}</span><h3 className="text-h3 text-foreground">{project.title}</h3>
                 <div><p className="leading-relaxed text-foreground-muted">{project.problem ?? project.summary}</p><div className="mt-5 flex flex-wrap gap-5"><Link className="about-text-link" href={localePath(locale, `/projects/${project.slug}`)}>{t.about.projectDetail} →</Link>{project.liveUrl ? <a className="about-text-link" href={project.liveUrl} target="_blank" rel="noreferrer">{t.about.visitLive} ↗</a> : null}</div></div>
               </div>)}
             </div>
@@ -200,6 +200,6 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   );
 }
 
-function SectionHeading({ eyebrow, title, description, id }: { eyebrow: string; title: string; description?: string; id: string }) { return <div className="max-w-3xl"><p className="about-eyebrow">{eyebrow}</p><h2 id={id} className="mt-4 text-[clamp(2rem,4vw,3.5rem)] leading-[1.05] tracking-[-.04em]">{title}</h2>{description ? <p className="mt-5 max-w-[65ch] text-lg leading-relaxed text-foreground-muted">{description}</p> : null}</div>; }
+function SectionHeading({ eyebrow, title, description, id }: { eyebrow: string; title: string; description?: string; id: string }) { return <div className="max-w-3xl"><p className="about-eyebrow">{eyebrow}</p><h2 id={id} className="mt-4 text-[clamp(2rem,4vw,3.5rem)] leading-[1.05] tracking-[-.04em] text-foreground">{title}</h2>{description ? <p className="mt-5 max-w-[65ch] text-lg leading-relaxed text-foreground-muted">{description}</p> : null}</div>; }
 function Practice({ title, items, tone }: { title: string; items: string[]; tone: "gold" | "cyan" }) { return <div className="about-practice bg-surface" data-tone={tone}><p>{title}</p><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></div>; }
 function Evidence({ title, items, label }: { title: string; label: string; items: Array<{ id: string; title: string; detail: string | null; href: string }> }) { if (!items.length) return null; return <div><h3>{title}</h3><ul>{items.map((item) => <li key={item.id}><div><strong>{item.title}</strong>{item.detail ? <p>{item.detail}</p> : null}</div><Link href={item.href} aria-label={`${label}: ${item.title}`}>→</Link></li>)}</ul></div>; }

@@ -6,13 +6,10 @@ import { useEffect } from "react";
  * Scroll-state sync for the site header.
  *
  * Renders nothing. It finds the server-rendered `<header data-site-header>` and
- * flips two attributes on it as the page scrolls:
+ * flips its scroll attribute as the page scrolls:
  *
  *   data-scrolled   "true" once past the opening band, which CSS uses to fade
  *                   in the blurred background and the bottom border.
- *   data-scheme     "ink" while at the top, so the header's controls resolve to
- *                   their light values over the dark hero; removed once the
- *                   header sits on the page background again.
  *
  * Why an effect that mutates the DOM rather than a client component that owns
  * the <header>:
@@ -25,7 +22,7 @@ import { useEffect } from "react";
  *   with no `lang` and no `<title>`. axe caught it as two serious WCAG
  *   violations on every 404.
  *
- *   Keeping `<header>` server-rendered and touching only two attributes from an
+ *   Keeping `<header>` server-rendered and touching only its scroll attribute from an
  *   effect avoids the boundary entirely. The server already emits the correct
  *   initial state (a page always loads at scroll position 0), so there is no
  *   flash and nothing to hydrate.
@@ -49,11 +46,6 @@ export function HeaderScrollSync() {
       scrolled = next;
 
       header.dataset.scrolled = next ? "true" : "false";
-      if (next) {
-        delete header.dataset.scheme;
-      } else {
-        header.dataset.scheme = "ink";
-      }
     };
 
     // Covers landing part-way down the page via an anchor or a restored

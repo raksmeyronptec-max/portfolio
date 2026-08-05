@@ -44,15 +44,14 @@ export function SiteHeader({ locale }: { locale: Locale }) {
      * same two attributes from an effect by HeaderScrollSync — see the note
      * there for why the element must not itself live in a client boundary.
      *
-     * The initial values are the correct ones for a fresh page load: every page
-     * loads at scroll 0, where the header floats over the dark opening band and
-     * therefore needs the ink scope.
+     * The header participates in normal layout above the opening band, so it
+     * uses the page theme at scroll zero. Giving it the ink scope here would
+     * produce light controls on the light page background.
      */
     <header
       data-site-header
       data-print="hide"
       data-scrolled="false"
-      data-scheme="ink"
       className="header-bar sticky top-0 z-40"
     >
       <HeaderScrollSync />

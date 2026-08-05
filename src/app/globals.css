@@ -5,7 +5,7 @@
 .about-page { overflow: clip; }
 .about-hero { position: relative; background: var(--background); }
 .about-grid { position: absolute; inset: 0; opacity: .16; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 64px 64px; mask-image: linear-gradient(to bottom, black, transparent 92%); }
-.about-eyebrow { color: var(--accent); font-size: .78rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.about-eyebrow { color: var(--accent-subtle-foreground); font-size: .78rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
 [lang="km"] .about-eyebrow { letter-spacing: 0; text-transform: none; line-height: 1.8; }
 .about-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border-radius: 999px; padding: .7rem 1.15rem; font-size: .9rem; font-weight: 650; transition: background-color .18s ease, border-color .18s ease, transform .18s ease; }
 .about-button:hover { transform: translateY(-1px); }
@@ -20,7 +20,7 @@
 .about-prose { max-width: 68ch; font-size: clamp(1.05rem, 1.4vw, 1.22rem); line-height: 1.85; color: var(--foreground-muted); white-space: pre-line; }
 .about-statement { margin-top: clamp(3rem, 7vw, 6rem); max-width: 35ch; border-left: 3px solid var(--accent); padding-left: clamp(1.2rem, 3vw, 2.25rem); font-size: clamp(1.55rem, 3.5vw, 2.8rem); line-height: 1.25; letter-spacing: -.025em; }
 .about-practice { padding: clamp(1.5rem, 4vw, 3rem); }
-.about-practice > p { color: var(--accent); font-size: .8rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.about-practice > p { color: var(--accent-subtle-foreground); font-size: .8rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
 .about-practice[data-tone="cyan"] > p { color: var(--secondary); }
 .about-practice ul { margin-top: 2rem; }
 .about-practice li { border-top: 1px solid var(--border); padding-block: 1rem; font-size: clamp(1.05rem, 2vw, 1.35rem); }
@@ -31,9 +31,9 @@
 .about-timeline h3 { font-size: clamp(1.25rem, 2.5vw, 1.8rem); }
 .about-timeline li div p { margin-top: .6rem; max-width: 65ch; line-height: 1.7; color: var(--foreground-muted); }
 .about-timeline a { margin-top: .9rem; display: inline-flex; min-height: 44px; align-items: center; color: var(--primary); font-weight: 650; }
-.about-project-number { color: var(--accent); font-weight: 750; }
+.about-project-number { color: var(--accent-subtle-foreground); font-weight: 750; }
 .about-principle { min-height: 16rem; border: 1px solid var(--border); background: var(--surface); padding: 1.35rem; }
-.about-principle span, .about-convergence span { color: var(--accent); font-size: .78rem; font-weight: 750; }
+.about-principle span, .about-convergence span { color: var(--accent-subtle-foreground); font-size: .78rem; font-weight: 750; }
 .about-principle h3 { margin-top: 2.6rem; font-size: 1.15rem; line-height: 1.25; }
 .about-principle p { margin-top: .8rem; color: var(--foreground-muted); font-size: .93rem; line-height: 1.65; }
 .about-convergence { display: grid; gap: 1px; background: var(--border); }
@@ -56,7 +56,7 @@
 .about-details dt { color: var(--foreground-subtle); font-size: .82rem; font-weight: 700; }
 .about-details dd { line-height: 1.7; }
 .about-details a { color: var(--primary); text-decoration: underline; text-underline-offset: .25em; }
-.about-closing { background: var(--background); }
+.about-section[data-scheme="ink"], .about-closing { background: var(--background); }
 @media (min-width: 48rem) {
   .about-timeline li { grid-template-columns: 10rem 1fr; gap: 2rem; }
   .about-convergence { grid-template-columns: repeat(3, 1fr); }
