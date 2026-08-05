@@ -1,5 +1,71 @@
 @import "tailwindcss";
 
+/* About — editorial composition. These selectors are intentionally page-scoped:
+   the redesign must not turn shared portfolio pages into a second About page. */
+.about-page { overflow: clip; }
+.about-hero { position: relative; background: var(--background); }
+.about-grid { position: absolute; inset: 0; opacity: .16; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 64px 64px; mask-image: linear-gradient(to bottom, black, transparent 92%); }
+.about-eyebrow { color: var(--accent); font-size: .78rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+[lang="km"] .about-eyebrow { letter-spacing: 0; text-transform: none; line-height: 1.8; }
+.about-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border-radius: 999px; padding: .7rem 1.15rem; font-size: .9rem; font-weight: 650; transition: background-color .18s ease, border-color .18s ease, transform .18s ease; }
+.about-button:hover { transform: translateY(-1px); }
+.about-button-primary { background: var(--accent); color: var(--accent-foreground); }
+.about-button-primary:hover { background: var(--accent-hover); }
+.about-button-secondary { border: 1px solid var(--border-strong); background: var(--surface); color: var(--foreground); }
+.about-text-link { display: inline-flex; min-height: 44px; align-items: center; gap: .4rem; color: var(--foreground); font-weight: 650; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: .3em; }
+.about-portrait { position: relative; margin-inline: auto; width: min(100%, 31rem); padding: .55rem; border: 1px solid var(--border); background: linear-gradient(145deg, rgb(var(--glow-primary)/.2), rgb(var(--glow-accent)/.12)); }
+.about-portrait figcaption { padding: .8rem .35rem .25rem; color: var(--foreground-muted); font-size: .78rem; line-height: 1.5; }
+.about-section { padding-block: clamp(4.5rem, 9vw, 8rem); }
+.about-section + .about-section { border-top: 1px solid var(--border); }
+.about-prose { max-width: 68ch; font-size: clamp(1.05rem, 1.4vw, 1.22rem); line-height: 1.85; color: var(--foreground-muted); white-space: pre-line; }
+.about-statement { margin-top: clamp(3rem, 7vw, 6rem); max-width: 35ch; border-left: 3px solid var(--accent); padding-left: clamp(1.2rem, 3vw, 2.25rem); font-size: clamp(1.55rem, 3.5vw, 2.8rem); line-height: 1.25; letter-spacing: -.025em; }
+.about-practice { padding: clamp(1.5rem, 4vw, 3rem); }
+.about-practice > p { color: var(--accent); font-size: .8rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.about-practice[data-tone="cyan"] > p { color: var(--secondary); }
+.about-practice ul { margin-top: 2rem; }
+.about-practice li { border-top: 1px solid var(--border); padding-block: 1rem; font-size: clamp(1.05rem, 2vw, 1.35rem); }
+.about-purpose-line { display: flex; flex-wrap: wrap; gap: .7rem 2rem; border-bottom: 1px solid var(--border); padding: 1.4rem; background: var(--primary-subtle); }
+.about-purpose-line strong { color: var(--primary-subtle-foreground); }
+.about-timeline li { display: grid; gap: 1rem; border-top: 1px solid var(--border); padding-block: 2rem; }
+.about-year { color: var(--accent-subtle-foreground); font-size: .85rem; font-weight: 750; }
+.about-timeline h3 { font-size: clamp(1.25rem, 2.5vw, 1.8rem); }
+.about-timeline li div p { margin-top: .6rem; max-width: 65ch; line-height: 1.7; color: var(--foreground-muted); }
+.about-timeline a { margin-top: .9rem; display: inline-flex; min-height: 44px; align-items: center; color: var(--primary); font-weight: 650; }
+.about-project-number { color: var(--accent); font-weight: 750; }
+.about-principle { min-height: 16rem; border: 1px solid var(--border); background: var(--surface); padding: 1.35rem; }
+.about-principle span, .about-convergence span { color: var(--accent); font-size: .78rem; font-weight: 750; }
+.about-principle h3 { margin-top: 2.6rem; font-size: 1.15rem; line-height: 1.25; }
+.about-principle p { margin-top: .8rem; color: var(--foreground-muted); font-size: .93rem; line-height: 1.65; }
+.about-convergence { display: grid; gap: 1px; background: var(--border); }
+.about-convergence > div { background: var(--surface); padding: clamp(1.5rem, 4vw, 3rem); }
+.about-convergence h3 { margin-top: 2rem; font-size: clamp(1.25rem, 2.5vw, 1.75rem); }
+.about-convergence p { margin-top: .8rem; color: var(--foreground-muted); line-height: 1.7; }
+.about-convergence > div:last-child { background: var(--primary-subtle); }
+.about-evidence { display: grid; gap: 3rem; }
+.about-evidence h3 { margin-bottom: 1rem; color: var(--foreground-subtle); font-size: .8rem; font-weight: 750; letter-spacing: .11em; text-transform: uppercase; }
+.about-evidence li { display: flex; align-items: start; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding-block: 1rem; }
+.about-evidence li p { margin-top: .25rem; color: var(--foreground-muted); font-size: .9rem; }
+.about-evidence a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; color: var(--primary); }
+.about-process { display: grid; gap: 1px; background: var(--border); }
+.about-process li { background: var(--background); padding: 1.5rem; }
+.about-process span { color: var(--secondary); font-weight: 750; }
+.about-process h3 { margin-top: 2rem; font-size: 1.2rem; }
+.about-process p { margin-top: .75rem; color: var(--foreground-muted); font-size: .93rem; line-height: 1.6; }
+.about-details { border-top: 1px solid var(--border); }
+.about-details > div { display: grid; gap: .5rem; border-bottom: 1px solid var(--border); padding-block: 1.25rem; }
+.about-details dt { color: var(--foreground-subtle); font-size: .82rem; font-weight: 700; }
+.about-details dd { line-height: 1.7; }
+.about-details a { color: var(--primary); text-decoration: underline; text-underline-offset: .25em; }
+.about-closing { background: var(--background); }
+@media (min-width: 48rem) {
+  .about-timeline li { grid-template-columns: 10rem 1fr; gap: 2rem; }
+  .about-convergence { grid-template-columns: repeat(3, 1fr); }
+  .about-evidence { grid-template-columns: repeat(3, 1fr); }
+  .about-process { grid-template-columns: repeat(5, 1fr); }
+  .about-details > div { grid-template-columns: 12rem 1fr; gap: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) { .about-button { transition: none; } .about-button:hover { transform: none; } }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    DESIGN SYSTEM — "Signal" (v3)
    ───────────────────────────────────────────────────────────────────────────

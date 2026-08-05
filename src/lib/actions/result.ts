@@ -167,6 +167,7 @@ export function revalidatePublications(
   for (const locale of locales) {
     revalidatePath(`/${locale}`);
     revalidatePath(`/${locale}/publications`);
+    revalidatePath(`/${locale}/about`);
     revalidatePath(`/${locale}/journey`);
     revalidatePath(`/${locale}/experience`);
     revalidatePath(`/${locale}/education`);
@@ -188,6 +189,7 @@ export function revalidateJourney(
   for (const locale of locales) {
     revalidatePath(`/${locale}`);
     revalidatePath(`/${locale}/journey`);
+    revalidatePath(`/${locale}/about`);
     revalidatePath(`/${locale}/experience`);
     revalidatePath(`/${locale}/education`);
     revalidatePath(`/${locale}/certificates`);
