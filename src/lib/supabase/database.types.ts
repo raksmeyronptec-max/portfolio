@@ -3543,7 +3543,6 @@ export type Database = {
           public_bio_km: string | null
           public_headline_en: string | null
           public_headline_km: string | null
-          public_location: string | null
         }
         Insert: {
           display_name?: string | null
@@ -3553,7 +3552,6 @@ export type Database = {
           public_bio_km?: string | null
           public_headline_en?: string | null
           public_headline_km?: string | null
-          public_location?: string | null
         }
         Update: {
           display_name?: string | null
@@ -3563,7 +3561,6 @@ export type Database = {
           public_bio_km?: string | null
           public_headline_en?: string | null
           public_headline_km?: string | null
-          public_location?: string | null
         }
         Relationships: []
       }
@@ -4498,4 +4495,3 @@ export const Constants = {
     },
   },
 } as const
-

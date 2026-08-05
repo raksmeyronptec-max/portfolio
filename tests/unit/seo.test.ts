@@ -32,6 +32,12 @@ describe("URL helpers", () => {
     expect(absoluteUrl("en")).toBe("https://portfolio.test/en");
     expect(absoluteUrl("/")).toBe("https://portfolio.test/");
   });
+
+  it("does not prefix an already absolute public media URL", () => {
+    expect(absoluteUrl("https://cdn.example.test/portrait.webp")).toBe(
+      "https://cdn.example.test/portrait.webp",
+    );
+  });
 });
 
 describe("buildPageMetadata", () => {

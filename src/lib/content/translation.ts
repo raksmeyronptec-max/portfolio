@@ -70,6 +70,35 @@ export function pickLocalized(
 }
 
 /**
+ * Pick only the requested locale from a paired-column field.
+ *
+ * Most compact labels may safely fall back and carry their true `lang`, but
+ * personal biography and headline prose must not silently turn an otherwise
+ * Khmer page into a mixed-language profile. Those fields use this stricter
+ * helper and disappear when their requested translation is absent.
+ */
+export function pickExactLocale(
+  locale: Locale,
+  en: string | null | undefined,
+  km: string | null | undefined,
+): string | null {
+  const value = locale === "km" ? km : en;
+  if (!value || value.trim() === "") return null;
+
+  const trimmed = value.trim();
+  const hasKhmer = /[\u1780-\u17ff]/u.test(trimmed);
+  const hasLatin = /[a-z]/iu.test(trimmed);
+
+  // This helper is intentionally limited to personal prose fields. A non-empty
+  // Khmer column containing only English was previously treated as translated
+  // and leaked an English profile headline into `/km/about`.
+  if (locale === "km" && !hasKhmer) return null;
+  if (locale === "en" && hasKhmer && !hasLatin) return null;
+
+  return trimmed;
+}
+
+/**
  * `lang` attribute for a block of text, or `undefined` when it matches the page.
  *
  * Returning `undefined` rather than always emitting `lang` keeps the markup

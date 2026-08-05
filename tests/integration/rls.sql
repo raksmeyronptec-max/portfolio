@@ -416,9 +416,9 @@ begin
     not exists (
       select 1 from information_schema.columns
        where table_schema = 'public' and table_name = 'public_profile'
-         and column_name in ('email', 'last_login_at')
+         and column_name in ('email', 'last_login_at', 'public_location')
     ),
-    'public_profile does NOT expose email or last_login_at'
+    'public_profile does NOT expose email, last_login_at or precise profile location'
   );
 
   -- Analytics is append-only for visitors.

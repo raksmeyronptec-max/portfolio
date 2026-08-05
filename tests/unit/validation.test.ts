@@ -17,6 +17,7 @@ import {
   PRIVACY_CHECKLIST,
 } from "@/lib/validation/certificate";
 import { educationSchema, testimonialSchema } from "@/lib/validation/cv";
+import { ownerProfileSchema } from "@/lib/validation/profile";
 
 // ── Contact form ────────────────────────────────────────────────────────────
 
@@ -458,6 +459,33 @@ describe("testimonial schema", () => {
       testimonialSchema.safeParse({
         ...base,
         translations: [{ locale: "en" as const, quote: "x".repeat(1201) }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("owner profile portrait validation", () => {
+  const base = { display_name: "Ron Raksmey" };
+
+  it("accepts the legacy local portrait and configured public Supabase images", () => {
+    expect(
+      ownerProfileSchema.safeParse({ ...base, public_avatar_url: "/image/MyPF.jpg" })
+        .success,
+    ).toBe(true);
+    expect(
+      ownerProfileSchema.safeParse({
+        ...base,
+        public_avatar_url:
+          "https://project.supabase.co/storage/v1/object/public/public-media/portrait.webp",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects arbitrary HTTPS hosts that next/image cannot render", () => {
+    expect(
+      ownerProfileSchema.safeParse({
+        ...base,
+        public_avatar_url: "https://unapproved.example/portrait.webp",
       }).success,
     ).toBe(false);
   });

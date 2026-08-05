@@ -4,6 +4,7 @@ import {
   langAttribute,
   missingLocales,
   pickLocalized,
+  pickExactLocale,
   resolveTranslation,
   translationStatus,
 } from "@/lib/content/translation";
@@ -85,6 +86,25 @@ describe("pickLocalized", () => {
 
   it("returns null when neither language has a value", () => {
     expect(pickLocalized("en", null, undefined)).toBeNull();
+  });
+});
+
+describe("pickExactLocale", () => {
+  it("never mixes personal prose across locales", () => {
+    expect(pickExactLocale("km", "English biography", null)).toBeNull();
+    expect(pickExactLocale("en", null, "ជីវប្រវត្តិ")).toBeNull();
+    expect(pickExactLocale("km", "English biography", "ជីវប្រវត្តិ")).toBe(
+      "ជីវប្រវត្តិ",
+    );
+  });
+
+  it("treats blank requested prose as absent", () => {
+    expect(pickExactLocale("km", "English biography", "   ")).toBeNull();
+  });
+
+  it("rejects prose saved in the wrong script even when the locale field is non-empty", () => {
+    expect(pickExactLocale("km", "English biography", "English headline")).toBeNull();
+    expect(pickExactLocale("en", "ជីវប្រវត្តិ", "ជីវប្រវត្តិ")).toBeNull();
   });
 });
 

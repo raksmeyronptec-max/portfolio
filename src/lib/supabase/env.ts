@@ -114,6 +114,7 @@ function stripTrailingSlash(value: string): string {
 
 /** Build an absolute URL against the configured origin. */
 export function absoluteUrl(path = "/"): string {
+  if (/^https?:\/\//i.test(path)) return path;
   const clean = path.startsWith("/") ? path : `/${path}`;
   return `${siteUrl()}${clean}`;
 }

@@ -18,6 +18,7 @@
     "test:rls": "bash scripts/run-rls-tests.sh",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
+    "capture:about": "node scripts/capture-about-screenshots.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "db:start": "supabase start",
     "db:stop": "supabase stop",

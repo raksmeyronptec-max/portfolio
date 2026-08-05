@@ -160,7 +160,7 @@ export default async function HomePage({
       name: displayName,
       headline: settings.tagline ?? profile?.headline,
       description: profile?.bio ?? settings.heroSubheadline,
-      location: settings.location ?? profile?.location,
+      location: settings.location,
       imageUrl: absoluteUrl(profile?.avatarUrl ?? "/image/MyPF.jpg"),
       email: settings.contactEmail,
       sameAs: socialLinks
@@ -195,7 +195,7 @@ export default async function HomePage({
       <CredibilityStrip
         t={t}
         counts={counts}
-        location={settings.location ?? profile?.location}
+        location={settings.location}
         languages={languages}
       />
 

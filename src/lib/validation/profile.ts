@@ -25,12 +25,58 @@ const optionalText = (max: number) =>
     .nullable()
     .optional();
 
+function isAllowedPortraitUrl(value: string): boolean {
+  if (value.startsWith("/image/") && !value.includes("..")) return true;
+
+  let candidate: URL;
+  try {
+    candidate = new URL(value);
+  } catch {
+    return false;
+  }
+
+  if (candidate.protocol !== "https:") return false;
+
+  const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabase) {
+    try {
+      const base = new URL(supabase);
+      if (
+        candidate.origin === base.origin &&
+        candidate.pathname.startsWith("/storage/v1/object/public/")
+      ) {
+        return true;
+      }
+    } catch {
+      // An invalid deployment variable must not broaden the allowlist.
+    }
+  }
+
+  const r2 = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  if (r2) {
+    try {
+      const base = new URL(r2);
+      const basePath = base.pathname.replace(/\/+$/, "");
+      if (
+        candidate.origin === base.origin &&
+        candidate.pathname.startsWith(`${basePath}/public-media/`)
+      ) {
+        return true;
+      }
+    } catch {
+      // An invalid deployment variable must not broaden the allowlist.
+    }
+  }
+
+  return false;
+}
+
 export const ownerProfileSchema = z.object({
   display_name: z.string().trim().min(1, { message: "nameRequired" }).max(120),
   public_headline_en: optionalText(300),
   public_headline_km: optionalText(300),
-  public_bio_en: optionalText(2000),
-  public_bio_km: optionalText(2000),
+  public_bio_en: optionalText(6000),
+  public_bio_km: optionalText(6000),
   public_location: optionalText(200),
   /**
    * Either a media asset chosen from the library or an empty string. Stored
@@ -50,7 +96,9 @@ export const ownerProfileSchema = z.object({
       { message: "invalidMediaId" },
     ),
   /**
-   * A root-relative path (`/image/portrait.jpg`) or an absolute https URL.
+   * A legacy `/image/portrait.jpg` path or a URL on the configured public
+   * Supabase/R2 image origin. This mirrors next/image's allowlist instead of
+   * accepting a URL the public page cannot render.
    * Root-relative is allowed because the migrated portrait still lives in
    * `public/`; refusing it would mean pretending the file is not there.
    */
@@ -64,8 +112,7 @@ export const ownerProfileSchema = z.object({
       (value) =>
         value === null ||
         value === undefined ||
-        value.startsWith("/") ||
-        /^https:\/\//i.test(value),
+        isAllowedPortraitUrl(value),
       { message: "avatarUrlFormat" },
     )
     .refine((value) => value === null || value === undefined || !value.startsWith("//"), {
@@ -77,7 +124,7 @@ export const profileErrorLabels: Record<string, string> = {
   nameRequired: "A display name is required.",
   invalidMediaId: "Choose a portrait from the media library, or leave it unset.",
   avatarUrlFormat:
-    "Use a path that starts with / (a file in public/) or a full https:// URL.",
+    "Use a legacy /image/ path or choose a public image from the configured media library.",
 };
 
 export type OwnerProfileInput = z.infer<typeof ownerProfileSchema>;

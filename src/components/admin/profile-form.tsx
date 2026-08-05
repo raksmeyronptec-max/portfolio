@@ -144,8 +144,8 @@ export function ProfileForm({
 
           <Field
             id={locationId}
-            label="Location"
-            description="Shown on About and in the Person structured data."
+            label="Private profile location"
+            description="Not published. Set the public city and country under Settings instead; never enter a street address for public display."
             optionalLabel="optional"
             showOptional
           >
@@ -190,7 +190,7 @@ export function ProfileForm({
 
           <BilingualPair
             label="Biography"
-            description="A short paragraph. Appears on About and as the Person description in structured data."
+            description="Your authored About story. Aim for roughly 250–450 words per language; it appears visibly on About and in Person structured data."
             enValue={values.public_bio_en}
             kmValue={values.public_bio_km}
             onEnChange={(value) => update("public_bio_en", value)}

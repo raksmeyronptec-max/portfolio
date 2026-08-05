@@ -181,8 +181,8 @@ export function buildRootMetadata(
     publisher: "Ron Raksmey",
     formatDetection: { telephone: false, email: false, address: false },
     icons: {
-      icon: [{ url: "/image/MyPF.jpg", type: "image/jpeg" }],
-      apple: [{ url: "/image/MyPF.jpg" }],
+      icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+      apple: [{ url: "/image/portrait-keyed.webp", type: "image/webp" }],
     },
     referrer: "strict-origin-when-cross-origin",
   };

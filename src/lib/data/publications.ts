@@ -236,6 +236,27 @@ export type PublicationListing = {
 };
 
 /**
+ * Lightweight evidence check for pages that only need to link to the published
+ * collection. RLS remains the publication boundary; drafts return no row.
+ */
+export async function hasPublishedPublications(): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const supabase = await createSupabasePublicClient();
+    const { data, error } = await supabase
+      .from("publications")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+
+    return !error && Boolean(data?.id);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Every published publication, newest edition first within the owner's order.
  *
  * Editions are fetched in one extra query rather than joined, because the join

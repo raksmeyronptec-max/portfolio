@@ -26,7 +26,14 @@ export default defineConfig({
     },
     {
       name: "mobile-390",
-      use: { ...devices["iPhone 13"] },
+      // Chromium's current protocol rejects the iPhone preset's legacy
+      // PushAPIEnabled override. A real 390px viewport exercises the same CSS
+      // reflow without making every test fail during context setup.
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        isMobile: false,
+      },
     },
     {
       // Narrowest width in the responsive matrix.

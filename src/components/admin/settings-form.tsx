@@ -126,7 +126,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
 
           <Pair
             label="Positioning statement"
-            description="One sentence describing what you do. Shown on About and the resume."
+            description="One sentence connecting education and product work. Shown on About."
             enValue={String(values.positioning_en ?? "")}
             kmValue={String(values.positioning_km ?? "")}
             onEnChange={(value) => update("positioning_en", value)}

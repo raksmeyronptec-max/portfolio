@@ -3,7 +3,7 @@ import "server-only";
 import { createSupabasePublicClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { MEDIA_COLUMNS, type MediaAsset } from "@/lib/content/media";
-import { pickLocalized } from "@/lib/content/translation";
+import { pickExactLocale, pickLocalized } from "@/lib/content/translation";
 import type { Locale } from "@/i18n/config";
 
 /**
@@ -69,15 +69,15 @@ export async function getSiteSettings(locale: Locale): Promise<SiteSettings> {
       siteName:
         pickLocalized(locale, data.site_name_en, data.site_name_km) ??
         FALLBACK_SETTINGS.siteName,
-      tagline: pickLocalized(locale, data.tagline_en, data.tagline_km),
-      positioning: pickLocalized(locale, data.positioning_en, data.positioning_km),
-      heroHeadline: pickLocalized(locale, data.hero_headline_en, data.hero_headline_km),
-      heroSubheadline: pickLocalized(
+      tagline: pickExactLocale(locale, data.tagline_en, data.tagline_km),
+      positioning: pickExactLocale(locale, data.positioning_en, data.positioning_km),
+      heroHeadline: pickExactLocale(locale, data.hero_headline_en, data.hero_headline_km),
+      heroSubheadline: pickExactLocale(
         locale,
         data.hero_subheadline_en,
         data.hero_subheadline_km,
       ),
-      availabilityStatus: pickLocalized(
+      availabilityStatus: pickExactLocale(
         locale,
         data.availability_status_en,
         data.availability_status_km,
@@ -105,7 +105,6 @@ export type OwnerProfile = {
   displayName: string | null;
   headline: string | null;
   bio: string | null;
-  location: string | null;
   avatarUrl: string | null;
 };
 
@@ -123,7 +122,9 @@ export async function getOwnerProfile(locale: Locale): Promise<OwnerProfile | nu
     const supabase = await createSupabasePublicClient();
     const { data, error } = await supabase
       .from("public_profile")
-      .select("*")
+      .select(
+        "id, display_name, public_headline_en, public_headline_km, public_bio_en, public_bio_km, public_avatar_url",
+      )
       .limit(1)
       .maybeSingle();
 
@@ -132,13 +133,12 @@ export async function getOwnerProfile(locale: Locale): Promise<OwnerProfile | nu
     return {
       id: data.id,
       displayName: data.display_name,
-      headline: pickLocalized(
+      headline: pickExactLocale(
         locale,
         data.public_headline_en,
         data.public_headline_km,
       ),
-      bio: pickLocalized(locale, data.public_bio_en, data.public_bio_km),
-      location: data.public_location,
+      bio: pickExactLocale(locale, data.public_bio_en, data.public_bio_km),
       avatarUrl: data.public_avatar_url,
     };
   } catch {
