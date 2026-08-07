@@ -41,6 +41,22 @@ const coverFallbacks: Record<string, string> = {
   "ptec-storage": "/image/projects/ptec-storage.webp",
 };
 
+/*
+ * Tiny, pre-blurred versions of the committed screenshots. Static imports
+ * would generate these automatically, but the fallback is selected by a CMS
+ * slug at runtime, so the images are addressed by public URL instead. Keeping
+ * the LQIPs beside that lookup preserves the same blur-up behaviour as an
+ * uploaded CMS cover without sending another request.
+ */
+const coverFallbackBlurData: Record<string, string> = {
+  krusmart:
+    "data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACQAQCdASoQAAoABIByJZwAAudUwMAA/vNrvj4/sAAAAA==",
+  "ptec-digital-library":
+    "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAADwAQCdASoQAAoABIByJYwCdAEKk1wLkgAA/ryP1XaXI8/1hgCiSlyM2np+IUwTcsAQAA==",
+  "ptec-storage":
+    "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoQAAoABIByJaQAA3AA/vDeAAA=",
+};
+
 /**
  * The placeholder screenshot for a project slug, or null when there is none.
  *
@@ -51,12 +67,16 @@ const coverFallbacks: Record<string, string> = {
 export function coverFallbackFor(
   slug: string,
   altTemplate: string,
-): { src: string; alt: string } | null {
+): { src: string; alt: string; blurDataURL: string | null } | null {
   const src = coverFallbacks[slug];
   if (!src) return null;
 
   const platform = livePlatforms.find((entry) => entry.key === slug);
-  return { src, alt: altTemplate.replace("{name}", platform?.name ?? slug) };
+  return {
+    src,
+    alt: altTemplate.replace("{name}", platform?.name ?? slug),
+    blurDataURL: coverFallbackBlurData[slug] ?? null,
+  };
 }
 
 export type LivePlatform = {

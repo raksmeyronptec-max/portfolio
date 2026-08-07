@@ -240,8 +240,6 @@ export default async function ProjectsPage({
                   project={lead}
                   locale={locale}
                   t={t}
-                  index={0}
-                  priority
                   headingLevel={2}
                 />
               </Reveal>
@@ -256,7 +254,6 @@ export default async function ProjectsPage({
                         project={project}
                         locale={locale}
                         t={t}
-                        priority={!lead && index === 0}
                         headingLevel={2}
                       />
                     </Reveal>

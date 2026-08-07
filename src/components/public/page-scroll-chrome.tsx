@@ -43,7 +43,12 @@ export function PageScrollChrome({ backToTopLabel }: { backToTopLabel: string })
     );
     const activate = (id: string) => {
       navTargets.forEach((targets, key) => {
-        targets.forEach((target) => target.classList.toggle("active", key === id));
+        targets.forEach((target) => {
+          const active = key === id;
+          target.classList.toggle("active", active);
+          if (active) target.dataset.scrollActive = "true";
+          else delete target.dataset.scrollActive;
+        });
       });
     };
     const observer = new IntersectionObserver(
@@ -51,7 +56,7 @@ export function PageScrollChrome({ backToTopLabel }: { backToTopLabel: string })
         const current = entries.find((entry) => entry.isIntersecting);
         if (current?.target.id) activate(current.target.id);
       },
-      { rootMargin: "-40% 0px -40% 0px", threshold: 0 },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
     sections.forEach((section) => observer.observe(section));
 
@@ -59,7 +64,12 @@ export function PageScrollChrome({ backToTopLabel }: { backToTopLabel: string })
       window.removeEventListener("scroll", onScroll);
       if (frame) window.cancelAnimationFrame(frame);
       observer.disconnect();
-      navTargets.forEach((targets) => targets.forEach((target) => target.classList.remove("active")));
+      navTargets.forEach((targets) =>
+        targets.forEach((target) => {
+          target.classList.remove("active");
+          delete target.dataset.scrollActive;
+        }),
+      );
     };
   }, []);
 

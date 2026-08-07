@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { ButtonLink } from "@/components/ui/button";
 import { Icon, toIconName } from "@/components/ui/icon";
-import { SmartLink, StatusDot, Tag } from "@/components/ui/primitives";
+import { SmartLink, StatusDot } from "@/components/ui/primitives";
 import { Reveal } from "@/components/motion/reveal";
 import { HeroLens } from "@/components/public/hero-lens";
 import { HeroMotion } from "@/components/public/hero-motion";
@@ -401,7 +401,7 @@ export function FeaturedProjects({
             {projects.map((project, index) => (
               <li key={project.id} className="flex">
                 <Reveal delay={index * 100} className="flex min-w-0 flex-1">
-                  <ProjectShowcase project={project} locale={locale} t={t} index={index} priority={index === 0} />
+                  <ProjectShowcase project={project} locale={locale} t={t} />
                 </Reveal>
               </li>
             ))}
@@ -1110,142 +1110,70 @@ export function Timeline({
   }>;
 }) {
   return (
-    <ol className="flex flex-col">
+    <ol className="timeline" aria-label={t.home.journey.heading}>
       {items.map((item, index) => (
-        <li key={item.id} id={item.anchorId} className={item.anchorId ? "scroll-mt-24" : undefined}>
-          <Reveal
-            delay={Math.min(index, 6) * 100}
-            className="grid gap-x-8 sm:grid-cols-[8rem_1fr]"
-          >
-            {/* ── Year column (desktop) ──────────────────────────────────── */}
-            <div className="hidden pt-8 sm:block">
-              {item.period ? (
-                <p className="font-mono text-[0.8125rem] leading-relaxed text-foreground-subtle">
-                  {item.period}
-                </p>
-              ) : null}
-            </div>
-
-            {/* ── Rule + content ─────────────────────────────────────────── */}
-            <div
-              className={cn(
-                "relative flex flex-col gap-2.5 border-s border-border py-8 ps-7",
-                // The last entry's rule stops at its content rather than
-                // running into the section padding.
-                index === items.length - 1 && "border-s-transparent",
-              )}
-            >
-              {/* Re-draws the rule for the final item, stopping at the node. */}
-              {index === items.length - 1 ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute -start-px top-0 h-[2.75rem] w-px bg-border"
-                />
-              ) : null}
-
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute -start-[5px] top-[2.15rem] size-2.5 rounded-full ring-4",
-                  item.isCurrent
-                    ? "bg-accent ring-surface-muted"
-                    : "bg-border-strong ring-surface-muted",
-                )}
-              />
-
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                {/* Period repeats on mobile, where the year column is hidden. */}
-                {item.period ? (
-                  <span className="font-mono text-[0.8125rem] text-foreground-subtle sm:hidden">
-                    {item.period}
-                  </span>
-                ) : null}
-
-                <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-foreground-subtle">
-                  <Icon
-                    name={item.kind === "education" ? "graduation" : "briefcase"}
-                    size={14}
-                  />
-                  {item.kind === "education" ? t.education.title : t.experience.title}
-                </span>
-
-                {item.isCurrent ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-(--radius-full) bg-success-subtle px-2.5 py-0.5 text-[0.75rem] font-semibold text-success-foreground">
-                    <StatusDot tone="success" className="size-1.5" />
-                    {t.home.journey.present}
-                  </span>
-                ) : null}
-              </div>
-
-              <h3
-                className="text-h4 font-semibold"
-                lang={langAttribute(locale, item.contentLocale)}
-              >
-                {item.title}
-              </h3>
-
-              <p className="text-small font-medium text-foreground-muted">
-                {item.organizationUrl ? (
-                  <SmartLink
-                    href={item.organizationUrl}
-                    newTabHint={t.a11y.opensInNewTab}
-                    className="underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
-                  >
-                    {item.organization}
-                  </SmartLink>
-                ) : (
-                  item.organization
-                )}
-              </p>
-
-              {item.description ? (
-                <p
-                  className="max-w-[68ch] text-small text-foreground-muted"
-                  lang={langAttribute(locale, item.contentLocale)}
+        <Reveal
+          as="li"
+          key={item.id}
+          id={item.anchorId}
+          delay={Math.min(index, 6) * 100}
+          className="timeline-item"
+        >
+          <div className="timeline-left">
+            {item.period ? <span className="timeline-date">{item.period}</span> : null}
+            <span className="timeline-org">
+              {item.organizationUrl ? (
+                <SmartLink
+                  href={item.organizationUrl}
+                  newTabHint={t.a11y.opensInNewTab}
+                  className="underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
                 >
-                  {item.description}
-                </p>
+                  {item.organization}
+                </SmartLink>
+              ) : (
+                item.organization
+              )}
+            </span>
+          </div>
+
+          <div className="timeline-line" aria-hidden="true">
+            <span className="timeline-dot" data-active={item.isCurrent ? "true" : undefined} />
+            {index !== items.length - 1 ? <span className="timeline-connector" /> : null}
+          </div>
+
+          <article className="timeline-right" lang={langAttribute(locale, item.contentLocale)}>
+            <div className="timeline-heading-row">
+              <h3>{item.title}</h3>
+              <span className="timeline-kind">
+                <Icon
+                  name={item.kind === "education" ? "graduation" : "briefcase"}
+                  size={13}
+                  aria-hidden
+                />
+                {item.kind === "education" ? t.education.title : t.experience.title}
+              </span>
+              {item.isCurrent ? (
+                <span className="timeline-current">{t.home.journey.present}</span>
               ) : null}
-
-              {item.detail ? (
-                <p className="text-small font-medium text-secondary-subtle-foreground">
-                  {item.detail}
-                </p>
-              ) : null}
-
-              {/*
-                Photographs sit after the prose deliberately. The role, the
-                organisation and what was done are the professional evidence;
-                the image corroborates it and must not be read first.
-              */}
-              {item.media ?? null}
-
-              {item.tags.length > 0 ? (
-                <ul className="flex flex-wrap gap-1.5 pt-1">
-                  {/*
-                    Deduplicated, because the tag list is the entry's kind label
-                    followed by its own tags — and an entry of kind "Practicum"
-                    that is also tagged "Practicum" produced two children with
-                    the same key. React warns about it, and the duplicate chip
-                    was visible on the page.
-                  */}
-                  {[...new Set(item.tags)].map((tag) => (
-                    <li key={tag}>
-                      <Tag>{tag}</Tag>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-
-              {/*
-                After the tags: the journey cross-link is a way *out* of this
-                entry, so it comes last. Putting it above the tags would interrupt
-                the entry's own description with a link to a different page.
-              */}
-              {item.footer ?? null}
             </div>
-          </Reveal>
-        </li>
+
+            {item.description ? <p>{item.description}</p> : null}
+            {item.detail ? <p className="timeline-detail">{item.detail}</p> : null}
+            {item.media ?? null}
+
+            {item.tags.length > 0 ? (
+              <ul className="timeline-tags">
+                {[...new Set(item.tags)].map((tag) => (
+                  <li key={tag}>
+                    <span className="timeline-tag">{tag}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {item.footer ?? null}
+          </article>
+        </Reveal>
       ))}
     </ol>
   );

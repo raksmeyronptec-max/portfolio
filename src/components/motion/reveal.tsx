@@ -94,7 +94,7 @@ export function Reveal({
       },
       // Fires a little before the element reaches the viewport, so the motion
       // completes as it arrives rather than after it has already been read.
-      { rootMargin: "0px 0px -40px 0px", threshold: 0.15 },
+      { rootMargin: "0px 0px -40px 0px", threshold: 0.12 },
     );
 
     observer.observe(node);

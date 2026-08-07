@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Reveal } from "@/components/motion/reveal";
@@ -16,12 +17,12 @@ type DiagramNode = {
 };
 
 const NODE_POSITIONS = [
-  { x: 20, y: 35 },
-  { x: 500, y: 35 },
-  { x: 260, y: 245 },
+  { x: 50, y: 48 },
+  { x: 450, y: 48 },
+  { x: 250, y: 230 },
 ] as const;
 
-/** A progressive SVG: the ordered list remains the accessible source of truth. */
+/** Interactive SVG on wide screens with an equivalent linked stack on mobile. */
 export function ProjectEcosystem({
   projects,
   locale,
@@ -111,17 +112,9 @@ export function ProjectEcosystem({
           data-motion={motionState ?? undefined}
           onMouseLeave={() => setActiveNode(null)}
         >
-          <ol className="sr-only">
-            {nodes.map((node) => (
-              <li key={node.project.id}>
-                {node.shortName}: {node.sublabel}
-              </li>
-            ))}
-          </ol>
-
           <svg
             className="ecosystem-svg"
-            viewBox="0 0 720 370"
+            viewBox="0 0 640 320"
             role="group"
             aria-labelledby="ecosystem-svg-title ecosystem-svg-description"
           >
@@ -134,9 +127,33 @@ export function ProjectEcosystem({
             </defs>
 
             <g className="ecosystem-arrows" aria-hidden="true">
-              <DiagramArrow index={0} activeNode={activeNode} connection={connections[0]} d="M 220 80 L 500 80" label={arrowLabels[0]} labelX={360} labelY={62} />
-              <DiagramArrow index={1} activeNode={activeNode} connection={connections[1]} d="M 600 125 C 600 205 525 280 460 285" label={arrowLabels[1]} labelX={570} labelY={205} />
-              <DiagramArrow index={2} activeNode={activeNode} connection={connections[2]} d="M 260 285 C 125 350 55 290 120 125" label={arrowLabels[2]} labelX={118} labelY={324} />
+              <DiagramArrow
+                index={0}
+                activeNode={activeNode}
+                connection={connections[0]}
+                d="M 190 76 C 270 12 370 12 450 76"
+                label={arrowLabels[0]}
+                labelX={320}
+                labelY={28}
+              />
+              <DiagramArrow
+                index={1}
+                activeNode={activeNode}
+                connection={connections[1]}
+                d="M 520 104 C 620 142 600 238 390 258"
+                label={arrowLabels[1]}
+                labelX={566}
+                labelY={174}
+              />
+              <DiagramArrow
+                index={2}
+                activeNode={activeNode}
+                connection={connections[2]}
+                d="M 250 258 C 105 320 18 206 120 104"
+                label={arrowLabels[2]}
+                labelX={92}
+                labelY={264}
+              />
             </g>
 
             {nodes.map((node, index) => (
@@ -148,12 +165,15 @@ export function ProjectEcosystem({
                 onFocus={() => setActiveNode(index)}
                 onBlur={() => setActiveNode(null)}
               >
-                <g className="ecosystem-node" style={{ "--node-delay": `${index * 100}ms` } as React.CSSProperties}>
-                  <rect x={node.x} y={node.y} width="200" height="90" rx="10" />
-                  <text x={node.x + 100} y={node.y + 40} textAnchor="middle" className="ecosystem-node-title">
+                <g
+                  className="ecosystem-node"
+                  style={{ "--node-delay": `${index * 100}ms` } as React.CSSProperties}
+                >
+                  <rect x={node.x} y={node.y} width="140" height="56" rx="12" ry="12" />
+                  <text x={node.x + 70} y={node.y + 24} textAnchor="middle" className="ecosystem-node-title">
                     {node.shortName}
                   </text>
-                  <text x={node.x + 100} y={node.y + 62} textAnchor="middle" className="ecosystem-node-label">
+                  <text x={node.x + 70} y={node.y + 42} textAnchor="middle" className="ecosystem-node-label">
                     {node.sublabel}
                   </text>
                 </g>
@@ -161,13 +181,16 @@ export function ProjectEcosystem({
             ))}
           </svg>
 
-          <div className="ecosystem-mobile" aria-hidden="true">
+          <div className="ecosystem-mobile">
             {nodes.map((node, index) => (
               <div key={node.project.id} className="contents">
-                <div className="ecosystem-mobile-node">
+                <Link
+                  href={localePath(locale, `projects/${node.project.slug}`)}
+                  className="ecosystem-mobile-node"
+                >
                   <strong>{node.shortName}</strong>
                   <span>{node.sublabel}</span>
-                </div>
+                </Link>
                 {index < nodes.length - 1 ? (
                   <div className="ecosystem-mobile-arrow">
                     <span>{arrowLabels[index]}</span>
@@ -205,7 +228,12 @@ function DiagramArrow({
   const dimmed = activeNode !== null && !connection.includes(activeNode);
   const highlighted = activeNode !== null && connection.includes(activeNode);
   return (
-    <g className="ecosystem-arrow" data-dimmed={dimmed ? "true" : undefined} data-highlighted={highlighted ? "true" : undefined} style={{ "--arrow-delay": `${index * 300}ms` } as React.CSSProperties}>
+    <g
+      className="ecosystem-arrow"
+      data-dimmed={dimmed ? "true" : undefined}
+      data-highlighted={highlighted ? "true" : undefined}
+      style={{ "--arrow-delay": `${index * 250}ms` } as React.CSSProperties}
+    >
       <path d={d} pathLength="1" markerEnd="url(#ecosystem-arrow)" />
       <text x={labelX} y={labelY} textAnchor="middle">{label}</text>
     </g>

@@ -300,6 +300,8 @@ function ProjectGallery({
                         fill
                         sizes="(min-width: 640px) 50vw, 100vw"
                         loading="lazy"
+                        placeholder={image.blurDataURL ? "blur" : undefined}
+                        blurDataURL={image.blurDataURL ?? undefined}
                         className="object-cover"
                       />
                     </div>

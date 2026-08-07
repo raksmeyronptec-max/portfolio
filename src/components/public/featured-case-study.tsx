@@ -168,6 +168,8 @@ export function FeaturedCaseStudy({
                     width={1200}
                     height={750}
                     sizes="(min-width: 1024px) 42vw, 92vw"
+                    placeholder={cover.blurDataURL ? "blur" : undefined}
+                    blurDataURL={cover.blurDataURL ?? undefined}
                     className="h-auto w-full object-cover"
                   />
                 </div>

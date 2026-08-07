@@ -29,14 +29,11 @@ export function ProjectCard({
   project,
   locale,
   t,
-  priority = false,
   headingLevel = 3,
 }: {
   project: ProjectCardData;
   locale: Locale;
   t: Dictionary;
-  /** Only true for the first card above the fold. */
-  priority?: boolean;
   headingLevel?: 2 | 3 | 4;
 }) {
   // A CMS cover always wins; the fallback is a committed screenshot of the live
@@ -45,9 +42,7 @@ export function ProjectCard({
   const fallback = cmsCover
     ? null
     : coverFallbackFor(project.slug, t.projects.screenshotAlt);
-  const cover =
-    cmsCover ??
-    (fallback ? { ...fallback, blurDataURL: null as string | null } : null);
+  const cover = cmsCover ?? fallback;
 
   const href = localePath(locale, `projects/${project.slug}`);
   const contentLang = langAttribute(locale, project.contentLocale);
@@ -64,8 +59,7 @@ export function ProjectCard({
             alt={cover.alt}
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
+            loading="lazy"
             placeholder={cover.blurDataURL ? "blur" : undefined}
             blurDataURL={cover.blurDataURL ?? undefined}
             className="lift__media object-cover object-top"

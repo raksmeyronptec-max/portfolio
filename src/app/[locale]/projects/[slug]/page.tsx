@@ -286,7 +286,6 @@ export default async function ProjectDetailPage({
                   alt={heroImage.alt}
                   fill
                   sizes="(min-width: 1280px) 76rem, 100vw"
-                  priority
                   placeholder={heroImage.blurDataURL ? "blur" : undefined}
                   blurDataURL={heroImage.blurDataURL ?? undefined}
                   className="object-cover object-top"
