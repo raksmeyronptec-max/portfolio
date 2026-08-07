@@ -95,7 +95,11 @@
   display: grid;
   gap: clamp(3rem, 7vw, 7rem);
   align-items: center;
-  padding-block: clamp(4.5rem, 9vw, 8.5rem);
+  /* Top padding gives back the header height the hero's negative margin takes,
+     so the copy clears the sticky header rather than sitting under it. See the
+     note on the element in about/hero.tsx for why the hero is pulled up. */
+  padding-block: calc(var(--header-height) + clamp(4.5rem, 9vw, 8.5rem))
+    clamp(4.5rem, 9vw, 8.5rem);
 }
 
 .about-v4-hero-copy {

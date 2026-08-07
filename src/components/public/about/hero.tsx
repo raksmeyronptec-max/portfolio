@@ -22,6 +22,20 @@ export function AboutHero({
       data-about-section="hero"
       data-scheme="ink"
       className="about-v4-hero"
+      /*
+       * The header is `position: sticky`, so it occupies layout space. Without
+       * this the hero began *below* it, leaving the header's own ink scope —
+       * which it carries unconditionally — resolving to near-white text on the
+       * light page background. On /about that made the wordmark, the nav, the
+       * locale switcher and the Resume button illegible.
+       *
+       * Pulling the hero up by exactly the header height puts it underneath the
+       * transparent header, which is what the ink scope assumes and what every
+       * other opening band already does — see the same note in home-sections.tsx
+       * and layout/page-header.tsx. `.about-v4-hero-layout` gives the space back
+       * in its top padding, so nothing is hidden.
+       */
+      style={{ marginTop: "calc(-1 * var(--header-height))" }}
     >
       <div aria-hidden="true" className="about-v4-coordinate-grid" />
       <div className="container-content about-v4-hero-layout">
