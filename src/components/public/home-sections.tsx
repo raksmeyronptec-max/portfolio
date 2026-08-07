@@ -5,9 +5,8 @@ import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { Icon, toIconName } from "@/components/ui/icon";
 import { SmartLink, StatusDot, Tag } from "@/components/ui/primitives";
-import { AnimatedIdentityName } from "@/components/motion/identity-name";
 import { Reveal } from "@/components/motion/reveal";
-import { RotatingWords } from "@/components/motion/rotating-words";
+import { HeroLens } from "@/components/public/hero-lens";
 import { HeroPortrait } from "@/components/public/hero-portrait";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { ProjectShowcase } from "@/components/public/project-showcase";
@@ -52,7 +51,7 @@ import { cn } from "@/lib/utils/cn";
 export function Hero({
   locale,
   t,
-  settings,
+  settings: _settings,
   profile,
 }: {
   locale: Locale;
@@ -60,40 +59,31 @@ export function Hero({
   settings: SiteSettings;
   profile: OwnerProfile | null;
 }) {
-  // CMS content wins; the dictionary only supplies a floor so the hero is never
-  // empty on a fresh install.
-  const headline = settings.heroHeadline ?? profile?.headline ?? null;
-  const subheadline = settings.heroSubheadline ?? profile?.bio ?? t.home.hero.intro;
-  /*
-   * The keyed portrait: the same photograph with its green studio backdrop
-   * removed by `scripts/key-portrait.mjs`, so the hero's own lighting sits
-   * behind the subject rather than being tinted over him. See hero-portrait.tsx.
-   *
-   * A CMS avatar still wins, and an opaque one degrades cleanly — the lighting
-   * layers are simply covered, and the vignette and scrim still apply on top.
-   */
   const portrait = profile?.avatarUrl ?? "/image/portrait-keyed.webp";
-
-  /*
-   * The hero name prefers `settings.siteName` over `profile.displayName`.
-   *
-   * `site_settings` stores site_name_en / site_name_km, so it resolves to
-   * "រុន រស្មី" on the Khmer site. `profiles.display_name` is a single
-   * locale-independent column, so it is always the Latin spelling — which meant
-   * the Khmer homepage showed "Ron Raksmey" as the <h1> while the header and
-   * footer beside it said "រុន រស្មី". `displayName` is still the right value
-   * for the portrait's alt text, where the Latin spelling is harmless.
-   */
-  const displayName = settings.siteName ?? profile?.displayName;
-
-  const builds = [
-    // Ordered most concrete first: a visitor who reads only the first phrase
-    // should get the plainest one.
-    t.home.hero.builds.tools,
-    t.home.hero.builds.platforms,
-    t.home.hero.builds.systems,
-    t.home.hero.builds.libraries,
-  ];
+  const labels =
+    locale === "km"
+      ? {
+          viewWork: "មើលស្នាដៃរបស់ខ្ញុំ",
+          contact: "ទាក់ទងមកខ្ញុំ",
+          availability: "បើកចំហសម្រាប់កិច្ចសហការផ្នែកអប់រំ និងផលិតផលឌីជីថល",
+          proof: "វេទិកា ៣ កំពុងដំណើរការ",
+          stats: [
+            { value: "3", label: "គម្រោងបានបោះពុម្ព" },
+            { value: "114+", label: "ធនធានឌីជីថលបានផ្តល់ជូន" },
+            { value: "26", label: "មេរៀនថ្នាក់រៀនបានបង្កើត" },
+          ],
+        }
+      : {
+          viewWork: "View my work",
+          contact: "Get in touch",
+          availability: "Open to education and digital-product collaborations",
+          proof: "3 platforms in production",
+          stats: [
+            { value: "3", label: "published projects" },
+            { value: "114+", label: "digital resources served" },
+            { value: "26", label: "classroom modules built" },
+          ],
+        };
 
   return (
     <section
@@ -109,10 +99,6 @@ export function Hero({
        */
       style={{ marginTop: "calc(-1 * var(--header-height))" }}
     >
-      {/* ── Decoration ──────────────────────────────────────────────────────
-          Three cheap, static layers: a grid, a large primary wash behind the
-          portrait, and a smaller warm wash on the opposite side. No canvas, no
-          animation loop — v1 ran a permanent requestAnimationFrame here. */}
       <div aria-hidden="true" className="grid-lines" />
       <div
         aria-hidden="true"
@@ -135,143 +121,47 @@ export function Hero({
 
       <div className="container-content">
         <div
-          className="grid items-center gap-10 pb-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14 lg:pb-20"
-          // Clears the transparent fixed header without a magic number. Tighter
-          // than before: the whole point of this pass is that the statement and
-          // both actions fit above the fold on a 1280×800 laptop, and the old
-          // 5rem top padding alone cost a sixth of that budget.
+          className="home-hero-layout"
           style={{ paddingTop: "calc(var(--header-height) + clamp(1.75rem, 4vw, 3.25rem))" }}
         >
-          {/* ── Copy ─────────────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-6">
-            {/* ── Identity lockup ──────────────────────────────────────────
-                The name is a signature, not the headline.
+          <div className="home-hero-copy">
+            <HeroLens locale={locale} />
 
-                It used to be the <h1>, at `--text-hero` — 6.5rem at full size,
-                which pushed the positioning statement and every call to action
-                below the fold on a laptop. A visitor who already clicked
-                through to a personal site does not need the name at 104px;
-                they need to know what the person does. So the name keeps a
-                strong, deliberate treatment at a fraction of the size, and the
-                statement takes the heading.
-
-                Nothing is lost for SEO: the name is still the <title>, the
-                Person schema's `name`, the header wordmark and the footer. */}
-            <Reveal className="flex flex-col gap-2">
-              <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent">
-                {t.home.hero.eyebrow}
-              </p>
-
-              <p>
-                <AnimatedIdentityName
-                  name={displayName ?? ""}
-                  className="text-h3 font-bold tracking-[-0.02em]"
-                />
-              </p>
-            </Reveal>
-
-            {/* ── The positioning statement, as the page's one <h1> ───────── */}
-            <Reveal delay={80} className="flex flex-col gap-4">
-              {headline ? (
-                <h1 className="max-w-[19ch] text-h1 font-bold text-balance">
-                  {headline}
-                </h1>
-              ) : (
-                <h1 className="max-w-[19ch] text-h1 font-bold text-balance">
-                  <span className="block">{t.home.hero.roleLine1}</span>
-                  <span className="block text-foreground-muted">
-                    {t.home.hero.roleLine2}
-                  </span>
-                </h1>
-              )}
-
-              <p className="max-w-[52ch] text-body text-foreground-muted">
-                {subheadline}
-              </p>
-            </Reveal>
-
-            {/* ── "I build …" ─────────────────────────────────────────────
-                The dynamic specialty line, placed between the supporting
-                paragraph and the calls to action — the brief's hierarchy puts
-                it above the availability metadata, and it used to sit below.
-
-                Kept to a quiet one-line strap rather than the h3-sized line it
-                once was: at that size it competed directly with the statement
-                three elements above it. */}
-            <Reveal delay={140}>
-              <p className="flex flex-wrap items-baseline gap-x-2 text-body text-foreground-muted">
-                <span>{t.home.hero.buildsLabel}</span>
-                <RotatingWords words={builds} />
-              </p>
-            </Reveal>
-
-            {/* ── Actions ─────────────────────────────────────────────────── */}
-            <Reveal delay={200} className="flex flex-wrap items-center gap-3">
-              <ButtonLink
-                href={localePath(locale, "projects")}
-                variant="accent"
-                size="lg"
-                iconEnd="arrowRight"
-                className="group rounded-(--radius-full) px-6"
-              >
-                {t.home.hero.exploreWork}
-              </ButtonLink>
-
-              <ButtonLink
-                href={localePath(locale, "resume")}
-                variant="outline"
-                size="lg"
-                iconStart="download"
-                className="rounded-(--radius-full) px-6"
-              >
-                {t.home.hero.downloadResume}
-              </ButtonLink>
-
-              <ButtonLink
+            <div className="home-hero-actions">
+              <Link href="#work" className="home-hero-action home-hero-action--primary">
+                {labels.viewWork}
+              </Link>
+              <Link
                 href={localePath(locale, "contact")}
-                variant="ghost"
-                size="lg"
-                className="rounded-(--radius-full) px-4"
+                className="home-hero-action home-hero-action--secondary"
               >
-                {t.home.hero.contactMe}
-              </ButtonLink>
-            </Reveal>
+                {labels.contact}
+              </Link>
+            </div>
 
-            {/* ── Availability ────────────────────────────────────────────
-                The last thing in the hero, and the only metadata left in it.
-                Location and spoken languages moved down to the proof strip:
-                they are supporting facts, and holding six competing pieces of
-                information at the same visual level was the hero's main
-                problem. Availability stays because it is the one fact that
-                changes what a visitor does next. */}
-            <Reveal delay={260}>
-              <span className="inline-flex items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5 text-small text-foreground-muted">
-                <StatusDot tone={settings.isAvailableForWork ? "success" : "neutral"} />
-                {settings.availabilityStatus ??
-                  (settings.isAvailableForWork
-                    ? t.home.hero.availableForWork
-                    : t.home.hero.notAvailable)}
-              </span>
-            </Reveal>
-
+            <p className="home-hero-availability">
+              <span aria-hidden="true">●</span>
+              {labels.availability}
+            </p>
           </div>
 
-          {/* ── Portrait ─────────────────────────────────────────────────────
-              Extracted to its own component: the lighting is six layers deep
-              and the reasoning behind each one is long enough that inlining it
-              buried the hero's copy. See hero-portrait.tsx.
-
-              No `order-first` — on mobile the copy comes first. It used to be
-              portrait-first, which meant a phone visitor scrolled past a
-              photograph to reach what the site is about. */}
-          <Reveal delay={160}>
+          <Reveal delay={120}>
             <HeroPortrait
               src={portrait}
               alt={profile?.displayName ?? t.home.hero.portraitAlt}
-              t={t}
+              proofLabel={labels.proof}
             />
           </Reveal>
         </div>
+
+        <dl className="home-hero-stats" aria-label={locale === "km" ? "ស្ថិតិសង្ខេប" : "Impact at a glance"}>
+          {labels.stats.map((stat) => (
+            <div key={stat.label}>
+              <dd>{stat.value}</dd>
+              <dt>{stat.label}</dt>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );
@@ -444,6 +334,7 @@ export function FeaturedProjects({
 }) {
   return (
     <section
+      id="work"
       aria-labelledby="featured-projects-heading"
       className="decorated section-y"
     >
