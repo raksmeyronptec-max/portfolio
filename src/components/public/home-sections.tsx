@@ -7,6 +7,7 @@ import { Icon, toIconName } from "@/components/ui/icon";
 import { SmartLink, StatusDot, Tag } from "@/components/ui/primitives";
 import { Reveal } from "@/components/motion/reveal";
 import { HeroLens } from "@/components/public/hero-lens";
+import { HeroMotion } from "@/components/public/hero-motion";
 import { HeroPortrait } from "@/components/public/hero-portrait";
 import { OutboundLink } from "@/components/public/outbound-link";
 import { ProjectShowcase } from "@/components/public/project-showcase";
@@ -87,6 +88,7 @@ export function Hero({
 
   return (
     <section
+      data-home-hero
       data-scheme="ink"
       className="decorated relative bg-background text-foreground"
       /*
@@ -99,7 +101,8 @@ export function Hero({
        */
       style={{ marginTop: "calc(-1 * var(--header-height))" }}
     >
-      <div aria-hidden="true" className="grid-lines" />
+      <HeroMotion />
+      <div aria-hidden="true" className="grid-lines hero-grid-bg" />
       <div
         aria-hidden="true"
         className="glow"
@@ -127,7 +130,10 @@ export function Hero({
           <div className="home-hero-copy">
             <HeroLens locale={locale} />
 
-            <div className="home-hero-actions">
+            <div
+              className="home-hero-actions hero-stagger hero-stagger--actions"
+              data-hero-stagger
+            >
               <Link href="#work" className="home-hero-action home-hero-action--primary">
                 {labels.viewWork}
               </Link>
@@ -139,13 +145,19 @@ export function Hero({
               </Link>
             </div>
 
-            <p className="home-hero-availability">
-              <span aria-hidden="true">●</span>
+            <p
+              className="home-hero-availability hero-stagger hero-stagger--availability"
+              data-hero-stagger
+            >
+              <span className="availability-dot" aria-hidden="true" />
               {labels.availability}
             </p>
           </div>
 
-          <Reveal delay={120}>
+          <Reveal
+            className="hero-stagger hero-stagger--photo"
+            data-hero-stagger
+          >
             <HeroPortrait
               src={portrait}
               alt={profile?.displayName ?? t.home.hero.portraitAlt}
@@ -154,10 +166,31 @@ export function Hero({
           </Reveal>
         </div>
 
-        <dl className="home-hero-stats" aria-label={locale === "km" ? "ស្ថិតិសង្ខេប" : "Impact at a glance"}>
+        <dl
+          className="home-hero-stats hero-stagger hero-stagger--metrics"
+          aria-label={locale === "km" ? "ស្ថិតិសង្ខេប" : "Impact at a glance"}
+          data-hero-metrics
+          data-hero-stagger
+        >
           {labels.stats.map((stat) => (
             <div key={stat.label}>
-              <dd>{stat.value}</dd>
+              <dd
+                aria-label={stat.value}
+                data-count-to={Number.parseInt(stat.value, 10)}
+              >
+                <span data-count-value aria-hidden="true">
+                  {Number.parseInt(stat.value, 10)}
+                </span>
+                {stat.value.endsWith("+") ? (
+                  <span
+                    className="home-hero-stat-suffix"
+                    data-count-suffix
+                    aria-hidden="true"
+                  >
+                    +
+                  </span>
+                ) : null}
+              </dd>
               <dt>{stat.label}</dt>
             </div>
           ))}
@@ -412,7 +445,7 @@ export function LivePlatformsFallback({
         {livePlatforms.map((platform, index) => (
           <li key={platform.key} className="flex">
             <Reveal
-              delay={index * 70}
+              delay={index * 100}
               className="lift group flex flex-1 flex-col gap-4 rounded-(--radius-lg) border border-border bg-surface p-6 hover:border-border-interactive hover:shadow-(--shadow-lg)"
             >
               <div className="flex items-center justify-between gap-3">
@@ -546,7 +579,7 @@ export function Capabilities({
           <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2">
             {groupsWithEvidence.map(({ group, evidence }, index) => (
               <li key={group.id}>
-                <Reveal delay={index * 70} className="flex flex-col gap-3">
+                <Reveal delay={index * 100} className="flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-(--radius-md) bg-primary-subtle text-primary-subtle-foreground">
                       <Icon name={toIconName(group.icon, "target")} size={20} />
@@ -639,7 +672,7 @@ export function CertificatesPreview({
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {certificates.map((certificate, index) => (
               <li key={certificate.id} className="flex">
-                <Reveal delay={index * 60} className="flex flex-1">
+                <Reveal delay={index * 100} className="flex flex-1">
                   <CertificateCard certificate={certificate} locale={locale} t={t} />
                 </Reveal>
               </li>
@@ -709,7 +742,7 @@ export function SelectedMoments({
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry, index) => (
             <li key={entry.id} className="flex">
-              <Reveal delay={index * 60} className="flex flex-1">
+              <Reveal delay={index * 100} className="flex flex-1">
                 <MomentCard locale={locale} t={t} entry={entry} />
               </Reveal>
             </li>
@@ -900,7 +933,7 @@ export function SelectedPublications({
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {publications.map((publication, index) => (
             <li key={publication.id} className="flex">
-              <Reveal delay={index * 60} className="flex flex-1">
+              <Reveal delay={index * 100} className="flex flex-1">
                 <PublicationCard
                   publication={publication}
                   locale={locale}
@@ -1085,7 +1118,7 @@ export function Timeline({
       {items.map((item, index) => (
         <li key={item.id} id={item.anchorId} className={item.anchorId ? "scroll-mt-24" : undefined}>
           <Reveal
-            delay={Math.min(index, 6) * 50}
+            delay={Math.min(index, 6) * 100}
             className="grid gap-x-8 sm:grid-cols-[8rem_1fr]"
           >
             {/* ── Year column (desktop) ──────────────────────────────────── */}
@@ -1260,7 +1293,7 @@ export function Testimonials({
 
             return (
               <li key={testimonial.id} className="flex">
-                <Reveal delay={index * 70} className="flex flex-1">
+                <Reveal delay={index * 100} className="flex flex-1">
                   <figure className="lift flex flex-1 flex-col gap-5 rounded-(--radius-lg) border border-border bg-surface p-6 hover:border-border-interactive hover:shadow-(--shadow-md)">
                     <Icon name="lightbulb" size={20} className="text-accent-subtle-foreground" />
 

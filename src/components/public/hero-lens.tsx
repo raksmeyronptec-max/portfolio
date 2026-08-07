@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Locale } from "@/i18n/config";
 
 type Lens = "educator" | "developer";
+type TransitionState =
+  | { phase: "idle"; from: Lens; to: Lens }
+  | { phase: "exit" | "enter" | "settle"; from: Lens; to: Lens };
+
+const LENSES: Lens[] = ["educator", "developer"];
 
 const COPY: Record<Locale, Record<Lens, { headline: string; subheadline: string }>> = {
   en: {
@@ -40,34 +45,108 @@ const LABELS: Record<Locale, Record<Lens, string> & { group: string }> = {
 
 export function HeroLens({ locale }: { locale: Locale }) {
   const [activeLens, setActiveLens] = useState<Lens>("educator");
-  const copy = COPY[locale][activeLens];
+  const [transition, setTransition] = useState<TransitionState>({
+    phase: "idle",
+    from: "educator",
+    to: "educator",
+  });
+  const timers = useRef<number[]>([]);
   const labels = LABELS[locale];
+  const selectedLens =
+    transition.phase === "idle" ? activeLens : transition.to;
+
+  useEffect(
+    () => () => timers.current.forEach((timer) => window.clearTimeout(timer)),
+    [],
+  );
+
+  function selectLens(nextLens: Lens) {
+    if (nextLens === selectedLens || transition.phase !== "idle") return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setActiveLens(nextLens);
+      setTransition({ phase: "idle", from: nextLens, to: nextLens });
+      return;
+    }
+
+    const from = activeLens;
+    setTransition({ phase: "exit", from, to: nextLens });
+
+    timers.current = [
+      window.setTimeout(() => {
+        setActiveLens(nextLens);
+        setTransition({ phase: "enter", from, to: nextLens });
+      }, 200),
+      window.setTimeout(() => {
+        setTransition({ phase: "settle", from, to: nextLens });
+      }, 250),
+      window.setTimeout(() => {
+        setTransition({ phase: "idle", from: nextLens, to: nextLens });
+        timers.current = [];
+      }, 600),
+    ];
+  }
+
+  function textState(lens: Lens) {
+    if (transition.phase === "idle") {
+      return lens === activeLens ? "active" : "inactive";
+    }
+    if (lens === transition.from) return "exit";
+    if (lens === transition.to) {
+      return transition.phase === "settle" ? "active" : "enter";
+    }
+    return "inactive";
+  }
 
   return (
     <div className="home-hero-lens">
-      <div className="home-hero-toggle" role="group" aria-label={labels.group}>
+      <div
+        className="home-hero-toggle hero-stagger hero-stagger--toggle"
+        role="group"
+        aria-label={labels.group}
+        data-lens={selectedLens}
+        data-hero-stagger
+      >
         <button
           type="button"
-          aria-pressed={activeLens === "educator"}
-          data-active={activeLens === "educator"}
-          onClick={() => setActiveLens("educator")}
+          aria-pressed={selectedLens === "educator"}
+          data-active={selectedLens === "educator"}
+          onClick={() => selectLens("educator")}
         >
           {labels.educator}
         </button>
         <button
           type="button"
           className="home-hero-toggle__developer"
-          aria-pressed={activeLens === "developer"}
-          data-active={activeLens === "developer"}
-          onClick={() => setActiveLens("developer")}
+          aria-pressed={selectedLens === "developer"}
+          data-active={selectedLens === "developer"}
+          onClick={() => selectLens("developer")}
         >
           {`<${labels.developer} />`}
         </button>
       </div>
 
-      <div key={activeLens} className="home-hero-lens__copy">
-        <h1>{copy.headline}</h1>
-        <p>{copy.subheadline}</p>
+      <div className="home-hero-lens__copy" aria-live="polite">
+        {LENSES.map((lens) => (
+          <div
+            key={lens}
+            className={`toggle-text ${textState(lens)}`}
+            aria-hidden={lens !== activeLens}
+          >
+            <h1
+              className="hero-stagger hero-stagger--headline"
+              data-hero-stagger
+            >
+              {COPY[locale][lens].headline}
+            </h1>
+            <p
+              className="hero-stagger hero-stagger--subheadline"
+              data-hero-stagger
+            >
+              {COPY[locale][lens].subheadline}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

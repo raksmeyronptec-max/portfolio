@@ -42,11 +42,14 @@ export function Reveal({
   delay?: number;
   className?: string;
   children: ReactNode;
-} & Record<string, unknown>) {
+  } & Record<string, unknown>) {
   const ref = useRef<HTMLElement | null>(null);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
   // `null` means "not yet evaluated", which is also the server state — the
   // element carries no data-reveal attribute at all and is therefore visible.
-  const [state, setState] = useState<"pending" | "visible" | null>(null);
+  const [state, setState] = useState<
+    "pending" | "visible" | "complete" | null
+  >(null);
 
   useEffect(() => {
     const node = ref.current;
@@ -65,31 +68,49 @@ export function Reveal({
       return;
     }
 
+    setShouldAnimate(true);
     setState("pending");
+
+    let completionTimer = 0;
+    const handleTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== node) return;
+      setState("complete");
+      node.removeEventListener("transitionend", handleTransitionEnd);
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
+            node.addEventListener("transitionend", handleTransitionEnd);
             setState("visible");
             observer.disconnect();
+            completionTimer = window.setTimeout(
+              () => setState("complete"),
+              600 + delay,
+            );
           }
         }
       },
       // Fires a little before the element reaches the viewport, so the motion
       // completes as it arrives rather than after it has already been read.
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
+      { rootMargin: "0px 0px -40px 0px", threshold: 0.15 },
     );
 
     observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(completionTimer);
+      node.removeEventListener("transitionend", handleTransitionEnd);
+    };
+  }, [delay]);
 
   return (
     <Component
       ref={ref}
       className={cn("reveal", className)}
       data-reveal={state ?? undefined}
+      data-reveal-animated={shouldAnimate ? "true" : undefined}
       style={delay ? ({ "--reveal-delay": `${delay}ms` } as object) : undefined}
       {...rest}
     >

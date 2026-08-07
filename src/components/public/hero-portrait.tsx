@@ -27,7 +27,12 @@ export function HeroPortrait({
         />
       </div>
 
-      <p className="home-hero-proof">{proofLabel}</p>
+      <p
+        className="home-hero-proof badge-entrance"
+        data-badge-entrance
+      >
+        {proofLabel}
+      </p>
     </div>
   );
 }
