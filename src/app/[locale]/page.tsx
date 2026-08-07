@@ -27,6 +27,7 @@ import {
 import { DualIdentity } from "@/components/public/dual-identity";
 import { FeaturedCaseStudy } from "@/components/public/featured-case-study";
 import { ProjectEcosystem } from "@/components/public/project-ecosystem";
+import { PageScrollChrome } from "@/components/public/page-scroll-chrome";
 import { SystemMap } from "@/components/public/system-map";
 import { getFeaturedProjects, getProjectBySlug } from "@/lib/data/projects";
 import { getFeaturedCertificates } from "@/lib/data/certificates";
@@ -189,6 +190,7 @@ export default async function HomePage({
   return (
     <>
       <JsonLd data={structuredData} />
+      <PageScrollChrome backToTopLabel={t.footer.backToTop} />
 
       <Hero locale={locale} t={t} settings={settings} profile={profile} />
 
@@ -204,24 +206,25 @@ export default async function HomePage({
         reasoning behind it is that the page should answer questions in the
         order a stranger asks them:
 
-          can he build?          the flagship, told end to end
-          is it one system?      the ecosystem the three products form
+          can he build?          the flagship and its two companion products
+          is it one system?      the ecosystem those three products form
           with what?             capabilities, grouped by outcome
           why him specifically?  the two practices, and what they do to
                                  each other
           says who?              roles, books, credentials, the record
 
-        The remaining featured projects come after the case study rather than
-        before it: leading with three equal cards asks the visitor to choose
-        where to start, which is the thing the flagship exists to avoid.
+        The flagship establishes the story before the three comparable previews;
+        the ecosystem then explains how those products connect.
       */}
-      {flagship ? (
-        <FeaturedCaseStudy project={flagship} locale={locale} t={t} />
-      ) : null}
+      <div id="work" className="scroll-section">
+        {flagship ? (
+          <FeaturedCaseStudy project={flagship} locale={locale} t={t} />
+        ) : null}
 
-      <ProjectEcosystem projects={ecosystemProjects} locale={locale} t={t} />
+        <FeaturedProjects locale={locale} t={t} projects={featuredProjects} />
 
-      <FeaturedProjects locale={locale} t={t} projects={featuredProjects} />
+        <ProjectEcosystem projects={ecosystemProjects} locale={locale} t={t} />
+      </div>
 
       {/*
         Dual identity before Capabilities, not after: it frames the four

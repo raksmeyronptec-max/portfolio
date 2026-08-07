@@ -367,7 +367,6 @@ export function FeaturedProjects({
 }) {
   return (
     <section
-      id="work"
       aria-labelledby="featured-projects-heading"
       className="decorated section-y"
     >
@@ -398,19 +397,15 @@ export function FeaturedProjects({
         {projects.length === 0 ? (
           <LivePlatformsFallback locale={locale} t={t} />
         ) : (
-          <div className="flex flex-col gap-20 lg:gap-28">
+          <ul className="case-card-grid">
             {projects.map((project, index) => (
-              <Reveal key={project.id}>
-                <ProjectShowcase
-                  project={project}
-                  locale={locale}
-                  t={t}
-                  index={index}
-                  priority={index === 0}
-                />
-              </Reveal>
+              <li key={project.id} className="flex">
+                <Reveal delay={index * 100} className="flex min-w-0 flex-1">
+                  <ProjectShowcase project={project} locale={locale} t={t} index={index} priority={index === 0} />
+                </Reveal>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </section>
@@ -1032,6 +1027,7 @@ export function Journey({
 
   return (
     <section
+      id="background"
       aria-labelledby="journey-heading"
       className="decorated section-y border-y border-border bg-surface-muted/40"
     >
@@ -1380,6 +1376,7 @@ export function ContactCta({
 
   return (
     <section
+      id="contact"
       data-scheme="ink"
       aria-labelledby="contact-cta-heading"
       className="decorated bg-background text-foreground"

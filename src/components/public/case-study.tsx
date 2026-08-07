@@ -73,6 +73,33 @@ export function CaseStudyBody({
   sections: CaseStudySection[];
 }) {
   const contentLang = langAttribute(locale, project.contentLocale);
+  const take = (ids: string[], used: Set<string>) => {
+    const match = ids
+      .map((id) => sections.find((section) => section.id === id))
+      .find((section) => section && !used.has(section.id));
+    if (match) used.add(match.id);
+    return match;
+  };
+  const used = new Set<string>();
+  const primarySections = [
+    {
+      tone: "problem",
+      label: locale === "km" ? "បញ្ហា" : "The problem",
+      section: take(["problem", "constraints", "challenges", "overview"], used),
+    },
+    {
+      tone: "approach",
+      label: locale === "km" ? "វិធីសាស្ត្រ" : "The approach",
+      section: take(["solution", "architecture", "ux-decisions", "research", "key-features"], used),
+    },
+    {
+      tone: "result",
+      label: locale === "km" ? "អ្វីដែលវាធ្វើឥឡូវនេះ" : "What it does now",
+      section: take(["results", "key-features", "overview", "next-steps"], used),
+    },
+  ].filter((item): item is { tone: string; label: string; section: CaseStudySection } => Boolean(item.section));
+  const supportingSections = sections.filter((section) => !used.has(section.id));
+  const leadMetric = project.metrics[0] ?? null;
 
   return (
     <div className="flex flex-col gap-10">
@@ -85,14 +112,35 @@ export function CaseStudyBody({
         </Notice>
       ) : null}
 
-      {sections.map((section) => (
-        <section key={section.id} aria-labelledby={`${section.id}-heading`}>
-          <h2
-            id={`${section.id}-heading`}
-            className="text-h3 font-semibold"
-            // Anchor offset is handled globally by scroll-padding-top.
-            style={{ scrollMarginTop: "calc(var(--header-height) + 1.5rem)" }}
-          >
+      {primarySections.length > 0 ? (
+        <div className="case-blocks">
+          {primarySections.map(({ tone, label, section }) => (
+            <section
+              key={tone}
+              id={section.id}
+              aria-labelledby={`${section.id}-heading`}
+              className={`case-block ${tone}`}
+            >
+              <h2 id={`${section.id}-heading`} className="case-label">
+                {label}
+              </h2>
+              <ProseText text={section.body} />
+              {tone === "result" && leadMetric ? (
+                <p className="mt-4 text-small text-foreground-muted">
+                  <span className="metric-pull">
+                    {leadMetric.value}{leadMetric.unit ? ` ${leadMetric.unit}` : ""}
+                  </span>{" "}
+                  {leadMetric.label}
+                </p>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      ) : null}
+
+      {supportingSections.map((section) => (
+        <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`}>
+          <h2 id={`${section.id}-heading`} className="text-h3 font-semibold">
             {section.label}
           </h2>
           <ProseText text={section.body} className="mt-3" />

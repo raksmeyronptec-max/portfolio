@@ -58,6 +58,7 @@ export function DesktopNav({
                 href={entry.href}
                 aria-current={active ? "page" : undefined}
                 data-active={active ? "true" : undefined}
+                data-nav-key={entry.key}
                 className={cn(
                   "link-underline inline-flex min-h-9 items-center px-2.5",
                   "text-[0.9375rem] transition-colors duration-200",

@@ -86,7 +86,7 @@ export function DualIdentity({
   ];
 
   return (
-    <section aria-labelledby="dual-identity-heading" className="bg-surface-muted">
+    <section id="about" aria-labelledby="dual-identity-heading" className="bg-surface-muted">
       <div className="container-content section-y">
         <Reveal className="flex max-w-[52ch] flex-col gap-4">
           <p className="flex items-center gap-2.5 text-eyebrow font-semibold uppercase text-accent-subtle-foreground">

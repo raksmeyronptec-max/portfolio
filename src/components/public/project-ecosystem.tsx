@@ -1,57 +1,27 @@
-import Link from "next/link";
+"use client";
 
-import { Icon } from "@/components/ui/icon";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import { Reveal } from "@/components/motion/reveal";
-import { OutboundLink } from "@/components/public/outbound-link";
-import { type Dictionary } from "@/i18n/dictionary";
+import type { Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
-import { langAttribute } from "@/lib/content/translation";
 import type { ProjectCardData } from "@/lib/data/projects";
-import { cn } from "@/lib/utils/cn";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Project ecosystem.
+type DiagramNode = {
+  project: ProjectCardData;
+  shortName: string;
+  sublabel: string;
+  x: number;
+  y: number;
+};
 
-   The problem this solves
-     Listed as three cards, KruSmart, PTEC Digital Library and PTEC Storage read
-     as three unrelated side projects. They are not: one is the teacher-facing
-     application, one is the academic content it draws on, and one is the file
-     infrastructure underneath both. Saying so is the difference between "has
-     shipped three things" and "has designed a system".
+const NODE_POSITIONS = [
+  { x: 20, y: 35 },
+  { x: 500, y: 35 },
+  { x: 260, y: 245 },
+] as const;
 
-   Why it is a list and not a canvas
-     The brief asks for a connected node diagram on desktop, and warns against a
-     decorative graphic that hides essential information. So the markup is an
-     ordered list of three articles — readable with CSS off, linear for a screen
-     reader, every link reachable by keyboard. The layer rail and the connectors
-     are `aria-hidden` decoration painted on top of it, and they carry no text
-     that is not already in the list.
-
-     There is no hover-only content anywhere here: hover raises a card, and that
-     is all it does.
-
-   Where the words come from
-     Names, summaries and URLs are the CMS project rows. The only strings this
-     file adds are the three layer labels, which describe position in the stack
-     rather than making any claim about a platform.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/*
- * A note on how the layer label is chosen, because the obvious approach is
- * wrong.
- *
- * The first version labelled the three rows "Teaching", "Content" and
- * "Infrastructure" by position. That produced "Teaching — PTEC Digital
- * Library" and "Content — KruSmart", which is backwards: the library is the
- * repository and KruSmart is the teacher-facing app. Position in a featured
- * list is the owner's ranking, not a statement about what a product is, and
- * treating one as the other put a false claim on the page.
- *
- * The label is therefore the project's own primary category from the CMS. It
- * cannot go stale, it cannot contradict the project page, and re-ordering the
- * featured list can no longer relabel a product.
- */
-
+/** A progressive SVG: the ordered list remains the accessible source of truth. */
 export function ProjectEcosystem({
   projects,
   locale,
@@ -61,125 +31,183 @@ export function ProjectEcosystem({
   locale: Locale;
   t: Dictionary;
 }) {
-  // A relationship diagram needs a relationship.
-  if (projects.length < 2) return null;
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [motionState, setMotionState] = useState<"pending" | "visible" | null>(null);
+  const [activeNode, setActiveNode] = useState<number | null>(null);
+
+  const nodes = useMemo(() => {
+    const find = (terms: string[]) =>
+      projects.find((project) => terms.some((term) => project.slug.includes(term)));
+    const ordered = [
+      find(["krusmart"]),
+      find(["digital-library", "library"]),
+      find(["storage"]),
+    ].filter((project): project is ProjectCardData => Boolean(project));
+    const unique = [...new Map(ordered.map((project) => [project.id, project])).values()];
+    const fallback = projects.filter((project) => !unique.some((item) => item.id === project.id));
+    const selected = [...unique, ...fallback].slice(0, 3);
+    const labels: readonly [string, string, string] =
+      locale === "km"
+        ? ["គ្រូបង្រៀន", "ធនធាន", "ឯកសារ"]
+        : ["teachers", "resources", "files"];
+
+    return selected.map((project, index) => {
+      const position = NODE_POSITIONS[index] ?? NODE_POSITIONS[0];
+      return {
+        project,
+        shortName:
+          index === 0 ? "KruSmart" : index === 1 ? "PTEC Library" : "PTEC Storage",
+        sublabel: labels[index] ?? labels[0],
+        ...position,
+      };
+    }) satisfies DiagramNode[];
+  }, [locale, projects]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setMotionState("pending");
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setMotionState("visible");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  if (nodes.length < 3) return null;
+
+  const arrowLabels: readonly [string, string, string] =
+    locale === "km"
+      ? ["គ្រូប្រើប្រាស់", "រក្សាទុកធនធាន", "ឯកសារ និងទិន្នន័យ"]
+      : ["teachers use", "resources stored", "files & data"];
+  const connections = [
+    [0, 1],
+    [1, 2],
+    [2, 0],
+  ] as const;
 
   return (
     <section aria-labelledby="ecosystem-heading" className="bg-background">
       <div className="container-content section-y">
-        <Reveal className="flex max-w-[54ch] flex-col gap-4">
-          <p className="flex items-center gap-2.5 text-eyebrow font-semibold uppercase text-accent-subtle-foreground">
-            <span aria-hidden="true" className="h-px w-8 bg-accent" />
+        <Reveal className="mx-auto flex max-w-[54ch] flex-col gap-4 text-center">
+          <p className="text-eyebrow font-semibold uppercase text-accent-subtle-foreground">
             {t.home.ecosystem.eyebrow}
           </p>
-
           <h2 id="ecosystem-heading" className="text-h2">
             {t.home.ecosystem.heading}
           </h2>
-
-          <p className="text-body-lg text-foreground-muted">
-            {t.home.ecosystem.body}
-          </p>
+          <p className="text-body-lg text-foreground-muted">{t.home.ecosystem.body}</p>
         </Reveal>
 
-        <ol className="mt-12 flex flex-col gap-4">
-          {projects.map((project, index) => {
-            const layerLabel = project.categories[0]?.name ?? null;
-            const contentLang = langAttribute(locale, project.contentLocale);
-            const isLast = index === projects.length - 1;
+        <div
+          ref={rootRef}
+          className="ecosystem-diagram"
+          data-motion={motionState ?? undefined}
+          onMouseLeave={() => setActiveNode(null)}
+        >
+          <ol className="sr-only">
+            {nodes.map((node) => (
+              <li key={node.project.id}>
+                {node.shortName}: {node.sublabel}
+              </li>
+            ))}
+          </ol>
 
-            return (
-              <li key={project.id} className="relative">
-                <Reveal delay={index * 70}>
-                  <article
-                    className={cn(
-                      "group relative grid gap-x-6 gap-y-4 rounded-(--radius-xl) border border-border",
-                      "bg-surface p-6 transition-all duration-200",
-                      "hover:border-border-interactive hover:shadow-md",
-                      "sm:grid-cols-[auto_1fr_auto] sm:items-center",
-                    )}
-                  >
-                    {/* ── Layer marker ─────────────────────────────────────
-                        The numeral is decoration; the layer label beside it is
-                        real text, because "Infrastructure" is the information
-                        and a "03" is not. */}
-                    <div className="flex items-center gap-3 sm:flex-col sm:items-start sm:gap-1.5">
-                      <span
-                        aria-hidden="true"
-                        className="inline-flex size-10 items-center justify-center rounded-(--radius-full) border border-border-strong bg-surface-muted text-small font-bold tabular-nums text-foreground-muted transition-colors duration-200 group-hover:border-primary group-hover:text-primary"
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      {layerLabel ? (
-                        <span
-                          className="text-eyebrow font-semibold uppercase tracking-wide text-foreground-subtle sm:w-24"
-                          lang={contentLang}
-                        >
-                          {layerLabel}
-                        </span>
-                      ) : null}
-                    </div>
+          <svg
+            className="ecosystem-svg"
+            viewBox="0 0 720 370"
+            role="group"
+            aria-labelledby="ecosystem-svg-title ecosystem-svg-description"
+          >
+            <title id="ecosystem-svg-title">{t.home.ecosystem.heading}</title>
+            <desc id="ecosystem-svg-description">{t.home.ecosystem.body}</desc>
+            <defs>
+              <marker id="ecosystem-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" className="ecosystem-arrowhead" />
+              </marker>
+            </defs>
 
-                    <div className="flex flex-col gap-1.5">
-                      <h3 className="text-h4 font-semibold" lang={contentLang}>
-                        <Link
-                          href={localePath(locale, `projects/${project.slug}`)}
-                          /* The whole card is the hit area, but the anchor is
-                             still just the title — so the accessible name is
-                             the project name, not the entire paragraph. */
-                          className="after:absolute after:inset-0 after:rounded-(--radius-xl) hover:text-primary"
-                        >
-                          {project.title}
-                        </Link>
-                      </h3>
+            <g className="ecosystem-arrows" aria-hidden="true">
+              <DiagramArrow index={0} activeNode={activeNode} connection={connections[0]} d="M 220 80 L 500 80" label={arrowLabels[0]} labelX={360} labelY={62} />
+              <DiagramArrow index={1} activeNode={activeNode} connection={connections[1]} d="M 600 125 C 600 205 525 280 460 285" label={arrowLabels[1]} labelX={570} labelY={205} />
+              <DiagramArrow index={2} activeNode={activeNode} connection={connections[2]} d="M 260 285 C 125 350 55 290 120 125" label={arrowLabels[2]} labelX={118} labelY={324} />
+            </g>
 
-                      {project.summary ? (
-                        <p
-                          className="max-w-[60ch] text-small text-foreground-muted"
-                          lang={contentLang}
-                        >
-                          {project.summary}
-                        </p>
-                      ) : null}
-                    </div>
+            {nodes.map((node, index) => (
+              <a
+                key={node.project.id}
+                href={localePath(locale, `projects/${node.project.slug}`)}
+                className="ecosystem-node-link"
+                onMouseEnter={() => setActiveNode(index)}
+                onFocus={() => setActiveNode(index)}
+                onBlur={() => setActiveNode(null)}
+              >
+                <g className="ecosystem-node" style={{ "--node-delay": `${index * 100}ms` } as React.CSSProperties}>
+                  <rect x={node.x} y={node.y} width="200" height="90" rx="10" />
+                  <text x={node.x + 100} y={node.y + 40} textAnchor="middle" className="ecosystem-node-title">
+                    {node.shortName}
+                  </text>
+                  <text x={node.x + 100} y={node.y + 62} textAnchor="middle" className="ecosystem-node-label">
+                    {node.sublabel}
+                  </text>
+                </g>
+              </a>
+            ))}
+          </svg>
 
-                    {/* Sits above the title's overlay so it stays clickable. */}
-                    {project.liveUrl ? (
-                      <OutboundLink
-                        href={project.liveUrl}
-                        newTabHint={t.a11y.opensInNewTab}
-                        event={{
-                          name: "project_live_link_click",
-                          locale,
-                          properties: { slug: project.slug, url: project.liveUrl },
-                        }}
-                        className="relative z-10 inline-flex min-h-11 items-center gap-2 self-start rounded-(--radius-full) border border-border px-4 text-small font-medium text-foreground-muted transition-colors duration-200 hover:border-border-interactive hover:text-foreground sm:self-center"
-                      >
-                        <Icon name="externalLink" size={15} aria-hidden />
-                        {t.home.ecosystem.visit}
-                        <span className="sr-only"> — {project.title}</span>
-                      </OutboundLink>
-                    ) : null}
-                  </article>
-                </Reveal>
-
-                {/* ── Connector ────────────────────────────────────────────
-                    Pure decoration between the cards, drawn only where there
-                    is a next card to point at. It repeats no information: the
-                    order is already the list's order. */}
-                {!isLast ? (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none flex h-4 items-center justify-center sm:justify-start sm:pl-11"
-                  >
-                    <span className="h-full w-px bg-gradient-to-b from-border-strong to-border" />
+          <div className="ecosystem-mobile" aria-hidden="true">
+            {nodes.map((node, index) => (
+              <div key={node.project.id} className="contents">
+                <div className="ecosystem-mobile-node">
+                  <strong>{node.shortName}</strong>
+                  <span>{node.sublabel}</span>
+                </div>
+                {index < nodes.length - 1 ? (
+                  <div className="ecosystem-mobile-arrow">
+                    <span>{arrowLabels[index]}</span>
                   </div>
                 ) : null}
-              </li>
-            );
-          })}
-        </ol>
+              </div>
+            ))}
+            <div className="ecosystem-mobile-return">
+              <span aria-hidden="true">↳</span> {arrowLabels[2]} → {nodes[0]?.shortName}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
+  );
+}
+
+function DiagramArrow({
+  index,
+  activeNode,
+  connection,
+  d,
+  label,
+  labelX,
+  labelY,
+}: {
+  index: number;
+  activeNode: number | null;
+  connection: readonly number[];
+  d: string;
+  label: string;
+  labelX: number;
+  labelY: number;
+}) {
+  const dimmed = activeNode !== null && !connection.includes(activeNode);
+  const highlighted = activeNode !== null && connection.includes(activeNode);
+  return (
+    <g className="ecosystem-arrow" data-dimmed={dimmed ? "true" : undefined} data-highlighted={highlighted ? "true" : undefined} style={{ "--arrow-delay": `${index * 300}ms` } as React.CSSProperties}>
+      <path d={d} pathLength="1" markerEnd="url(#ecosystem-arrow)" />
+      <text x={labelX} y={labelY} textAnchor="middle">{label}</text>
+    </g>
   );
 }

@@ -109,6 +109,7 @@ export function NavMenu({
         aria-expanded={open}
         aria-controls={id}
         data-active={activeChild ? "true" : undefined}
+        data-nav-key={group.key}
         onClick={() => setOpenedAt(open ? null : pathname)}
         className={cn(
           "link-underline inline-flex min-h-9 items-center gap-1 px-2.5",
