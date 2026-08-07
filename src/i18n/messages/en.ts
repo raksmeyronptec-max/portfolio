@@ -284,6 +284,18 @@ export const en = {
       viewPublication: "View publication",
       viewAll: "View all publications",
     },
+    teaching: {
+      label: "Teaching",
+      heading: "Materials I have written and typeset",
+      description:
+        "I use LaTeX to produce clean, accessible mathematics resources for Cambodian students. Precision in code, precision on the page.",
+    },
+    conversation: {
+      label: "Contact",
+      heading: "Start a conversation",
+      description:
+        "Whether you are building something for education, need a hand with a classroom tool, or just want to talk about typesetting mathematics in LaTeX — I read every message.",
+    },
     testimonials: {
       eyebrow: "References",
       heading: "What colleagues say",
@@ -1585,6 +1597,9 @@ export const en = {
     tagline: "Educator, mathematics student and full-stack product builder.",
     availability: "Available for education and digital-product collaboration.",
     navHeading: "Pages",
+    workHeading: "Work",
+    caseStudies: "Case studies",
+    teachingMaterials: "Teaching materials",
     connectHeading: "Connect",
     legalHeading: "About this site",
     builtWith: "Built with Next.js, Supabase and Cloudflare.",

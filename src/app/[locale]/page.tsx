@@ -4,15 +4,15 @@ import { notFound } from "next/navigation";
 import {
   Capabilities,
   CertificatesPreview,
-  ContactCta,
   CredibilityStrip,
   FeaturedProjects,
   Hero,
   Journey,
   SelectedMoments,
-  SelectedPublications,
   Testimonials,
 } from "@/components/public/home-sections";
+import { ContactConversation } from "@/components/public/contact-conversation";
+import { TeachingMaterials } from "@/components/public/teaching-materials";
 import { getDictionary } from "@/i18n/dictionary";
 import { isLocale, type Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/supabase/env";
@@ -265,10 +265,16 @@ export default async function HomePage({
       {/*
         The books are the most durable evidence on the page — an authored
         mathematics collection is a harder claim than a list of roles — so they
-        now sit directly after the record that establishes the roles, rather
-        than trailing the page. Renders nothing when no publication is featured.
+        sit directly after the record that establishes the roles, rather than
+        trailing the page. Renders nothing when no publication is featured.
+
+        Carries id="teaching", which the footer's "Teaching materials" idea and
+        any in-page link target. It is after the Work block and before Contact,
+        as the brief asked; it is not immediately after Work because the
+        capability, dual-identity and timeline sections between them are what
+        make the books read as evidence rather than as a second product grid.
       */}
-      <SelectedPublications locale={locale} t={t} publications={featuredPublications} />
+      <TeachingMaterials locale={locale} t={t} publications={featuredPublications} />
 
       <CertificatesPreview locale={locale} t={t} certificates={featuredCertificates} />
 
@@ -281,7 +287,18 @@ export default async function HomePage({
 
       <Testimonials locale={locale} t={t} testimonials={testimonials} />
 
-      <ContactCta locale={locale} t={t} settings={settings} socialLinks={socialLinks} />
+      {/*
+        The closing section is now the form itself rather than a band of
+        buttons pointing at /contact. A visitor who has read this far should be
+        able to say something without a second navigation; the dedicated page
+        still exists for anyone who wants the longer form.
+      */}
+      <ContactConversation
+        locale={locale}
+        t={t}
+        email={settings.contactEmail}
+        location={settings.location}
+      />
     </>
   );
 }

@@ -5,21 +5,26 @@ import { SmartLink, StatusDot } from "@/components/ui/primitives";
 import { getDictionary, interpolate } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
 import { BrandMark } from "./brand";
-import { primaryNav } from "@/components/nav/nav-items";
 import type { SiteSettings, SocialLink } from "@/lib/data/site";
 
 /**
  * Site footer.
  *
- * Rebuilt from v2's four-column directory, which restated the whole navigation
- * a second time and ran to roughly 400px of height. The brief asked for
- * something compact and expressive that reads as the end of the page rather
- * than as a sitemap.
+ * Two columns — identity on the left, link columns on the right — over a thin
+ * legal strip. Replaces v2's four-column directory, which restated the whole
+ * navigation a second time and ran to roughly 400px of height.
  *
- * Structure now: identity and availability on the left, a single row of social
- * icons, one compact link row, and a thin legal strip. The nav row is the
- * primary items only — the secondary ones (home, education, resume) are all
- * reachable from the pages already listed, so repeating them here was noise.
+ * The link columns are Work and Connect, not a sitemap: Work points at the two
+ * things the page has just spent its length arguing for (the case studies and
+ * the authored books), and Connect is however the CMS says he can be reached.
+ * Everything else on the site is reachable from the header.
+ *
+ * ── Why nothing here is hardcoded ──────────────────────────────────────────
+ * The social links, the email, the tagline and the availability line all come
+ * from `site_settings` / `social_links`. A placeholder profile URL in a footer
+ * is the kind of thing that ships and stays shipped, and the CMS exists so
+ * these can be corrected without a deploy. A link that is not in the CMS is not
+ * rendered.
  *
  * Two absences carried over from v2, both deliberate:
  *  - No link to `/admin`. Admin routes are not advertised in public navigation.
@@ -35,21 +40,25 @@ export function SiteFooter({
   socialLinks: SocialLink[];
 }) {
   const t = getDictionary(locale);
-  const primary = primaryNav(locale, t);
   const year = new Date().getFullYear();
 
-  const hasEmailLink = socialLinks.some(
+  const emailLink = socialLinks.find(
     (link) => link.platform === "email" || link.url.startsWith("mailto:"),
   );
+  // Only added when the CMS social links do not already carry one, or the
+  // column shows the same address twice.
+  const showsMailto = Boolean(settings.contactEmail) && !emailLink;
+
+  const externalLinks = socialLinks.filter((link) => link !== emailLink);
 
   return (
     <footer
       data-site-footer
       data-print="hide"
       data-scheme="ink"
-      className="decorated mt-auto bg-background text-foreground"
+      className="site-footer decorated mt-auto bg-background text-foreground"
     >
-      {/* Ties the footer visually to the CTA band directly above it. */}
+      {/* Ties the footer visually to the contact section directly above it. */}
       <div
         aria-hidden="true"
         className="glow"
@@ -63,120 +72,94 @@ export function SiteFooter({
         }
       />
 
-      <div className="container-content py-14">
-        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mx-auto max-w-[960px] px-6 pb-6 pt-12">
+        <div className="footer-inner">
           {/* ── Identity ─────────────────────────────────────────────────── */}
-          <div className="flex max-w-[38ch] flex-col gap-4">
-            <div className="flex items-center gap-2.5">
-              <BrandMark gradientId="brand-footer" size={32} />
-              {/* Matches the header wordmark's face — see the note in
-                  brand.tsx. `text-h4` is a size token only, and a <p> does not
-                  pick up the display stack the way a heading element does, so
-                  without `font-display` the same brand name rendered in two
-                  different typefaces at opposite ends of the page. */}
-              <p className="brand-wordmark font-display text-h4 font-bold tracking-[-0.02em]">
+          <div>
+            <div className="footer-brand">
+              <BrandMark gradientId="brand-footer" size={28} />
+              {/* `font-display` is not decoration: a <span> does not pick up
+                  the display stack the way a heading does, and without it the
+                  same brand name rendered in two different typefaces at
+                  opposite ends of the page. */}
+              <span className="footer-name brand-wordmark font-display tracking-[-0.02em]">
                 {settings.siteName}
-              </p>
+              </span>
             </div>
 
-            <p className="text-small text-foreground-muted">
+            <p className="footer-tagline leading-khmer">
               {settings.tagline ?? t.footer.tagline}
             </p>
 
             {settings.isAvailableForWork ? (
-              <p className="inline-flex w-fit items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5 text-[0.8125rem] text-foreground-muted">
+              <p className="mt-4 inline-flex w-fit items-center gap-2 rounded-(--radius-full) border border-border bg-surface px-3 py-1.5 text-[0.8125rem] text-foreground-muted">
                 <StatusDot tone="success" />
                 {settings.availabilityStatus ?? t.footer.availability}
               </p>
             ) : null}
-
-            {/* ── Social ─────────────────────────────────────────────────
-                Icon-only, so each link carries its label as visually hidden
-                text rather than relying on the icon alone for its name. */}
-            {socialLinks.length > 0 ? (
-              <ul className="mt-1 flex flex-wrap items-center gap-2">
-                {socialLinks.map((link) => (
-                  <li key={link.id}>
-                    <SmartLink
-                      href={link.url}
-                      newTabHint={t.a11y.opensInNewTab}
-                      className="inline-flex size-11 items-center justify-center rounded-(--radius-full) border border-border bg-surface text-foreground-muted transition-colors duration-200 hover:border-border-interactive hover:bg-surface-muted hover:text-foreground"
-                    >
-                      <Icon name={toIconName(link.icon, "globe")} size={18} />
-                      <span className="sr-only">
-                        {link.label}
-                        {link.handle ? ` ${link.handle}` : ""}
-                      </span>
-                    </SmartLink>
-                  </li>
-                ))}
-
-                {/*
-                  Only add a mailto tile when the CMS social links do not
-                  already carry one — otherwise the footer shows two identical
-                  envelope icons pointing at the same address.
-                */}
-                {settings.contactEmail && !hasEmailLink ? (
-                  <li>
-                    <SmartLink
-                      href={`mailto:${settings.contactEmail}`}
-                      className="inline-flex size-11 items-center justify-center rounded-(--radius-full) border border-border bg-surface text-foreground-muted transition-colors duration-200 hover:border-border-interactive hover:bg-surface-muted hover:text-foreground"
-                    >
-                      <Icon name="mail" size={18} />
-                      <span className="sr-only">
-                        {t.contact.directEmail} {settings.contactEmail}
-                      </span>
-                    </SmartLink>
-                  </li>
-                ) : null}
-              </ul>
-            ) : null}
           </div>
 
-          {/* ── Compact navigation ───────────────────────────────────────── */}
-          <nav aria-labelledby="footer-nav-heading" className="lg:text-right">
-            <p
-              id="footer-nav-heading"
-              className="text-eyebrow font-semibold uppercase text-foreground-subtle"
-            >
-              {t.footer.navHeading}
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-0.5 lg:flex-col lg:items-end">
-              {primary.map((item) => (
-                <li key={item.key}>
-                  <Link
-                    href={item.href}
-                    // min-h-9 is not decoration: WCAG 2.2 AA 2.5.8 requires a
-                    // 24×24px target, and these links at `text-small` in a
-                    // 10px-gap column were 20px tall. axe flagged every page.
-                    className="link-underline inline-flex min-h-9 items-center text-small text-foreground-muted transition-colors hover:text-foreground"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+          {/* ── Link columns ─────────────────────────────────────────────── */}
+          <nav aria-label={t.footer.navHeading} className="footer-links">
+            <ul className="footer-col">
+              <li className="footer-col-title">{t.footer.workHeading}</li>
               <li>
-                <Link
-                  href={localePath(locale, "resume")}
-                  className="link-underline text-small text-foreground-muted transition-colors hover:text-foreground"
-                >
-                  {t.nav.resume}
+                <Link href={localePath(locale, "projects")}>
+                  {t.footer.caseStudies}
                 </Link>
               </li>
+              <li>
+                <Link href={localePath(locale, "publications")}>
+                  {t.footer.teachingMaterials}
+                </Link>
+              </li>
+              <li>
+                <Link href={localePath(locale, "resume")}>{t.nav.resume}</Link>
+              </li>
+            </ul>
+
+            <ul className="footer-col">
+              <li className="footer-col-title">{t.footer.connectHeading}</li>
+
+              {showsMailto ? (
+                <li>
+                  <a href={`mailto:${settings.contactEmail}`}>
+                    <FooterLinkIcon name="mail" />
+                    {t.contact.directEmail}
+                  </a>
+                </li>
+              ) : null}
+
+              {emailLink ? (
+                <li>
+                  <a href={emailLink.url}>
+                    <FooterLinkIcon name={toIconName(emailLink.icon, "mail")} />
+                    {emailLink.label}
+                  </a>
+                </li>
+              ) : null}
+
+              {/* `SmartLink` adds rel="noopener noreferrer" and the
+                  "opens in a new tab" hint for external destinations, so the
+                  target attribute is never set by hand here. */}
+              {externalLinks.map((link) => (
+                <li key={link.id}>
+                  <SmartLink href={link.url} newTabHint={t.a11y.opensInNewTab}>
+                    <FooterLinkIcon name={toIconName(link.icon, "globe")} />
+                    {link.label}
+                  </SmartLink>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>
 
         {/* ── Legal strip ────────────────────────────────────────────────── */}
-        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[0.8125rem] text-foreground-subtle">
-            {interpolate(t.footer.copyright, { year })}
-          </p>
+        <div className="footer-bottom">
+          <span>{interpolate(t.footer.copyright, { year })}</span>
 
-          <div className="flex items-center gap-5">
-            <p className="text-[0.8125rem] text-foreground-subtle">
-              {t.footer.builtWith}
-            </p>
+          <span className="flex items-center gap-5">
+            {t.footer.builtWith}
 
             {/*
               Back to top is a plain in-page anchor, not a scroll script: `main`
@@ -186,18 +169,28 @@ export function SiteFooter({
             */}
             <a
               href="#main-content"
-              className="group inline-flex items-center gap-1.5 rounded-(--radius-xs) text-[0.8125rem] text-foreground-muted transition-colors hover:text-foreground"
+              className="group inline-flex min-h-9 items-center gap-1.5 rounded-(--radius-xs) text-foreground-muted transition-colors hover:text-foreground"
             >
               {t.footer.backToTop}
               <Icon
                 name="arrowRight"
-                size={14}
+                size={13}
+                aria-hidden
                 className="-rotate-90 transition-transform duration-200 group-hover:-translate-y-0.5"
               />
             </a>
-          </div>
+          </span>
         </div>
       </div>
     </footer>
   );
+}
+
+/**
+ * Decorative mark beside a Connect link. Always `aria-hidden`: the link text
+ * next to it is the accessible name, and announcing "Telegram Telegram" is
+ * what happens when an icon in a labelled link is given one of its own.
+ */
+function FooterLinkIcon({ name }: { name: Parameters<typeof Icon>[0]["name"] }) {
+  return <Icon name={name} size={15} aria-hidden className="mr-2 shrink-0" />;
 }

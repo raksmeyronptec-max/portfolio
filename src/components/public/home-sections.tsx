@@ -16,13 +16,11 @@ import { interpolate, type Dictionary } from "@/i18n/dictionary";
 import { localePath, type Locale } from "@/i18n/config";
 import { langAttribute } from "@/lib/content/translation";
 import type { CapabilityGroup, EducationEntry, ExperienceEntry, Testimonial } from "@/lib/data/cv";
-import { PublicationCard } from "./publication-card";
-import type { PublicationSummary } from "@/lib/content/publication";
 import type { JourneyEntrySummary } from "@/lib/content/journey";
 import type { CertificateCardData } from "@/lib/data/certificates";
 import type { ProjectCardData } from "@/lib/data/projects";
 import { livePlatforms } from "@/lib/data/live-platforms";
-import type { OwnerProfile, SiteCounts, SiteSettings, SocialLink, SpokenLanguage } from "@/lib/data/site";
+import type { OwnerProfile, SiteCounts, SiteSettings, SpokenLanguage } from "@/lib/data/site";
 import { resolveImage } from "@/lib/content/media";
 import { cn } from "@/lib/utils/cn";
 
@@ -876,73 +874,6 @@ function MomentCard({
  * Uses the `periodLabel` when present — the honest precision for migrated v1
  * content — and only formats a stored date when no label exists.
  */
-/**
- * Selected publications.
- *
- * Three or four authored books, never the whole shelf. Deliberately does NOT
- * mount a PDF viewer or a download control: the homepage's job is to establish
- * that these exist, and a reader who wants the book goes to its page, where the
- * download policy and the file size can be stated properly.
- *
- * Renders nothing when nothing is featured, like every other optional section
- * here — an empty band with a heading is worse than no band.
- */
-export function SelectedPublications({
-  locale,
-  t,
-  publications,
-}: {
-  locale: Locale;
-  t: Dictionary;
-  publications: PublicationSummary[];
-}) {
-  if (publications.length === 0) return null;
-
-  return (
-    <section aria-labelledby="publications-heading" className="section-y">
-      <div className="container-content flex flex-col gap-10">
-        <Reveal>
-          <SectionHead
-            id="publications-heading"
-            eyebrow={t.home.publications.eyebrow}
-            title={t.home.publications.heading}
-            description={t.home.publications.description}
-            watermark="05"
-            action={
-              <ButtonLink
-                href={localePath(locale, "publications")}
-                variant="outline"
-                iconEnd="arrowRight"
-                className="group rounded-(--radius-full) px-5"
-              >
-                {t.home.publications.viewAll}
-              </ButtonLink>
-            }
-          />
-        </Reveal>
-
-        {/*
-          Three across on desktop. The data layer caps at four, so a fourth book
-          wraps to a second row rather than being silently dropped.
-        */}
-        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {publications.map((publication, index) => (
-            <li key={publication.id} className="flex">
-              <Reveal delay={index * 100} className="flex flex-1">
-                <PublicationCard
-                  publication={publication}
-                  locale={locale}
-                  headingLevel="h3"
-                />
-              </Reveal>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
 export function Journey({
   locale,
   t,
@@ -1276,109 +1207,6 @@ export function Testimonials({
             );
           })}
         </ul>
-      </div>
-    </section>
-  );
-}
-
-// ── Contact CTA ─────────────────════════════════════════════════════════════
-
-/**
- * Closing call to action.
- *
- * Ink-scoped and decorated so it and the footer read as one dark closing
- * chapter rather than a coloured band followed by an unrelated directory.
- */
-export function ContactCta({
-  locale,
-  t,
-  settings,
-  socialLinks,
-}: {
-  locale: Locale;
-  t: Dictionary;
-  settings: SiteSettings;
-  socialLinks: SocialLink[];
-}) {
-  const telegram = socialLinks.find((link) => link.platform === "telegram");
-
-  return (
-    <section
-      id="contact"
-      data-scheme="ink"
-      aria-labelledby="contact-cta-heading"
-      className="decorated bg-background text-foreground"
-    >
-      <div aria-hidden="true" className="grid-lines" style={{ "--grid-alpha": "0.04" } as object} />
-      <div
-        aria-hidden="true"
-        className="glow"
-        style={{ "--glow-x": "50%", "--glow-y": "12%", "--glow-size": "62%", "--glow-alpha": "0.2" } as object}
-      />
-
-      <div className="container-content flex flex-col items-center gap-7 py-24 text-center">
-        <Reveal className="flex flex-col items-center gap-5">
-          <span
-            aria-hidden="true"
-            className="flex size-14 items-center justify-center rounded-(--radius-lg) border border-border bg-surface text-accent"
-          >
-            <Icon name="send" size={24} />
-          </span>
-
-          <h2 id="contact-cta-heading" className="text-display max-w-[20ch] font-bold">
-            {t.home.cta.heading}
-          </h2>
-
-          <p className="max-w-[54ch] text-body-lg text-foreground-muted">
-            {t.home.cta.description}
-          </p>
-        </Reveal>
-
-        <Reveal delay={120} className="flex flex-wrap justify-center gap-3 pt-2">
-          <ButtonLink
-            href={localePath(locale, "contact")}
-            variant="accent"
-            size="lg"
-            iconStart="send"
-            className="rounded-(--radius-full) px-6"
-          >
-            {t.home.cta.openContactForm}
-          </ButtonLink>
-
-          {settings.contactEmail ? (
-            <OutboundLink
-              href={`mailto:${settings.contactEmail}`}
-              event={{
-                name: "email_click",
-                locale,
-                properties: { url: `mailto:${settings.contactEmail}` },
-              }}
-              className="inline-flex min-h-12 items-center gap-2 rounded-(--radius-full) border border-border-strong bg-surface px-6 text-[1.0625rem] font-medium transition-colors hover:bg-surface-muted"
-            >
-              <Icon name="mail" size={18} />
-              {t.home.cta.emailMe}
-            </OutboundLink>
-          ) : null}
-
-          {telegram ? (
-            <OutboundLink
-              href={telegram.url}
-              newTabHint={t.a11y.opensInNewTab}
-              event={{
-                name: "telegram_click",
-                locale,
-                properties: { url: telegram.url },
-              }}
-              className="inline-flex min-h-12 items-center gap-2 rounded-(--radius-full) border border-border-strong bg-surface px-6 text-[1.0625rem] font-medium transition-colors hover:bg-surface-muted"
-            >
-              <Icon name="telegram" size={18} />
-              {t.home.cta.telegram}
-            </OutboundLink>
-          ) : null}
-        </Reveal>
-
-        {/* Sets an honest expectation instead of implying an instant reply. */}
-        <p className="pt-2 text-small text-foreground-subtle">{t.contact.responseTime}</p>
       </div>
     </section>
   );
