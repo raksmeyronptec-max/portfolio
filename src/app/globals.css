@@ -3644,10 +3644,42 @@
   .case-card-img,
   .case-card-overlay,
   .case-card-cta,
+  .book-card,
+  .book-img,
   .timeline-item,
   .reveal,
   .ecosystem-node,
-  .ecosystem-arrow path { transition: none !important; animation: none !important; opacity: 1 !important; transform: none !important; }
+  .ecosystem-arrow path { transition: none !important; animation: none !important; }
+
+  /* Content a reveal or an entrance would otherwise leave hidden is forced
+     visible — that is the whole point of opting out of the motion.
+
+     The hover overlay is deliberately *not* in this list. Its `opacity: 0` is
+     the off state of an interaction, not an animation waiting to run, so
+     forcing it to 1 would paint a 40% black scrim and a "Visit live site"
+     button permanently over every project screenshot. Reduced motion asks for
+     no movement, not for hover states to be stuck on. The overlay still
+     appears on hover and focus-within — instantly, with the transition above
+     removed. */
+  .timeline-item,
+  .reveal,
+  .ecosystem-node,
+  .ecosystem-arrow path { opacity: 1 !important; transform: none !important; }
+
+  /* Movement only: the lift, the image zoom, and the CTA's 6px rise. Their
+     opacity is left alone so the hover reveal still reads. */
+  .case-card,
+  .case-card:hover,
+  .case-card:focus-within,
+  .case-card-img,
+  .case-card:hover .case-card-img,
+  .case-card:focus-within .case-card-img,
+  .case-card-cta,
+  .book-card,
+  .book-card:hover,
+  .book-img,
+  .book-card:hover .book-img { transform: none !important; }
+
   .back-to-top { transition: none !important; animation: none !important; }
   .progress-bar { transition: none; }
 }
