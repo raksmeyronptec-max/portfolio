@@ -162,7 +162,9 @@ export default async function HomePage({
       headline: settings.tagline ?? profile?.headline,
       description: profile?.bio ?? settings.heroSubheadline,
       location: settings.location,
-      imageUrl: absoluteUrl(profile?.avatarUrl ?? "/image/MyPF.jpg"),
+      // The keyed portrait, not the green-screen original it used to be: this
+      // is the image search engines may show beside the Person entity.
+      imageUrl: absoluteUrl(profile?.avatarUrl ?? "/image/portrait-keyed.webp"),
       email: settings.contactEmail,
       sameAs: socialLinks
         .filter((link) => link.url.startsWith("http"))

@@ -18,8 +18,23 @@ import { localeMeta, localePath, locales, type Locale } from "@/i18n/config";
  *     `hreflang` pair plus `x-default`.
  */
 
-/** Fallback social image: the existing portrait, kept from v1. */
-const FALLBACK_OG_IMAGE = "/image/MyPF.jpg";
+/*
+ * Fallback social image.
+ *
+ * Was `/image/MyPF.jpg` — the v1 portrait, kept when this file was written and
+ * never revisited. It was wrong twice over, and invisibly so, because no page
+ * renders it: it is the *unkeyed* studio original, so every shared link
+ * previewed a bright green screen; and it is a 2:3 portrait declared as
+ * `summary_large_image`, which wants 1.91:1, so scrapers cropped it to a band
+ * across the chest.
+ *
+ * Built by scripts/build-og-image.mjs from the keyed portrait, so re-keying the
+ * portrait can rebuild the card instead of leaving it to drift.
+ */
+const FALLBACK_OG_IMAGE = "/image/og-default.jpg";
+
+/** Must match the output of scripts/build-og-image.mjs. */
+const FALLBACK_OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
 export type PageMetadataInput = {
   locale: Locale;
@@ -71,8 +86,8 @@ export function buildPageMetadata({
   }
   languages["x-default"] = absoluteUrl(localePath("en", path));
 
-  const imageUrl =
-    ogImageUrl ?? resolveOgImageUrl(ogImage) ?? absoluteUrl(FALLBACK_OG_IMAGE);
+  const fallbackImageUrl = absoluteUrl(FALLBACK_OG_IMAGE);
+  const imageUrl = ogImageUrl ?? resolveOgImageUrl(ogImage) ?? fallbackImageUrl;
 
   /*
    * Dimensions are declared only when they are actually known — i.e. when the
@@ -80,11 +95,17 @@ export function buildPageMetadata({
    * 1200×630 for an arbitrary image (as is commonly copy-pasted) makes social
    * platforms letterbox or crop it wrongly, so an unknown size is left unstated
    * and the platform detects it.
+   *
+   * The fallback is the one case where the size is known without asking, since
+   * scripts/build-og-image.mjs emits it at exactly these dimensions. Stating
+   * them lets a platform lay the card out before it has fetched the file.
    */
   const knownDimensions =
     ogImage && ogImage.visibility === "public" && ogImage.width && ogImage.height
       ? { width: ogImage.width, height: ogImage.height }
-      : null;
+      : imageUrl === fallbackImageUrl
+        ? { width: FALLBACK_OG_IMAGE_SIZE.width, height: FALLBACK_OG_IMAGE_SIZE.height }
+        : null;
 
   const trimmedDescription = description?.trim() || undefined;
 

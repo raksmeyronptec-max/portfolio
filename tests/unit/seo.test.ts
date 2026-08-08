@@ -70,11 +70,59 @@ describe("buildPageMetadata", () => {
 
   it("does not assert image dimensions it does not know", () => {
     // Declaring 1200x630 for an arbitrary image makes platforms crop it wrongly.
-    const metadata = buildPageMetadata({ locale: "en", title: "Home" });
+    const metadata = buildPageMetadata({
+      locale: "en",
+      title: "Home",
+      ogImageUrl: "https://portfolio.test/image/some-upload.jpg",
+    });
     const images = metadata.openGraph?.images as Array<Record<string, unknown>>;
 
     expect(images[0]).not.toHaveProperty("width");
     expect(images[0]).not.toHaveProperty("height");
+  });
+
+  it("declares the dimensions of the generated fallback card", () => {
+    /*
+     * The exception to the rule above: the fallback is built by
+     * scripts/build-og-image.mjs at a fixed size, so it is the one image whose
+     * dimensions are known without asking. The file itself is checked below.
+     */
+    const metadata = buildPageMetadata({ locale: "en", title: "Home" });
+    const images = metadata.openGraph?.images as Array<Record<string, unknown>>;
+
+    expect(images[0]?.url).toBe("https://portfolio.test/image/og-default.jpg");
+    expect(images[0]?.width).toBe(1200);
+    expect(images[0]?.height).toBe(630);
+  });
+
+  it("ships a fallback card matching the dimensions it declares", async () => {
+    /*
+     * Guards the one duplicated fact in this file: FALLBACK_OG_IMAGE_SIZE
+     * restates what the build script emits. If someone re-runs the script with
+     * a different canvas, the metadata would advertise a size the file does not
+     * have, and social platforms would lay the card out to the wrong box.
+     */
+    const { readFile } = await import("node:fs/promises");
+    const bytes = await readFile("public/image/og-default.jpg");
+
+    // Walk the JPEG segments to the start-of-frame, which carries the size.
+    let offset = 2;
+    let dimensions: { width: number; height: number } | null = null;
+    while (offset < bytes.length && !dimensions) {
+      if (bytes[offset] !== 0xff) break;
+      const marker = bytes[offset + 1] ?? 0;
+      const length = bytes.readUInt16BE(offset + 2);
+      // SOF0/1/2 — baseline and progressive. Excludes DHT/DAC/RST markers.
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+        dimensions = {
+          height: bytes.readUInt16BE(offset + 5),
+          width: bytes.readUInt16BE(offset + 7),
+        };
+      }
+      offset += 2 + length;
+    }
+
+    expect(dimensions).toEqual({ width: 1200, height: 630 });
   });
 
   it("suffixes the site name once, and not twice", () => {
