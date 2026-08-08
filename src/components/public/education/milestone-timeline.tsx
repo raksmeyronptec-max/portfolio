@@ -234,6 +234,23 @@ function CompactTimeline({
                 {point.detail}
               </p>
             ) : null}
+
+            {/*
+              The stored result, for the points that have one. The scale is
+              read out rather than printed: "3.79" and "A" come from different
+              systems, and a badge wide enough to name both would dominate a
+              row whose subject is the qualification, not the mark.
+            */}
+            {point.grade ? (
+              <p className="mt-1">
+                <span className="inline-flex items-center rounded-(--radius-sm) bg-success-subtle px-2 py-0.5 text-[0.6875rem] font-semibold text-success-foreground">
+                  {point.grade.value}
+                  {point.grade.scale ? (
+                    <span className="sr-only"> — {point.grade.scale}</span>
+                  ) : null}
+                </span>
+              </p>
+            ) : null}
           </div>
         </li>
       ))}

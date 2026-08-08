@@ -491,6 +491,15 @@ export type TimelinePoint = {
   detail: string | null;
   /** In-page anchor of the entry this point summarises. */
   href: string | null;
+  /*
+   * The stored result, when the row carries one — a BacII letter grade, a GPA.
+   * Null for every point that is not a graded qualification, which is most of
+   * them: programme starts and expected completions have no result yet, and
+   * inventing one is the failure this whole module is written against. The
+   * scale travels with the value because "A" and "3.79" mean nothing without
+   * it, and the CMS stores them as a pair.
+   */
+  grade: { value: string; scale: string | null } | null;
 };
 
 /**
@@ -524,6 +533,9 @@ export function buildEducationTimeline({
        * not on the page.
        */
       href: milestone.featured ? `#${milestone.anchorId}` : null,
+      grade: milestone.gradeValue
+        ? { value: milestone.gradeValue, scale: milestone.gradeScale }
+        : null,
     });
   }
 
@@ -539,6 +551,7 @@ export function buildEducationTimeline({
         }),
         detail: programme.institution,
         href: `#${programme.anchorId}`,
+        grade: null,
       });
     }
 
@@ -553,6 +566,7 @@ export function buildEducationTimeline({
         }),
         detail: programme.institution,
         href: `#${programme.anchorId}`,
+        grade: null,
       });
     }
   }

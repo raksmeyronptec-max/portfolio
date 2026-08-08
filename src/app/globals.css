@@ -1916,7 +1916,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, transparent 40%, var(--background) 100%);
+    background: linear-gradient(to bottom, transparent 40%, var(--background) 90%);
     pointer-events: none;
   }
 
@@ -1924,8 +1924,8 @@
     object-fit: cover;
     object-position: top;
     filter: brightness(1.04) contrast(1.02);
-    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   }
 
   .home-hero-proof {

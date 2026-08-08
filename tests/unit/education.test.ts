@@ -307,6 +307,30 @@ describe("buildEducationTimeline", () => {
 
 // ── Convergence applications ────────────────────────────────────────────────
 
+describe("timeline grades", () => {
+  const points = buildEducationTimeline({
+    views: buildEducationViews({ entries: LIVE, locale: "en", t: en }),
+    locale: "en",
+    t: en,
+  });
+
+  it("carries a stored result onto its timeline point, with its scale", () => {
+    const bacii = points.find((p) => p.id === "completed-bacii");
+    expect(bacii?.grade).toEqual({
+      value: "A",
+      scale: "Cambodian BacII overall grade (A–E)",
+    });
+  });
+
+  it("leaves ungraded points without a result rather than an empty badge", () => {
+    // Grade 9 is stored with no result; starts and expected completions cannot
+    // have one yet. None of them may invent a mark.
+    expect(points.find((p) => p.id === "completed-grade9")?.grade).toBeNull();
+    expect(points.find((p) => p.id === "started-ptec")?.grade).toBeNull();
+    expect(points.find((p) => p.id === "expected-ptec")?.grade).toBeNull();
+  });
+});
+
 describe("buildConvergenceApplications", () => {
   const evidence = {
     experiences: [
