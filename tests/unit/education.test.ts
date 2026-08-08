@@ -184,6 +184,88 @@ describe("buildEducationViews", () => {
 
 // ── Timeline ────────────────────────────────────────────────────────────────
 
+describe("programmeProgress", () => {
+  /**
+   * A progress bar is a quantitative claim, so these tests are mostly about
+   * the states that must produce *no* claim at all. Each `toBeNull` below is a
+   * shape of missing or incoherent data the CMS can genuinely hold.
+   */
+  const progressFor = (
+    overrides: Partial<EducationInput>,
+    now: Date,
+  ) =>
+    buildEducationViews({
+      entries: [entry({ id: "p", isCurrent: true, ...overrides })],
+      locale: "en",
+      t: en,
+      now,
+    }).programmes[0]?.progress ?? null;
+
+  it("counts the year from the evidenced start and end", () => {
+    const progress = progressFor(
+      { periodLabel: "2023 — 2028 (expected)" },
+      new Date("2026-08-08T00:00:00Z"),
+    );
+
+    // 2023 start, five-year span, three years elapsed.
+    expect(progress?.label).toBe("Year 4 of 5");
+    expect(progress?.percent).toBe(60);
+  });
+
+  it("localises the numerals in the label", () => {
+    const progress = buildEducationViews({
+      entries: [entry({ id: "p", isCurrent: true, periodLabel: "2023 — 2028 (expected)" })],
+      locale: "km",
+      t: km,
+      now: new Date("2026-08-08T00:00:00Z"),
+    }).programmes[0]?.progress;
+
+    expect(progress?.label).toBe("ឆ្នាំទី ៤ ក្នុងចំណោម ៥ ឆ្នាំ");
+  });
+
+  it("claims nothing when the programme has no end year", () => {
+    // The live mathematics row is stored exactly this way.
+    expect(progressFor({ periodLabel: "2023" }, new Date("2026-08-08T00:00:00Z"))).toBeNull();
+  });
+
+  it("claims nothing when no year could be parsed at all", () => {
+    expect(progressFor({ periodLabel: "Dates to be confirmed" }, new Date())).toBeNull();
+  });
+
+  it("claims nothing when the start year is still in the future", () => {
+    // Clamping to zero here would render "Year 1", asserting that a programme
+    // beginning next year has already started.
+    expect(
+      progressFor({ periodLabel: "2030 — 2034 (expected)" }, new Date("2026-08-08T00:00:00Z")),
+    ).toBeNull();
+  });
+
+  it("claims nothing when the stored dates run backwards", () => {
+    /*
+     * Reachable only through the date columns: `yearsFromLabel` sorts, so a
+     * reversed *label* is normalised before it arrives here, but startedOn and
+     * endedOn are read straight off the row and a transposed pair is an
+     * ordinary data-entry mistake.
+     */
+    expect(
+      progressFor(
+        { startedOn: "2028-01-01", endedOn: "2023-01-01" },
+        new Date("2026-08-08T00:00:00Z"),
+      ),
+    ).toBeNull();
+  });
+
+  it("never exceeds the final year once the end has passed", () => {
+    const progress = progressFor(
+      { periodLabel: "2023 — 2028 (expected)" },
+      new Date("2031-08-08T00:00:00Z"),
+    );
+
+    expect(progress?.percent).toBe(100);
+    expect(progress?.label).toBe("Year 5 of 5");
+  });
+});
+
 describe("buildEducationTimeline", () => {
   const views = buildEducationViews({ entries: LIVE, locale: "en", t: en });
   const points = buildEducationTimeline({ views, locale: "en", t: en });

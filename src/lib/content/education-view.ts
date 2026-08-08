@@ -113,6 +113,8 @@ export type ProgrammeView = {
   periodLabel: string | null;
   /** "Expected completion: 2028", localised. Null when no end year is known. */
   expectedLabel: string | null;
+  /** Null whenever the span is not fully evidenced — see programmeProgress. */
+  progress: ProgrammeProgress | null;
   /** Focus areas for the default chips. Dictionary labels, capped by caller. */
   focus: string[];
   contentLocale: Locale | null;
@@ -195,14 +197,91 @@ function programmePeriodLabel(
     : start;
 }
 
+/**
+ * How far through a programme the student currently is.
+ *
+ * Returns null far more often than it returns a number, and that is the point.
+ * A progress bar is a *quantitative* claim — "you are 60% of the way through a
+ * five-year degree" — and this CMS has rows where the honest answer is that
+ * nobody knows. Every guard below corresponds to a state today's data actually
+ * contains or could contain:
+ *
+ *   no evidenced years    a row whose dates never parsed. Drawing an empty bar
+ *                         would assert "0% complete", which is a claim; drawing
+ *                         nothing asserts nothing.
+ *   no end year           an open-ended programme. Today the mathematics
+ *                         degree is stored this way, so it renders no bar at
+ *                         all rather than one against an invented finish.
+ *   end not after start   incoherent data. A zero or negative span cannot be
+ *                         divided by, and inventing a floor would hide the
+ *                         error instead of leaving it visible in the range.
+ *   not ongoing           a completed programme. The range label already says
+ *                         it finished; a full bar adds nothing.
+ *   starts in the future  a start year later than today. Clamping to zero
+ *                         would render "Year 1", stating that studies have
+ *                         begun. They have not.
+ *
+ * Year granularity throughout, because that is all `ExperiencePeriod` evidences
+ * — see its `precision` field. `now` is injected so the boundary cases are
+ * testable rather than dependent on the day the suite runs.
+ */
+export type ProgrammeProgress = {
+  /** Completed share of the programme, 0–1, for the bar's own width. */
+  fraction: number;
+  /** Whole percent, for `aria-valuenow`. */
+  percent: number;
+  /** "Year 4 of 5", in the reader's numerals. */
+  label: string;
+};
+
+export function programmeProgress({
+  period,
+  locale,
+  t,
+  now,
+}: {
+  period: ExperiencePeriod;
+  locale: Locale;
+  t: Dictionary;
+  now: Date;
+}): ProgrammeProgress | null {
+  if (period.precision !== "year") return null;
+  if (period.startYear === null || period.endYear === null) return null;
+  if (!period.isOngoing) return null;
+
+  const totalYears = period.endYear - period.startYear;
+  if (totalYears <= 0) return null;
+
+  const elapsed = now.getUTCFullYear() - period.startYear;
+  if (elapsed < 0) return null;
+
+  const fraction = Math.min(1, elapsed / totalYears);
+  // 1-based: the year that began at `startYear` is year one, and a student
+  // past the final year is still shown in it rather than beyond it.
+  const currentYear = Math.min(totalYears, elapsed + 1);
+
+  return {
+    fraction,
+    percent: Math.round(fraction * 100),
+    label: interpolate(t.education.status.yearOfTotal, {
+      year: formatNumeral(currentYear, locale),
+      total: formatNumeral(totalYears, locale),
+    }),
+  };
+}
+
 export function buildEducationViews({
   entries,
   locale,
   t,
+  /* Injected so progress is deterministic under test. The page revalidates
+     every 5 minutes, so a server-computed year never goes meaningfully stale. */
+  now = new Date(),
 }: {
   entries: EducationInput[];
   locale: Locale;
   t: Dictionary;
+  now?: Date;
 }): EducationViews {
   const programmes: ProgrammeView[] = [];
   const milestones: MilestoneView[] = [];
@@ -235,6 +314,7 @@ export function buildEducationViews({
                 year: formatNumeral(period.endYear, locale),
               })
             : null,
+        progress: programmeProgress({ period, locale, t, now }),
         focus: TRACK_FOCUS[track].map((key) => t.education.topics[key]),
         contentLocale: entry.contentLocale,
       });

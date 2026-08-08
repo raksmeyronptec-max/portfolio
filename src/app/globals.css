@@ -3597,6 +3597,28 @@
 .case-label { display: block; margin-bottom: 8px; color: var(--foreground-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
 .metric-pull { display: inline; padding: 2px 8px; border-radius: 6px; background: var(--success); color: var(--background); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 
+/* ── Degree progress ────────────────────────────────────────────────────────
+   Rendered only when the span is fully evidenced; see programmeProgress in
+   education-view.ts for the states that render nothing at all.
+
+   The fill sits at its true width by default and is collapsed *only* while its
+   Reveal wrapper is pending, so the growth is a consequence of the existing
+   scroll reveal rather than a second observer. That ordering also means the
+   bar is correct without JavaScript, on the server, and under reduced motion —
+   where Reveal never sets `pending`, so there is nothing to grow from. */
+.edu-progress { display: flex; flex-direction: column; gap: 6px; }
+.edu-progress-track { height: 4px; overflow: hidden; border-radius: 2px; background: var(--surface-muted); }
+.edu-progress-fill {
+  display: block;
+  width: var(--edu-progress, 0%);
+  height: 100%;
+  border-radius: 2px;
+  background: var(--experience-mark, var(--foreground));
+  transition: width var(--dur-slow) var(--ease-out);
+}
+[data-reveal="pending"] .edu-progress-fill { width: 0; }
+.edu-progress-label { color: var(--foreground-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
 /* ── Experience timeline ────────────────────────────────────────────────── */
 .timeline { position: relative; width: 100%; max-width: 720px; margin-inline: auto; }
 .timeline-item { display: grid; grid-template-columns: 150px 32px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 36px; scroll-margin-top: 80px; }
@@ -3653,7 +3675,9 @@
   .timeline-item,
   .reveal,
   .ecosystem-node,
-  .ecosystem-arrow path { transition: none !important; animation: none !important; }
+  .ecosystem-arrow path,
+  /* The width is already correct; only the growth is removed. */
+  .edu-progress-fill { transition: none !important; animation: none !important; }
 
   /* Content a reveal or an entrance would otherwise leave hidden is forced
      visible — that is the whole point of opting out of the motion.

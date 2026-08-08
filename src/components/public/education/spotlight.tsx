@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { Icon, type IconName } from "@/components/ui/icon";
 import { SmartLink, StatusDot, Tag } from "@/components/ui/primitives";
 import { JourneyStoryLinks } from "@/components/public/journey-story-links";
@@ -207,6 +209,33 @@ function ProgrammePanel({
           </p>
         ) : null}
       </header>
+
+      {/* Absent whenever the programme's span is not fully evidenced, which is
+          why there is no fallback branch here — an unknown span draws nothing
+          rather than an empty bar reading as "0% complete". */}
+      {programme.progress ? (
+        <div className="edu-progress">
+          <div
+            className="edu-progress-track"
+            role="progressbar"
+            aria-valuenow={programme.progress.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            /* "Year 4 of 5" rather than "60%": the percentage is the shape of
+               the bar, the years are what the reader actually wants. */
+            aria-valuetext={programme.progress.label}
+            aria-label={t.education.status.progressLabel}
+            style={
+              {
+                "--edu-progress": `${programme.progress.percent}%`,
+              } as CSSProperties
+            }
+          >
+            <span className="edu-progress-fill" />
+          </div>
+          <p className="edu-progress-label">{programme.progress.label}</p>
+        </div>
+      ) : null}
 
       {/* Expected completion and schedule as short labelled facts, not a
           metadata table — the old page's dt/dd grid is what made a live degree

@@ -904,6 +904,8 @@ export const km: Dictionary = {
       inProgress: "កំពុងសិក្សា",
       expectedRange: "{start}—រំពឹងបញ្ចប់ {end}",
       expectedCompletion: "រំពឹងបញ្ចប់៖ ឆ្នាំ {year}",
+      yearOfTotal: "ឆ្នាំទី {year} ក្នុងចំណោម {total} ឆ្នាំ",
+      progressLabel: "វឌ្ឍនភាពនៃកម្មវិធីសិក្សា",
     },
 
     spotlight: {

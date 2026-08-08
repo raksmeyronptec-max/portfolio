@@ -1057,6 +1057,10 @@ export const en = {
          completed qualification. */
       expectedRange: "{start}—Expected {end}",
       expectedCompletion: "Expected completion: {year}",
+      /* Rendered only when a start year, an end year and an ongoing status are
+         all evidenced — see programmeProgress in education-view.ts. */
+      yearOfTotal: "Year {year} of {total}",
+      progressLabel: "Progress through the programme",
     },
 
     spotlight: {
